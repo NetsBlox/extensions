@@ -4,4 +4,4 @@ This repository contains the NetsBlox Extensions to be hosted on extensions.nets
 
 Extensions currently included in this repository:
 
- - 
+ - [RoboScapeOnline (WIP)](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/RoboScapeOnline/js/roboscape-ext.js%22]#) - Networked robotics simulation in the browser!
