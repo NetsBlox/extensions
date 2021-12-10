@@ -13,11 +13,7 @@
         getMenu() {
             return {
                 'New Room': function () {
-                    if (!socket) {
-                        connectToRoboScapeSim();
-                    }
-
-                    setTimeout(() => {
+                    connectToRoboScapeSim().then(() => {
                         window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
                         const dialog = new DialogBoxMorph().withKey('NewRoboScapeSimRoom');
                         const roomIdField = new InputFieldMorph();
@@ -46,7 +42,7 @@
 
                         dialog.addButton('submit', 'Create Room');
                         dialog.submit = () => {                        
-                            newRoom('default', roomPasswordField.getValue(), environmentField.getValue());
+                            newRoom(environmentField.getValue(), roomPasswordField.getValue());
                             window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
                             dialog.destroy();
                         };
@@ -60,18 +56,17 @@
                         dialog.fixLayout();
                         dialog.popUp(world);
                         
-                    }, 200);
+                    });
                 },
                 'Join Room': function () {
-                    
-                    if (!socket) {
-                        connectToRoboScapeSim();
-                    }
-
-                    setTimeout(() => {
+                    connectToRoboScapeSim().then(() => {
                         window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
                         const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');
-                        const roomIdField = new InputFieldMorph();
+                        const roomIdField = new InputFieldMorph(null, false, availableRooms.reduce((p, r) => {
+                            console.log(r);
+                            p[r] = r;
+                            return p;
+                        }, {}), false);
                         const roomPasswordField = new InputFieldMorph();
                         const bdy = new AlignmentMorph('column', this.padding);
                     
@@ -108,7 +103,7 @@
                         dialog.fixLayout();
                         dialog.popUp(world);
                         
-                    }, 200);
+                    });
                 },
                 'Open 3D view': function () {
                     if (window.externalVariables.roboscapeSimCanvasInstance) {

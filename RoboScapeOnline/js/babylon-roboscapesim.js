@@ -15,7 +15,7 @@ RoboScapeSimCanvasMorph.prototype = new DialogBoxMorph();
 RoboScapeSimCanvasMorph.uber = DialogBoxMorph.prototype;
 RoboScapeSimCanvasMorph.id = 0;
 
-function RoboScapeSimCanvasMorph(title = 'Canvas') {
+function RoboScapeSimCanvasMorph(title = 'Not connected') {
     this.init(title);
 }
 
@@ -239,7 +239,7 @@ RoboScapeSimCanvasMorph.prototype.setCanvasPosition = function() {
     this.canvas.style.top = top + 'px';
     this.canvas.style.width = width + 'px';
     
-    if (vrHelper) {
+    if (vrHelper && vrHelper.vrButton) {
         vrHelper.vrButton.style.left = left + 'px';
         vrHelper.vrButton.style.top = top + 'px';
     } 
@@ -258,30 +258,32 @@ RoboScapeSimCanvasMorph.prototype.popUp = function(world) {
 
     var myself = this;
 
-    // Resize handle
-    this.handle = new HandleMorph(
-        this,
-        280,
-        220,
-        this.corner,
-        this.corner
-    );
+    // Create handle
+    if (!this.handle) {
+        this.handle = new HandleMorph(
+            this,
+            280,
+            220,
+            this.corner,
+            this.corner
+        );
 
-    this.handle.mouseDownLeft = function (pos) {
-        myself.hideCanvas();
-        HandleMorph.prototype.mouseDownLeft.call(this, pos);
-        var stepFn = this.step;
-        this.step = function() {
-            stepFn.apply(this, arguments);
-            if (!this.root().hand.mouseButton) {
-                myself.showCanvas();
+        this.handle.mouseDownLeft = function (pos) {
+            myself.hideCanvas();
+            HandleMorph.prototype.mouseDownLeft.call(this, pos);
+            var stepFn = this.step;
+            this.step = function () {
+                stepFn.apply(this, arguments);
+                if (!this.root().hand.mouseButton) {
+                    myself.showCanvas();
 
-                if (engine) {
-                    engine.resize();
+                    if (engine) {
+                        engine.resize();
+                    }
                 }
-            }
+            };
         };
-    };
+    }
 };
 
 RoboScapeSimCanvasMorph.prototype.destroy = function() {
@@ -413,13 +415,13 @@ updateLoopFunctions.push(() => {
     if (window.externalVariables.roboscapeSimCanvasInstance.overlappedMorphs().filter(morph => morph.parent == world).length > 1) {
         if (!tempCanvasVisibility) {
             // Hide canvas due to overlap
-            tempCanvasVisibility = window.externalVariables.roboscapeSimCanvasInstance.canvas.style.display;
+            tempCanvasVisibility = true;
             window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
         }
     } else {
         // Restore canvas state
         if (tempCanvasVisibility) {
-            window.externalVariables.roboscapeSimCanvasInstance.canvas.style.display = tempCanvasVisibility;
+            window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
             tempCanvasVisibility = false;
         }
     }
