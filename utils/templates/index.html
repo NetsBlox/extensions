@@ -4,9 +4,9 @@
 Welcome to the list of supported NetsBlox extensions! Click on one below to try it out!
 </p>
 <ul>
- 
- <li><a href="https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]#">RoboScapeOnline</a></li>
- 
+ <% extensions.forEach(ext => { %>
+ <li><a href="<%= ext.url %>"><%= ext.name %></a></li>
+ <% }) %>
 </ul>
 <p>
   For more information or to report an issue, please visit <a href="https://github.com/NetsBlox/extensions">github.com/NetsBlox/extensions</a>.
