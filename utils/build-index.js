@@ -12,6 +12,7 @@ const updateCount = fs.readdirSync(TEMPLATES_DIR)
     .reduce((updateCount, name) => renderTemplate(name, templateData) + updateCount, 0)
 
 if (updateCount > 0) {
+    console.log('Files have been updated. Please review and commit.')
     process.exit(1);
 }
 
