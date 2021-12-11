@@ -1,0 +1,22 @@
+{
+  "name": "netsblox-extensions",
+  "version": "1.0.0",
+  "description": "This repository contains the NetsBlox Extensions to be hosted on https://extensions.netsblox.org, allowing NetsBlox to recognize them as first-party extensions.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NetsBlox/extensions.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NetsBlox/extensions/issues"
+  },
+  "homepage": "https://github.com/NetsBlox/extensions#readme",
+  "devDependencies": {
+    "lodash": "^4.17.21"
+  }
+}
