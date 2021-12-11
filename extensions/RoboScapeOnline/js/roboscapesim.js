@@ -190,7 +190,7 @@ const addRobot = async function () {
     if (window.origin.includes("localhost")) {
         imported = await BABYLON.SceneLoader.ImportMeshAsync('', 'http://localhost:8080/src/', 'parallax_robot.gltf');
     } else {
-        imported = await BABYLON.SceneLoader.ImportMeshAsync('', 'https://extensions.netsblox.org/RoboScapeOnline/assets/', 'parallax_robot.gltf');
+        imported = await BABYLON.SceneLoader.ImportMeshAsync('', 'https://extensions.netsblox.org/extensions/RoboScapeOnline/assets/', 'parallax_robot.gltf');
     }
 
     imported.meshes[0].scaling.scaleInPlace(2);
