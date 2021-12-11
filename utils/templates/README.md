@@ -3,10 +3,9 @@
 This repository contains the NetsBlox Extensions to be hosted on https://extensions.netsblox.org, allowing NetsBlox to recognize them as first-party extensions.
 
 Extensions currently included in this repository:
- 
- - [RoboScapeOnline](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]#) - Networked robotics simulation in the browser! (WIP)
-
- 
+ <% extensions.forEach(ext => { %>
+ - [<%=ext.name %>](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/<%= ext.name %>/index.js%22]#) - <%= ext.description %>
+ <% }) %>
 
 ## Contributing
 After cloning the repository, configure the githooks with:

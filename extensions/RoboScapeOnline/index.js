@@ -151,14 +151,14 @@
     } else {
         script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'https://extensions.netsblox.org/RoboScapeOnline/js/babylon-roboscapesim.js';
+        script.src = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/js/babylon-roboscapesim.js';
         script.async = false;
         document.body.appendChild(script);
 
 
         script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'https://extensions.netsblox.org/RoboScapeOnline/js/roboscapesim.js';
+        script.src = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/js/roboscapesim.js';
         script.async = false;
         document.body.appendChild(script);
     }
