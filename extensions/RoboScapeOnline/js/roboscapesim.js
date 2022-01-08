@@ -222,7 +222,7 @@ var modelsDir;
 if (window.origin.includes("localhost")) {
     modelsDir = 'http://localhost:8080/src/';
 } else {
-    modelsDir = 'https://extensions.netsblox.org/RoboScapeOnline/assets/';
+    modelsDir = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/assets/';
 }
 
 /**
