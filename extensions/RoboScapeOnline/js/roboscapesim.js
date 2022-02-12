@@ -35,7 +35,7 @@ const connectToRoboScapeSim = function () {
             socket.emit('getRooms', SnapCloud.username || SnapCloud.clientId);
 
             // Handle incremental updates
-            socket.on('update', data => {
+            socket.on('u', data => {
                 if (performance.now() - nextUpdateTime > 10) {
                     bodies = { ...nextBodies };
                     nextBodies = { ...bodies, ...data };
@@ -231,6 +231,8 @@ if (window.origin.includes('localhost')) {
  */
 const addMesh = async function (name) {
     imported = await BABYLON.SceneLoader.ImportMeshAsync('', assetsDir, name);
+
+    shadowGenerator.addShadowCaster(imported.meshes[0], true);
     return imported.meshes[0];
 };
 
@@ -303,7 +305,7 @@ document.body.appendChild(script);
 
 var interpolate = function (x1, x2, dx1, dx2, t1, t2, t) {
     t = (t - t2) / Math.max(2, t2 - t1);
-    return BABYLON.Scalar.Lerp(x1, x2, t);
+    return BABYLON.Scalar.Lerp(+x1, +x2, t);
 };
 
 var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
@@ -311,7 +313,11 @@ var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
     return BABYLON.Quaternion.Slerp(q1, q2, t);
 };
 
-// Converts a color hex string to an RGB color object 
+/**
+ * Converts a color hex string to an RGB color object
+ * @param {String} hexstring Input hex string (e.g. '#FFFFFF'), beginning # is optional
+ * @returns {{r: Number, g: Number, b: Number}} 
+ */
 var hex2rgb = function (hexstring) {
     if (hexstring[0] != '#') {
         hexstring = '#' + hexstring;
@@ -343,7 +349,7 @@ setTimeout(() => {
                 if (!Object.keys(bodyMeshes).includes(label)) {
                     if (Object.keys(bodiesInfo).includes(label)) {
                         
-                        if (!bodiesInfo[label].width) {
+                        if (!bodiesInfo[label].width || !bodiesInfo[label].visualInfo) {
                             continue;
                         }
 
@@ -362,6 +368,12 @@ setTimeout(() => {
                                     tag.position.y = -0.2;
                                 
                                     nameTags[label] = tag;
+                                } else {
+                                    if (bodiesInfo[label].visualInfo.modelScale) {
+                                        bodyMeshes[label].scaling.x = bodiesInfo[label].visualInfo.modelScale;
+                                        bodyMeshes[label].scaling.y = bodiesInfo[label].visualInfo.modelScale;
+                                        bodyMeshes[label].scaling.z = bodiesInfo[label].visualInfo.modelScale;
+                                    }
                                 }
                             });
                         } else {
@@ -376,7 +388,9 @@ setTimeout(() => {
                                 } else if (bodiesInfo[label].visualInfo.image && bodiesInfo[label].visualInfo.image.endsWith('.png')) {
                                     var material = new BABYLON.StandardMaterial('material' + material_count++);
                                     material.diffuseTexture = new BABYLON.Texture(assetsDir + bodiesInfo[label].visualInfo.image);
-
+                                    material.diffuseTexture.uScale = bodiesInfo[label].width;
+                                    material.diffuseTexture.vScale = bodiesInfo[label].height;
+                                        
                                     if (bodiesInfo[label].visualInfo.color) {
                                         let color = hex2rgb(bodiesInfo[label].visualInfo.color);
                                         material.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b);
@@ -406,6 +420,11 @@ setTimeout(() => {
                     
                     let angle = {...body.angle};
                     const nextBody = nextBodies[label];
+
+                    if (!nextBody) {
+                        continue;
+                    }
+
                     // Extrapolate/Interpolate position and rotation
                     x = interpolate(x, nextBody.pos.x, body.vel.x || 0, nextBody.vel.x || 0, lastUpdateTime, tempNextTime, frameTime);
                     y = interpolate(y, nextBody.pos.y, body.vel.y || 0, nextBody.vel.y || 0, lastUpdateTime, tempNextTime, frameTime);
