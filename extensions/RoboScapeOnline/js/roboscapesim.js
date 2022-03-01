@@ -127,6 +127,7 @@ const connectToRoboScapeSim = function () {
             // Update list of quick-join rooms
             socket.on('availableRooms', info => {
                 ({ availableRooms } = info);
+                availableRooms = availableRooms.sort((room1, room2) => Date.parse(room2.lastInteractionTime) - Date.parse(room1.lastInteractionTime));
             });
 
             // Robot beeped
@@ -215,6 +216,11 @@ function leaveRoom() {
     bodyMeshes = {};
 
     updateCanvasTitle('Not connected');
+
+    // Reset camera
+    scene.activeCamera = camera;
+    camera.position = new BABYLON.Vector3(4, 10, -4);
+    camera.setTarget(new BABYLON.Vector3(0, 0, 0));
 }
 
 var assetsDir;
@@ -304,12 +310,12 @@ script.src = 'https://cdn.socket.io/socket.io-2.3.1.slim.js';
 document.body.appendChild(script);
 
 var interpolate = function (x1, x2, dx1, dx2, t1, t2, t) {
-    t = (t - t2) / Math.max(2, t2 - t1);
+    t = (t - t2) / Math.max(4, t2 - t1);
     return BABYLON.Scalar.Lerp(+x1, +x2, t);
 };
 
 var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
-    t = (t - t2) / Math.max(2, t2 - t1);
+    t = (t - t2) / Math.max(10, t2 - t1);
     return BABYLON.Quaternion.Slerp(q1, q2, t);
 };
 
