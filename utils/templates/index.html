@@ -1,13 +1,25 @@
+<html>
+<head>
+<title>NetsBlox Extensions</title>
+<link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" type="text/css">
+</head>
+<body>
 <h1>NetsBlox Extensions</h1>
 
 <p>
 Welcome to the list of supported NetsBlox extensions! Click on one below to try it out!
 </p>
-<ul>
- <% extensions.forEach(ext => { %>
- <li><a href="<%= ext.url %>"><%= ext.name %></a></li>
- <% }) %>
-</ul>
+
+<% extensions.forEach(ext => { %>
+<details>
+  <summary><a href="<%= ext.url %>"><%= ext.name %></a></summary>
+  <p><%= ext.description %></p>
+</details>
+<% }) %>
+
+<hr />
 <p>
-  For more information or to report an issue, please visit <a href="https://github.com/NetsBlox/extensions">github.com/NetsBlox/extensions</a>.
+For more information or to report an issue, please visit <a href="https://github.com/NetsBlox/extensions">github.com/NetsBlox/extensions</a>.
 </p>
+</body>
+</html>
