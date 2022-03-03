@@ -327,7 +327,7 @@ var interpolate = function (x1, x2, dx1, dx2, t1, t2, t) {
 
 var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
     t = (t - t2) / Math.max(10, t2 - t1);
-    return BABYLON.Quaternion.Slerp(q1, q2, t);
+    return BABYLON.Quaternion.Slerp(q1, q2, t).normalize();
 };
 
 /**
