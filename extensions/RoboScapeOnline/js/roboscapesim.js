@@ -27,9 +27,9 @@ const connectToRoboScapeSim = function () {
         console.log("Created new socket");
 
         if (window.origin.includes('localhost')) {
-            socket = io('//localhost:9001', { secure: true });
+            socket = io('//localhost:9001', { secure: true, withCredentials: false });
         } else {
-            socket = io('//3-222-232-255.nip.io', { secure: true });
+            socket = io('//3-222-232-255.nip.io', { secure: true, withCredentials: false });
         }
 
         socket.on('connect', e => {
@@ -52,16 +52,20 @@ const connectToRoboScapeSim = function () {
             // Handle full updates
             socket.on('fullUpdate', data => {
                 bodiesInfo = { ...data };
-                bodies = { ...data, ...bodies };
-                nextBodies = { ...data };
-                lastUpdateTime = lastUpdateTime || performance.now() - 50;
-                nextUpdateTime = performance.now();
-                lastUpdateServerTime = data.time * 1000;
-                nextUpdateServerTime = data.time * 1000;
-                startClientTime = nextUpdateTime;
-                startServerTime = data.time * 1000;
-                serverTimeOffset = startClientTime - startServerTime;
 
+                if (Object.keys(bodies).length == 0 || Object.keys(nextBodies).length == 0) {
+                    bodies = { ...data };
+                    nextBodies = { ...data };
+                    lastUpdateTime = lastUpdateTime || performance.now() - 50;
+                    nextUpdateTime = performance.now();
+                    lastUpdateServerTime = data.time * 1000;
+                    nextUpdateServerTime = data.time * 1000;
+                    startClientTime = nextUpdateTime;
+                    startServerTime = data.time * 1000;
+                    serverTimeOffset = startClientTime - startServerTime;
+                }
+
+                
                 // Create entries in dropdown
                 window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices =
                     Object.keys(bodiesInfo).filter(label => label.startsWith('robot'))
@@ -317,7 +321,7 @@ const createLabel = function (text, font = 'Arial', color = '#ffffff', outline =
 // Load socket.io
 var script = document.createElement('script');
 script.type = 'text/javascript';
-script.src = 'https://cdn.socket.io/socket.io-2.3.1.slim.js';
+script.src = 'https://cdn.socket.io/4.4.1/socket.io.min.js';
 document.body.appendChild(script);
 
 var interpolate = function (x1, x2, dx1, dx2, t1, t2, t) {
