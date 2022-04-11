@@ -327,14 +327,44 @@ const activateBabylon = async function () {
     scene = new BABYLON.Scene(engine);
 
     // Parameters : name, position, scene
-    camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(4, 10, -4), scene);
-    camera.speed = 0.4;
+    camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(0, 6, -2), scene);
+    camera.speed = 0.35;
     camera.minZ = 0.01;
     camera.maxZ = 200;
 
     // Attach the camera to the canvas
     camera.attachControl(canvas, true);
     camera.setTarget(new BABYLON.Vector3(0, 0, 0));
+
+    
+	scene.onKeyboardObservable.add((kbInfo) => {
+		switch (kbInfo.type) {
+            case BABYLON.KeyboardEventTypes.KEYDOWN:
+                
+                const camSpeed = 0.005;
+                
+                // Keyboard camera controls for touchscreen usability
+				switch (kbInfo.event.key) {
+                    case "u":
+                    case "U":
+                        camera.cameraRotation.x -= camSpeed;
+                    break
+                    case "j":
+                    case "J":
+                        camera.cameraRotation.x += camSpeed;
+                    break
+                    case "h":
+                    case "H":
+                        camera.cameraRotation.y -= camSpeed;
+                    break
+                    case "k":
+                    case "K":
+                        camera.cameraRotation.y += camSpeed;
+                    break
+                }
+			break;
+		}
+	});
 
     followCam = new BABYLON.FollowCamera('followcam', new BABYLON.Vector3(5, 5, 5), scene);
     followCam.heightOffset = 1.25;
