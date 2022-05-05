@@ -5,7 +5,6 @@ This repository contains the NetsBlox Extensions to be hosted on https://extensi
 Extensions currently included in this repository:
  
  - [HideCategories](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/HideCategories/index.js%22]#) - This extension allows you to automatically hide categories and is particularly useful when setting different visible categories for collaborating users.
-
  
  - [RoboScapeOnline](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]#) - Networked robotics simulation in the browser! (WIP)
  
