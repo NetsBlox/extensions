@@ -10,6 +10,7 @@ var ui;
 var vrHelper;
 var roboscapeSimCanvasInstance;
 var shadowGenerator;
+var optimizer;
 
 var updateLoopFunctions = [];
 
@@ -309,6 +310,9 @@ const resizeBabylonCanvas = function () {
     canvas.style.top = stage.boundingBox().top() + 'px';
 };
 
+var textStackPanel;
+const textBlocks = {};
+
 const activateBabylon = async function () {
 
     if (!canvas) {
@@ -325,6 +329,20 @@ const activateBabylon = async function () {
     stage = world.children[0].children.find(c => c.name == 'Stage');
 
     scene = new BABYLON.Scene(engine);
+
+    
+    // Optimizer
+    var options = BABYLON.SceneOptimizerOptions.ModerateDegradationAllowed();
+    optimizer = new BABYLON.SceneOptimizer(scene, options);
+    
+    // GUI
+    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+
+    textStackPanel = new BABYLON.GUI.StackPanel();    
+    textStackPanel.setPadding(20, 20, 20, 20);
+    textStackPanel.spacing = 20;
+    textStackPanel.verticalAlignment = "top";
+    advancedTexture.addControl(textStackPanel);   
 
     // Parameters : name, position, scene
     camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(0, 6, -2), scene);
@@ -446,6 +464,147 @@ const addBlock = async function (width, height, depth = -1, castShadows = true, 
     return block;
 };
 
+
+var assetsDir;
+
+if (window.origin.includes('localhost')) {
+    assetsDir = 'http://localhost:8080/src/';
+} else {
+    assetsDir = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/assets/';
+}
+
+/**
+ * Import mesh and add it to scene
+ * @returns Mesh object
+ */
+const addMesh = async function (name) {
+    try {
+        imported = await BABYLON.SceneLoader.ImportMeshAsync('', assetsDir, name);
+
+        shadowGenerator.addShadowCaster(imported.meshes[0], true);
+        return imported.meshes[0];
+    } catch (e) {
+        console.log(e);
+        return addBlock(1, 1);
+    }
+};
+
+/**
+ * Create a new plane with text written on its texture
+ * @param {string} text Text to display on label
+ * @param {string} font Font to write text in
+ * @param {string} color Color of text
+ * @param {boolean} outline Should black outline be added around text for visibility
+ * @returns Plane with dynamic texture material applied
+ */
+const createLabel = function (text, font = 'Arial', color = '#ffffff', outline = true) {
+    // Set font
+    var font_size = 48;
+    var font = 'bold ' + font_size + 'px ' + font;
+
+    // Set height for plane
+    var planeHeight = 3;
+
+    // Set height for dynamic texture
+    var DTHeight = 1.5 * font_size; //or set as wished
+
+    // Calcultae ratio
+    var ratio = planeHeight / DTHeight;
+
+    //Use a temporary dynamic texture to calculate the length of the text on the dynamic texture canvas
+    var temp = new BABYLON.DynamicTexture('DynamicTexture', 64, scene);
+    var tmpctx = temp.getContext();
+    tmpctx.font = font;
+    var DTWidth = tmpctx.measureText(text).width + 8;
+
+    // Calculate width the plane has to be 
+    var planeWidth = DTWidth * ratio;
+
+    //Create dynamic texture and write the text
+    var dynamicTexture = new BABYLON.DynamicTexture('DynamicTexture', { width: DTWidth + 8, height: DTHeight + 8 }, scene, false);
+    var mat = new BABYLON.StandardMaterial('mat', scene);
+    mat.diffuseTexture = dynamicTexture;
+    mat.ambientColor = new BABYLON.Color3(1, 1, 1);
+    mat.specularColor = new BABYLON.Color3(0, 0, 0);
+    mat.diffuseColor = new BABYLON.Color3(0, 0, 0);
+    mat.emissiveColor = new BABYLON.Color3(1, 1, 1);
+
+    // Create outline
+    if (outline) {
+        dynamicTexture.drawText(text, 2, DTHeight - 4, font, '#111111', null, true);
+        dynamicTexture.drawText(text, 4, DTHeight - 2, font, '#111111', null, true);
+        dynamicTexture.drawText(text, 6, DTHeight - 4, font, '#111111', null, true);
+        dynamicTexture.drawText(text, 4, DTHeight - 6, font, '#111111', null, true);
+    }
+
+    // Draw text
+    dynamicTexture.drawText(text, 4, DTHeight - 4, font, color, null, true);
+
+    dynamicTexture.hasAlpha = true;
+    dynamicTexture.getAlphaFromRGB = true;
+
+    //Create plane and set dynamic texture as material
+    var plane = BABYLON.MeshBuilder.CreatePlane('plane', { width: planeWidth, height: planeHeight }, scene);
+    plane.material = mat;
+
+    return plane;
+};
+ 
+/**
+ * Create a TextBlock in the 3D view's overlay.
+ * If a TextBlock already has the id, that TextBlock's text and timeout will be updated.
+ * 
+ * @param {string} text Text to display in TextBlock
+ * @param {string} id ID of TextBlock
+ * @param {number | boolean} timeout TextBlock will be removed after timeout ms, or never if timeout is falsey.
+ */
+const addOrUpdateText = function (text, id, timeout) {
+
+    if (!Object.keys(textBlocks).includes(id)) {
+        var textBlock = new BABYLON.GUI.TextBlock("textblock_" + (id ?? Math.round(Math.random() * 10000000)));
+        textBlock.text = text;
+        textBlock.heightInPixels = 24;
+        textBlock.outlineColor = "#2226";
+        textBlock.outlineWidth = 3;
+        textBlock.color = "#FFF";
+        textBlock.fontSizeInPixels = 20;
+
+        textStackPanel.addControl(textBlock);
+        textBlocks[id] = textBlock;
+    } else {
+        textBlocks[id].text = text;
+    }
+
+    if (timeout) {
+        if (textBlocks[id].timeout) {
+            clearTimeout(textBlocks[id].timeout);
+        }
+
+        textBlocks[id].timeout = setTimeout(() => {
+            textStackPanel.removeControl(textBlocks[id]);
+            delete textBlocks[id];
+        }, timeout);
+    }
+}
+
+/**
+ * Removes all TextBlocks from the 3D view's overlay
+ */
+const clearAllTextBlocks = function () {
+    for (const id in textBlocks) {
+        if (Object.hasOwnProperty.call(textBlocks, id)) {
+            const element = textBlocks[id];
+
+            if (element.timeout) {
+                clearTimeout(element.timeout);
+            }
+
+            textStackPanel.removeControl(element);
+            delete textBlocks[id];
+        }
+    }
+};
+
 // Load Babylon
 var babylonScripts = ['https://preview.babylonjs.com/babylon.js', 'https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js', 'https://preview.babylonjs.com/gui/babylon.gui.min.js'];
 var scriptPromises = [];
@@ -490,5 +649,31 @@ updateLoopFunctions.push(() => {
             window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
             tempCanvasVisibility = false;
         }
+    }
+
+    // Keep in-bounds
+    if(window.externalVariables.roboscapeSimCanvasInstance.width() > world.width()){
+        window.externalVariables.roboscapeSimCanvasInstance.setWidth(world.width());
+        window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
+    }
+    if(window.externalVariables.roboscapeSimCanvasInstance.height() > world.height()){
+        window.externalVariables.roboscapeSimCanvasInstance.setHeight(world.height());
+        window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
+    }
+    if(window.externalVariables.roboscapeSimCanvasInstance.left() < 0){
+        window.externalVariables.roboscapeSimCanvasInstance.setLeft(0);
+        window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
+    }
+    if(window.externalVariables.roboscapeSimCanvasInstance.right() > world.width()){
+        window.externalVariables.roboscapeSimCanvasInstance.setRight(world.width());
+        window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
+    }
+    if(window.externalVariables.roboscapeSimCanvasInstance.bottom() > world.height()){
+        window.externalVariables.roboscapeSimCanvasInstance.setBottom(world.height());
+        window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
+    }
+    if(window.externalVariables.roboscapeSimCanvasInstance.top() < 0){
+        window.externalVariables.roboscapeSimCanvasInstance.setTop(0);
+        window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
     }
 });
