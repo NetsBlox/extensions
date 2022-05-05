@@ -17,9 +17,18 @@ if (updateCount > 0) {
 }
 
 function readExtension(name) {
+
     const dirpath = path.join(EXTENSIONS_DIR, name);
-    const description = fs.readFileSync(path.join(dirpath, 'description.txt'), 'utf8');
-    const url = `https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/${name}/index.js%22]#`
+    const settings = JSON.parse(fs.readFileSync(path.join(dirpath, 'extension.json'), 'utf8'));
+    const description = settings['description'];
+    let url = "";
+    
+    if (!settings['useDev']) {
+        url = `https://editor.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/${name}/index.js%22]#`;
+    } else {
+        url = `https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/${name}/index.js%22]#`;
+    }
+
     return {
         name,
         description,
