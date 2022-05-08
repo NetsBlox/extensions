@@ -8,6 +8,8 @@ Extensions currently included in this repository:
  
  - [RoboScapeOnline](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]#) - Networked robotics simulation in the browser! (WIP)
  
+ - [WhenKeyPressedLogger](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/WhenKeyPressedLogger/index.js%22]#) - Logs 'When [key] key pressed' block activations for Ben
+ 
 
 ## Contributing
 After cloning the repository, configure the githooks with:
