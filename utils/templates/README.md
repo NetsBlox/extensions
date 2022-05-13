@@ -4,7 +4,7 @@ This repository contains the NetsBlox Extensions to be hosted on https://extensi
 
 Extensions currently included in this repository:
  <% extensions.forEach(ext => { %>
- - [<%=ext.name %>](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/<%= ext.name %>/index.js%22]#) - <%= ext.description %>
+ - [<%=ext.displayName %>](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/<%= ext.name %>/index.js%22]#) - <%= ext.description %>
  <% }) %>
 
 ## Contributing

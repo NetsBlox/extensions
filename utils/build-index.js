@@ -30,7 +30,8 @@ function readExtension(name) {
     }
 
     return {
-        name,
+        name : name,
+        displayName : settings['customName'] ?? name,
         description,
         url,
     };
