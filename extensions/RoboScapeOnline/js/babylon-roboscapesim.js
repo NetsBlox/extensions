@@ -11,6 +11,11 @@ var vrHelper;
 var roboscapeSimCanvasInstance;
 var shadowGenerator;
 var optimizer;
+var resetButton;
+var encryptButton;
+var claimButton;
+var claimLabel;
+var updateRobotRowUI;
 
 var updateLoopFunctions = [];
 
@@ -23,7 +28,7 @@ function RoboScapeSimCanvasMorph(title = 'Not connected') {
 }
 
 RoboScapeSimCanvasMorph.prototype.init = function (title) {
-    this.minWidth = 600;
+    this.minWidth = 700;
     this.minHeight = 300;
 
     if (!canvas) {
@@ -64,43 +69,28 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
     this.robotRow.add(dividerMorph);
 
     spacerMorph = new Morph();
-    spacerMorph.setWidth(10);
+    spacerMorph.setWidth(5);
     spacerMorph.alpha = 0;
 
     this.robotRow.add(spacerMorph);
 
-    this.robotRow.add(new PushButtonMorph(null, () => {
+    resetButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
-            socket.emit('resetRobot', this.robotsList.getValue());
+            socket.emit('resetRobot', this.robotsList.getValue(), SnapCloud.username || SnapCloud.clientId);
         } else {
-            socket.emit('resetAll', this.robotsList.getValue());
+            socket.emit('resetAll', SnapCloud.username || SnapCloud.clientId);
         }
-    }, 'Reset'));
+    }, 'Reset');
+
+    this.robotRow.add(resetButton);
 
     spacerMorph = new Morph();
-    spacerMorph.setWidth(10);
+    spacerMorph.setWidth(5);
     spacerMorph.alpha = 0;
 
     this.robotRow.add(spacerMorph);
-
-    // this.robotRow.add(new PushButtonMorph(null, () => {
-    //     if (this.robotsList.getValue() != '') {
-    //         socket.emit('robotButton', this.robotsList.getValue(), true);
-
-    //         // Set unpress to happen automatically
-    //         setTimeout(() => {
-    //             socket.emit('robotButton', this.robotsList.getValue(), false);
-    //         }, 250);
-    //     }
-    // }, 'Encrypt'));
-
-    spacerMorph = new Morph();
-    spacerMorph.setWidth(10);
-    spacerMorph.alpha = 0;
-
-    this.robotRow.add(spacerMorph);
-
-    this.robotRow.add(new PushButtonMorph(null, () => {
+    
+    let chaseCamButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
             // Activate chase cam for robot
             followCam.lockedTarget = bodyMeshes['robot_' + this.robotsList.getValue()];
@@ -109,9 +99,10 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
             // Reset to free camera
             scene.activeCamera = camera;
         }
-    }, 'Chase Cam'));
+    }, 'Chase Cam');
+    this.robotRow.add(chaseCamButton);
 
-    this.robotRow.add(new PushButtonMorph(null, () => {
+    let fpsCamButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
             // Activate chase cam for robot
             firstPersonCam.targetRobot = this.robotsList.getValue();
@@ -120,10 +111,58 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
             // Reset to free camera
             scene.activeCamera = camera;
         }
-    }, 'First Person Cam'));
+    }, 'First Person Cam');
+    this.robotRow.add(fpsCamButton);
+    
     this.robotRow.add(new PushButtonMorph(null, () => {
         scene.activeCamera = camera;
     }, 'Free Cam'));
+
+    spacerMorph = new Morph();
+    spacerMorph.setWidth(5);
+    spacerMorph.alpha = 0;
+
+    this.robotRow.add(spacerMorph);
+
+    encryptButton = new PushButtonMorph(null, () => {
+        if (this.robotsList.getValue() != '') {
+            socket.emit('robotButton', this.robotsList.getValue(), true, SnapCloud.username || SnapCloud.clientId);
+
+            // Set unpress to happen automatically
+            setTimeout(() => {
+                socket.emit('robotButton', this.robotsList.getValue(), false, SnapCloud.username || SnapCloud.clientId);
+            }, 250);
+        }
+    }, 'Encrypt');
+
+    this.robotRow.add(encryptButton);
+
+    spacerMorph = new Morph();
+    spacerMorph.setWidth(5);
+    spacerMorph.alpha = 0;
+
+    this.robotRow.add(spacerMorph);
+
+    claimButton = new PushButtonMorph(null, () => {
+        if (this.robotsList.getValue() != '') {
+            if (claimButton.label.text == 'Claim') {
+                socket.emit('claimRobot', this.robotsList.getValue(), true, SnapCloud.username || SnapCloud.clientId);
+            } else {
+                socket.emit('claimRobot', this.robotsList.getValue(), false, SnapCloud.username || SnapCloud.clientId);
+            }
+        }
+    }, 'Claim');
+
+    this.robotRow.add(claimButton);
+
+    spacerMorph = new Morph();
+    spacerMorph.setWidth(5);
+    spacerMorph.alpha = 0;
+
+    this.robotRow.add(spacerMorph);
+
+    claimLabel = new TextMorph('Unclaimed');
+    this.robotRow.add(claimLabel);
 
     this.add(this.robotRow);
 
@@ -133,6 +172,91 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     this.fixLayout();
     this.rerender();
+
+    updateRobotRowUI = () => {
+        let robot = this.robotsList.getValue();
+        if (robot == null || robot == '' || bodiesInfo['robot_' + robot] != null) {
+            
+            if (robot != null && robot != '' && bodiesInfo['robot_' + robot] == null) {
+                this.robotsList.setChoice('');
+            }
+
+            chaseCamButton.hide();
+            fpsCamButton.hide();
+            claimButton.hide();
+            claimButton.disable();
+            claimLabel.hide();
+            encryptButton.hide();
+            encryptButton.disable();
+        } else {
+            chaseCamButton.show();
+            fpsCamButton.show();
+            encryptButton.show();
+
+            if (bodiesInfo['robot_' + robot].claimedBy != null) {
+                // If this is our robot, allow unclaim
+                if (bodiesInfo['robot_' + robot].claimedBy === (SnapCloud.username || SnapCloud.clientId)) {
+                    claimButton.label.text = 'Unclaim';     
+                    claimButton.enable();
+                    encryptButton.enable();
+                    resetButton.enable();
+                } else {
+                    claimButton.label.text = 'Claim';     
+                    claimButton.disable();
+                    encryptButton.disable();
+                    resetButton.disable();
+                }
+            } else {
+                // No one claiming
+                claimButton.label.text = 'Claim';  
+                claimButton.enable();
+                encryptButton.enable();
+                resetButton.enable();
+            }
+            
+            claimButton.show();
+            claimButton.fixLayout();
+            claimButton.rerender();
+
+            claimLabel.show();
+            claimLabel.fixLayout();
+            claimLabel.rerender();
+
+            this.robotRow.fixLayout();
+            this.robotRow.rerender();
+
+            this.fixClaimLabel();
+        }
+    };
+
+    this.robotRow.reactToChoice = (robot) => {
+        console.log("robot " + robot + " selected");
+        updateRobotRowUI();        
+    };
+};
+
+RoboScapeSimCanvasMorph.prototype.fixClaimLabel = function () {
+
+    let robot = this.robotsList.getValue();
+
+    if (bodiesInfo['robot_' + robot].claimedBy != null) {
+        claimLabel.text = 'Claimed by ' + bodiesInfo['robot_' + robot].claimedBy;
+    } else {
+        claimLabel.text = 'Unclaimed';
+    }
+    
+    claimLabel.fixLayout();
+    claimLabel.rerender();
+
+    this.robotRow.fixLayout();
+    this.robotRow.rerender();
+
+    while (claimLabel.right() > this.right()) {
+        claimLabel.text = claimLabel.text.substr(0, claimLabel.text.length - 4) + '...';
+        claimLabel.fixLayout();
+        claimLabel.rerender();
+        this.robotRow.rerender();
+    }
 };
 
 RoboScapeSimCanvasMorph.prototype.fixLayout = function () {
@@ -203,7 +327,7 @@ RoboScapeSimCanvasMorph.prototype.showCanvas = function () {
         this.setCanvasPosition();
         this.canvas.style.display = 'inline';
 
-        if (vrHelper) {
+        if (vrHelper && vrHelper.vrButton) {
             vrHelper.vrButton.style.display = 'inline';
         }
     }
@@ -220,6 +344,7 @@ RoboScapeSimCanvasMorph.prototype.hideCanvas = function () {
 RoboScapeSimCanvasMorph.prototype.show = function () {
     RoboScapeSimCanvasMorph.uber.show.call(this);
     this.showCanvas();
+    this.robotRow.reactToChoice(this.robotsList.getValue());
 };
 
 RoboScapeSimCanvasMorph.prototype.hide = function () {
@@ -285,12 +410,17 @@ RoboScapeSimCanvasMorph.prototype.popUp = function (world) {
             var stepFn = this.step;
             this.step = function () {
                 stepFn.apply(this, arguments);
+
+                myself.fixClaimLabel();
+
                 if (!this.root().hand.mouseButton) {
                     myself.showCanvas();
 
                     if (engine) {
                         engine.resize();
                     }
+
+                    myself.fixClaimLabel();
                 }
             };
         };
@@ -326,6 +456,8 @@ const activateBabylon = async function () {
     }
 
     engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+    engine.useReverseDepthBuffer = true;
+    
     stage = world.children[0].children.find(c => c.name == 'Stage');
 
     scene = new BABYLON.Scene(engine);

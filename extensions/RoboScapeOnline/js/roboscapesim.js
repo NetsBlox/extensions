@@ -165,11 +165,39 @@ const connectToRoboScapeSim = function () {
 
             // Show message
             socket.on('showText', args => {
-                text = args[0];
-                id = args[1];
-                timeout = args[2];
+                let text = args[0];
+                let id = args[1];
+                let timeout = args[2];
 
                 addOrUpdateText(text, id, timeout);
+            });
+
+            socket.on('numeric', args => {
+                let id = args[0];
+                let num = args[1];
+
+                addOrUpdateText(num, id, 2000);
+            });
+
+            // Robot claimed update
+            socket.on('robotClaimed', args => {
+                let robot = args[0];
+                let user = args[1];
+                let status = args[2];
+
+                console.log(`Robot ${robot} ${status ? '' : 'un'}claimed by ${user}`);
+                if (status) {
+                    bodiesInfo['robot_' + robot].claimedBy = user;
+                } else {
+                    bodiesInfo['robot_' + robot].claimedBy = null;
+                }
+
+                updateRobotRowUI();
+            });
+
+            // LED status change
+            socket.on('led', args => {
+                //console.log(args);
             });
 
         });
@@ -261,11 +289,19 @@ script.src = 'https://cdn.socket.io/4.4.1/socket.io.min.js';
 document.body.appendChild(script);
 
 var interpolate = function (x1, x2, dx1, dx2, t1, t2, t) {
+    if (Math.abs(x1 - x2) < 0.005) {
+        return (t < t2) ? +x1 : +x2;
+    }
+
     t = (t - t2) / Math.max(4, t2 - t1);
     return BABYLON.Scalar.Lerp(+x1, +x2, t);
 };
 
 var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
+    if(q1.equalsWithEpsilon(q2, 0.01)){
+        return q1.normalize();
+    }
+
     t = (t - t2) / Math.max(10, t2 - t1);
     return BABYLON.Quaternion.Slerp(q1, q2, t).normalize();
 };
@@ -350,8 +386,8 @@ setTimeout(() => {
                                 } else if (bodiesInfo[label].visualInfo.image && bodiesInfo[label].visualInfo.image.endsWith('.png')) {
                                     var material = new BABYLON.StandardMaterial('material' + material_count++);
                                     material.diffuseTexture = new BABYLON.Texture(assetsDir + bodiesInfo[label].visualInfo.image);
-                                    material.diffuseTexture.uScale = bodiesInfo[label].width;
-                                    material.diffuseTexture.vScale = bodiesInfo[label].height;
+                                    material.diffuseTexture.uScale = bodiesInfo[label].visualInfo.uScale ?? bodiesInfo[label].width;
+                                    material.diffuseTexture.vScale = bodiesInfo[label].visualInfo.vScale ?? bodiesInfo[label].height;
 
                                     material.specularColor.r = 0.5;
                                     material.specularColor.g = 0.5;
@@ -392,6 +428,14 @@ setTimeout(() => {
                     }
 
                     // Extrapolate/Interpolate position and rotation
+                    if (body.vel == undefined) {
+                        body.vel = {};
+                    }
+                    
+                    if (nextBody.vel == undefined) {
+                        nextBody.vel = {};
+                    }
+
                     x = interpolate(x, nextBody.pos.x, body.vel.x || 0, nextBody.vel.x || 0, lastUpdateTime, tempNextTime, frameTime);
                     y = interpolate(y, nextBody.pos.y, body.vel.y || 0, nextBody.vel.y || 0, lastUpdateTime, tempNextTime, frameTime);
                     z = interpolate(z, nextBody.pos.z, body.vel.z || 0, nextBody.vel.z || 0, lastUpdateTime, tempNextTime, frameTime);
