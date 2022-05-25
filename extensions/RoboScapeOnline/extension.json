@@ -1,5 +1,5 @@
 {
     "customName": "🤖 RoboScape Online",
     "description": "Networked robotics simulation in the browser! (WIP)",
-    "useDev": true
+    "useDev": false
 }
