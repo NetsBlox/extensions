@@ -1,69 +1,48 @@
 <html>
-  <head>
-    <title>NetsBlox Extensions</title>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/sakura.css/css/sakura.css"
-      type="text/css"
-    />
-  </head>
+    <head>
+        <title>NetsBlox Extensions</title>
+        <link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" type="text/css" />
+    </head>
 
-  <body>
-    <h1>NetsBlox Extensions</h1>
+    <body>
+        <h1>NetsBlox Extensions</h1>
 
-    <p>
-      Welcome to the list of supported NetsBlox extensions! Click on one below
-      to try it out!
-    </p>
+        <p>Welcome to the list of supported NetsBlox extensions! Click on one below to try it out!</p>
 
-    <% extensions.forEach(ext=> { %>
-    <details>
-      <summary>
-        <input
-          type="checkbox"
-          class="extensionOption"
-          name="<%= ext.name %>"
-          style="margin-right: 10px"
-        /><a href="<%= ext.linkUrl %>"> <%= ext.displayName %> </a>
-      </summary>
-      <p>
-        <input
-          type="hidden"
-          name="<%= ext.name %>_script"
-          id="<%= ext.name %>_script"
-          value="<%= ext.scriptUrl %>"
-        />
-        <%= ext.description %>
-      </p>
-    </details>
-    <% }) %>
+        <label for="multiSelect"><input type="checkbox" name="multiSelect" id="multiSelect" /> Enable multiple selections</label>
 
-    <hr />
+        <% extensions.forEach(ext=> { %>
+        <details>
+            <summary><input type="checkbox" class="extensionOption" name="<%= ext.name %>" style="margin-right: 10px" /><a href="<%= ext.linkUrl %>" target="_blank"> <%= ext.displayName %> </a></summary>
+            <p>
+                <input type="hidden" name="<%= ext.name %>_script" id="<%= ext.name %>_script" value="<%= ext.scriptUrl %>" />
+                <%= ext.description %>
+            </p>
+        </details>
+        <% }) %>
 
-    <button>
-      <strong style="font-size: 16px" id="loadButton"
-        >Load Selected Extensions</strong
-      >
-    </button>
+        <hr />
 
-    <details style="font-size: 12px">
-      <summary>Advanced options:</summary>
-      <p>
-        <label for="devMode"
-          ><input type="checkbox" name="devMode" id="devMode" /> Use
-          dev.netsblox.org</label
-        >
-      </p>
-    </details>
+        <div id="multiSelectControls">
+            <button style="font-size: 16px" id="loadButton">
+                <strong>Load Selected Extensions</strong>
+            </button>
 
-    <hr />
-    <p>
-      For more information or to report an issue, please visit
-      <a href="https://github.com/NetsBlox/extensions"
-        >github.com/NetsBlox/extensions</a
-      >.
-    </p>
+            <details style="font-size: 12px">
+                <summary>Advanced options:</summary>
+                <p>
+                    <label for="devMode"><input type="checkbox" name="devMode" id="devMode" /> Use dev.netsblox.org</label>
+                </p>
+            </details>
 
-    <script src="./index.js" async defer></script>
-  </body>
+            <hr />
+        </div>
+
+        <p>
+            For more information or to report an issue, please visit
+            <a href="https://github.com/NetsBlox/extensions">github.com/NetsBlox/extensions</a>.
+        </p>
+
+        <script src="./index.js" async defer></script>
+    </body>
 </html>
