@@ -1,37 +1,69 @@
 <html>
-<head>
-<title>NetsBlox Extensions</title>
-<link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" type="text/css">
-</head>
-<body>
-<h1>NetsBlox Extensions</h1>
+  <head>
+    <title>NetsBlox Extensions</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/sakura.css/css/sakura.css"
+      type="text/css"
+    />
+  </head>
 
-<p>
-Welcome to the list of supported NetsBlox extensions! Click on one below to try it out!
-</p>
+  <body>
+    <h1>NetsBlox Extensions</h1>
 
-<% extensions.forEach(ext => { %>
-<details>
-  <summary><input type="checkbox" name="<%= ext.url %>" style="margin-right:10px"><a href="<%= ext.url %>"><%= ext.displayName %></a></summary>
-  <p><%= ext.description %></p>
-</details>
-<% }) %>
+    <p>
+      Welcome to the list of supported NetsBlox extensions! Click on one below
+      to try it out!
+    </p>
 
-<hr/>
+    <% extensions.forEach(ext=> { %>
+    <details>
+      <summary>
+        <input
+          type="checkbox"
+          class="extentionOption"
+          name="<%= ext.name %>"
+          style="margin-right: 10px"
+        /><a href="<%= ext.linkUrl %>"> <%= ext.displayName %> </a>
+      </summary>
+      <p>
+        <input
+          type="hidden"
+          name="<%= ext.name %>_script"
+          id="<%= ext.name %>_script"
+          value="<%= ext.scriptUrl %>"
+        />
+        <%= ext.description %>
+      </p>
+    </details>
+    <% }) %>
 
+    <hr />
 
-<button><strong style="font-size: 16px">Load Selected Extensions</strong></button>
+    <button>
+      <strong style="font-size: 16px" id="loadButton"
+        >Load Selected Extensions</strong
+      >
+    </button>
 
-<details style="font-size: 12px">
-  <summary>Advanced options:</summary>
-  <p>
-     <label for="devMode"><input type="checkbox" name="devMode" id="devMode"/> Use dev.netsblox.org</label>
-  </p>
-</details>
+    <details style="font-size: 12px">
+      <summary>Advanced options:</summary>
+      <p>
+        <label for="devMode"
+          ><input type="checkbox" name="devMode" id="devMode" /> Use
+          dev.netsblox.org</label
+        >
+      </p>
+    </details>
 
-<hr />
-<p>
-For more information or to report an issue, please visit <a href="https://github.com/NetsBlox/extensions">github.com/NetsBlox/extensions</a>.
-</p>
-</body>
+    <hr />
+    <p>
+      For more information or to report an issue, please visit
+      <a href="https://github.com/NetsBlox/extensions"
+        >github.com/NetsBlox/extensions</a
+      >.
+    </p>
+
+    <script src="./index.js" async defer></script>
+  </body>
 </html>
