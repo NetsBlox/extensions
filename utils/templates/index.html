@@ -12,10 +12,22 @@ Welcome to the list of supported NetsBlox extensions! Click on one below to try 
 
 <% extensions.forEach(ext => { %>
 <details>
-  <summary><a href="<%= ext.url %>"><%= ext.displayName %></a></summary>
+  <summary><input type="checkbox" name="<%= ext.url %>" style="margin-right:10px"><a href="<%= ext.url %>"><%= ext.displayName %></a></summary>
   <p><%= ext.description %></p>
 </details>
 <% }) %>
+
+<hr/>
+
+
+<button><strong style="font-size: 16px">Load Selected Extensions</strong></button>
+
+<details style="font-size: 12px">
+  <summary>Advanced options:</summary>
+  <p>
+     <label for="devMode"><input type="checkbox" name="devMode" id="devMode"/> Use dev.netsblox.org</label>
+  </p>
+</details>
 
 <hr />
 <p>
