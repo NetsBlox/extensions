@@ -13,7 +13,7 @@
 
         <% extensions.forEach(ext=> { %>
         <details>
-            <summary><input type="checkbox" class="extensionOption" name="<%= ext.name %>" style="margin-right: 10px" /><a href="<%= ext.linkUrl %>" target="_blank"> <%= ext.displayName %> </a></summary>
+            <summary><input type="checkbox" class="extensionOption" name="<%= ext.name %>" style="margin-right: 10px" hidden /><a href="<%= ext.linkUrl %>" target="_blank"> <%= ext.displayName %> </a></summary>
             <p>
                 <input type="hidden" name="<%= ext.name %>_script" id="<%= ext.name %>_script" value="<%= ext.scriptUrl %>" />
                 <%= ext.description %>
@@ -23,7 +23,7 @@
 
         <hr />
 
-        <div id="multiSelectControls">
+        <div id="multiSelectControls" hidden>
             <button style="font-size: 16px" id="loadButton">
                 <strong>Load Selected Extensions</strong>
             </button>
