@@ -738,7 +738,7 @@ const clearAllTextBlocks = function () {
 };
 
 // Load Babylon
-var babylonScripts = ['https://preview.babylonjs.com/babylon.js', 'https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js', 'https://preview.babylonjs.com/gui/babylon.gui.min.js'];
+var babylonScripts = ['https://cdn.jsdelivr.net/npm/babylonjs@5.9.1/babylon.min.js', 'https://cdn.jsdelivr.net/npm/babylonjs-loaders@5.9.1/babylonjs.loaders.min.js', 'https://cdn.jsdelivr.net/npm/babylonjs-gui@5.9.1/babylon.gui.min.js'];
 var scriptPromises = [];
 
 for (let file of babylonScripts) {
