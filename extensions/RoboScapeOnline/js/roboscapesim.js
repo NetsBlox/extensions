@@ -15,27 +15,37 @@ var nameTags = {};
 var availableEnvironments = [];
 var availableRooms = [];
 var material_count = 0;
+var connectedServer = null;
+var lastPassword = '';
 
-const connectToRoboScapeSim = function () {
+const connectToRoboScapeSim = function (server) {
     return new Promise((resolve, reject) => {
-        if (socket != undefined) {
+        if (socket != undefined && socket.connected && connectedServer == server) {
             console.log("Existing socket");
             return resolve(socket);
         }
 
-        console.log("Created new socket");
+        console.log("Creating new socket");
 
-        if (window.origin.includes('localhost')) {
-            socket = io('//localhost:9001', { secure: true, withCredentials: false });
-        } else {
-            socket = io('//3-222-232-255.nip.io', { secure: true, withCredentials: false });
+        if (socket != undefined && socket.connected && connectedServer != server) {
+            socket.disconnect();
         }
 
+        // if (window.origin.includes('localhost')) {
+        //     socket = io('//localhost:9001', { secure: true, withCredentials: false });
+        // } else {
+        //     socket = io('//3-222-232-255.nip.io', { secure: true, withCredentials: false });
+        // }
+
+        // if IP, rewrite as domain to make usable
+        if (server.match(/(\d{1,3}\.){3}\d{1,3}/)) {
+            server += ".nip.io";
+        }
+
+        socket = io('//' + server + ":9001", { secure: true, withCredentials: false });
+
         socket.on('connect', e => {
-
-            // Tell server who we are
-            socket.emit('getRooms', SnapCloud.username || SnapCloud.clientId);
-
+            connectedServer = server;
             // Handle incremental updates
             socket.on('u', data => {
                 if (performance.now() - nextUpdateTime > 10) {
@@ -118,7 +128,7 @@ const connectToRoboScapeSim = function () {
             socket.on('reconnect', attempt => {
                 console.log(`Reconnected after ${attempt} attempts!`);
                 //socket.emit('postReconnect', roomID);
-                joinRoom(roomID);
+                joinRoom(roomID, lastPassword);
             });
 
             // Room joined message
@@ -134,21 +144,6 @@ const connectToRoboScapeSim = function () {
                     // Failed to join room
                     world.inform('Failed to join room');
                 }
-            });
-
-            // Update list of available environments
-            socket.on('availableEnvironments', list => {
-                availableEnvironments = list;
-
-                setTimeout(() => {
-                    resolve(socket);
-                }, 50);
-            });
-
-            // Update list of quick-join rooms
-            socket.on('availableRooms', info => {
-                ({ availableRooms } = info);
-                availableRooms = availableRooms.sort((room1, room2) => Date.parse(room2.lastInteractionTime) - Date.parse(room1.lastInteractionTime));
             });
 
             // Robot beeped
@@ -207,7 +202,9 @@ const connectToRoboScapeSim = function () {
             updateCanvasTitle('Not connected');
         });
 
-        setTimeout(reject, 3500);
+        setTimeout(() => {
+            resolve(socket);
+        }, 50);
     });
 };
 
@@ -235,8 +232,16 @@ function updateCanvasTitle(result) {
     window.externalVariables.roboscapeSimCanvasInstance.rerender();
 }
 
-function newRoom(environment = 'default', password = '') {
-    joinRoom('create', environment, password);
+async function newRoom(environment = 'default', password = '') {
+    const response = await fetch(apiServer + "rooms/create", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `username=${encodeURI(SnapCloud.username || SnapCloud.clientId)}&namespace=${encodeURI(SnapCloud.username || SnapCloud.clientId)}&password=${encodeURI(password)}&environment=${encodeURI(environment)}`
+    });
+    const responseObject = await response.json();
+    joinRoom(responseObject.room, password, responseObject.server);
 }
 
 /**
@@ -244,13 +249,25 @@ function newRoom(environment = 'default', password = '') {
  * @param {string} room
  * @param {string} env
  */
-function joinRoom(room, env = '', password = '') {
+async function joinRoom(room, password = '', server = '') {
+
+    // Look up server
+    if (server == '') {
+        let response = await fetch(apiServer + "rooms/info?id=" + encodeURIComponent(room));
+        server = (await response.json()).server;
+    }
+
+    if (!socket || !socket.connected || connectedServer != server) {
+        await connectToRoboScapeSim(server);
+    }
+
     // Prevent joining a second room
     if (roomID != null && room != roomID) {
         leaveRoom();
     }
 
-    socket.emit('joinRoom', { roomID: room, env, password, namespace: SnapCloud.username || SnapCloud.clientId });
+    socket.emit('joinRoom', { roomID: room, password, username: SnapCloud.username || SnapCloud.clientId, namespace: SnapCloud.username || SnapCloud.clientId });
+    lastPassword = password;
 }
 
 /**
@@ -298,7 +315,7 @@ var interpolate = function (x1, x2, dx1, dx2, t1, t2, t) {
 };
 
 var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
-    if(q1.equalsWithEpsilon(q2, 0.01)){
+    if (q1.equalsWithEpsilon(q2, 0.01)) {
         return q1.normalize();
     }
 
@@ -431,7 +448,7 @@ setTimeout(() => {
                     if (body.vel == undefined) {
                         body.vel = {};
                     }
-                    
+
                     if (nextBody.vel == undefined) {
                         nextBody.vel = {};
                     }
@@ -494,3 +511,14 @@ const playNote = function (robot, frequency, duration) {
     setTimeout(() => { n.stop(); }, duration);
     roboNotes[robot] = n;
 };
+
+const updateRoomsList = async function () {
+    let response = await fetch(apiServer + "rooms/list?user=" + (SnapCloud.username || SnapCloud.clientId));
+    availableRooms = await response.json();
+    availableRooms = availableRooms.sort((room1, room2) => Date.parse(room2.lastInteractionTime) - Date.parse(room1.lastInteractionTime));
+}
+
+const updateEnvironmentsList = async function () {
+    let response = await fetch(apiServer + "environments/list");
+    availableEnvironments = await response.json();
+}
