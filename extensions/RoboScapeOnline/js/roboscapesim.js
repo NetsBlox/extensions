@@ -39,7 +39,7 @@ const connectToRoboScapeSim = function (server) {
 
         // if IP, rewrite as domain to make usable
         if (server.match(/(\d{1,3}\.){3}\d{1,3}/)) {
-            server = server.replace('.', '-');
+            server = server.replaceAll('.', '-');
             server += ".nip.io";
         }
 
