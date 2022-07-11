@@ -33,9 +33,17 @@
                         window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
                         const dialog = new DialogBoxMorph().withKey('NewRoboScapeSimRoom');
                         const roomPasswordField = new InputFieldMorph();
-                        const environmentField = new InputFieldMorph(null, false, availableEnvironments.reduce((p, c) => {
-                            console.log(c);
-                            p[c.Name] = c.ID;
+                        const environmentField = new DictMenuInputFieldMorph(null, false, availableEnvironments.reduce((p, c) => {
+
+                            if (c.Category) {
+                                if (!p[c.Category]) {
+                                    p[c.Category] = {};
+                                }
+
+                                p[c.Category][c.Name] = c.ID;
+                            } else {
+                                p[c.Name] = c.ID;
+                            }
                             return p;
                         }, {}), true);
                         const bdy = new AlignmentMorph('column', 2);
@@ -165,10 +173,15 @@
     if (window.origin.includes('localhost')) {
         script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'http://localhost:8080/src/babylon-roboscapesim.js';
+        script.src = 'http://localhost:8080/src/roboscapesim-ui.js';
         script.async = false;
         document.body.appendChild(script);
 
+        script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'http://localhost:8080/src/roboscapesim-babylon.js';
+        script.async = false;
+        document.body.appendChild(script);
 
         script = document.createElement('script');
         script.type = 'text/javascript';
@@ -178,10 +191,15 @@
     } else {
         script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/js/babylon-roboscapesim.js';
+        script.src = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/js/roboscapesim-ui.js';
         script.async = false;
         document.body.appendChild(script);
 
+        script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/js/roboscapesim-babylon.js';
+        script.async = false;
+        document.body.appendChild(script);
 
         script = document.createElement('script');
         script.type = 'text/javascript';
