@@ -157,11 +157,44 @@
         }
 
         getPalette() {
-            return [];
+            return [
+                new Extension.PaletteCategory(
+                    'network',
+                    [
+                        new Extension.Palette.Block('robotsInRoom'),
+                        new Extension.Palette.Block('inRoboScapeRoom'),
+                    ],
+                    SpriteMorph
+                ),
+                new Extension.PaletteCategory(
+                    'network',
+                    [
+                        new Extension.Palette.Block('robotsInRoom'),
+                        new Extension.Palette.Block('inRoboScapeRoom'),
+                    ],
+                    StageMorph
+                )
+            ];
         }
 
         getBlocks() {
-            return [];
+            return [
+                new Extension.Block(
+                    'robotsInRoom',
+                    'reporter',
+                    'network',
+                    'robots in room',
+                    [],
+                    () => new List(Object.keys(bodiesInfo).filter(label => label.startsWith('robot')).map(label => label.slice(6)))
+                ).for(SpriteMorph, StageMorph),
+                new Extension.Block(
+                    'inRoboScapeRoom',
+                    'predicate',
+                    'network',
+                    'in RoboScape room',
+                    [],
+                    () => !!roomID
+                ).for(SpriteMorph, StageMorph)];
         }
 
         getLabelParts() {
