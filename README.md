@@ -8,6 +8,8 @@ Extensions currently included in this repository:
  
  - [🤖 RoboScape Online](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]#) - Networked robotics simulation in the browser! (WIP)
  
+ - [TuneScope](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/TuneScope/index.js%22]#) - Music Notation, Instruments, Drums, Tones, Chords, Tracks, from the University of Virginia (Glen Bull)
+ 
  - [WhenKeyPressedLogger](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/WhenKeyPressedLogger/index.js%22]#) - Logs 'When [key] key pressed' block activations for Ben
  
 
@@ -19,5 +21,5 @@ git config core.hooksPath .githooks
 This will ensure that any automated preparation will happen automatically such as updating the website.
 
 Next, create a new directory in `extensions/`. This should contain the following files:
-- index.js: JS code for the actual extension
-- description.txt: Description of the extension
+- `index.js`: JS code for the actual extension
+- `extension.json`: Description of the extension

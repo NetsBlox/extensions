@@ -15,5 +15,5 @@ git config core.hooksPath .githooks
 This will ensure that any automated preparation will happen automatically such as updating the website.
 
 Next, create a new directory in `extensions/`. This should contain the following files:
-- index.js: JS code for the actual extension
-- description.txt: Description of the extension
+- `index.js`: JS code for the actual extension
+- `extension.json`: Description of the extension
