@@ -10,6 +10,12 @@
         }
     };
 
+    var _close3d = function () {
+        if (window.externalVariables.roboscapeSimCanvasInstance) {
+            window.externalVariables.roboscapeSimCanvasInstance.hide();
+        }
+    };
+
     class RoboScapeSim extends Extension {
         constructor(ide) {
             super('RoboScape Simulator');
@@ -179,6 +185,10 @@
                     [
                         new Extension.Palette.Block('robotsInRoom'),
                         new Extension.Palette.Block('inRoboScapeRoom'),
+                        new Extension.Palette.Block('roboScapeRoomID'),
+                        new Extension.Palette.Block('show3Dview'),
+                        new Extension.Palette.Block('hide3Dview'),
+                        new Extension.Palette.Block('joinRoom'),
                     ],
                     SpriteMorph
                 ),
@@ -187,6 +197,10 @@
                     [
                         new Extension.Palette.Block('robotsInRoom'),
                         new Extension.Palette.Block('inRoboScapeRoom'),
+                        new Extension.Palette.Block('roboScapeRoomID'),
+                        new Extension.Palette.Block('show3Dview'),
+                        new Extension.Palette.Block('hide3Dview'),
+                        new Extension.Palette.Block('joinRoom'),
                     ],
                     StageMorph
                 )
@@ -210,11 +224,69 @@
                     'in RoboScape room',
                     [],
                     () => !!roomID
-                ).for(SpriteMorph, StageMorph)];
+                ).for(SpriteMorph, StageMorph),
+                new Extension.Block(
+                    'roboScapeRoomID',
+                    'reporter',
+                    'network',
+                    'RoboScape room ID',
+                    [],
+                    () => (!!roomID) ? roomID : false
+                ).for(SpriteMorph, StageMorph),
+                new Extension.Block(
+                    'show3Dview',
+                    'command',
+                    'network',
+                    'show 3D view',
+                    [],
+                    _open3d
+                ).for(SpriteMorph, StageMorph),
+                new Extension.Block(
+                    'hide3Dview',
+                    'command',
+                    'network',
+                    'hide 3D view',
+                    [],
+                    _close3d
+                ).for(SpriteMorph, StageMorph),
+                new Extension.Block(
+                    'joinRoom',
+                    'command',
+                    'network',
+                    'join RoboScape room %roomID with password %password',
+                    [],
+                    (roomID, password) => { joinRoom(roomID, password) }
+                ).for(SpriteMorph, StageMorph)
+            ];
         }
 
         getLabelParts() {
-            return [];
+            return [
+                new Extension.LabelPart(
+                    '%roomID',
+                    () => {
+                        const part = new InputSlotMorph(
+                            null, // text
+                            false, // non-numeric
+                            null,
+                            false
+                        );
+                        return part;
+                    }
+                ),
+                new Extension.LabelPart(
+                    '%password',
+                    () => {
+                        const part = new InputSlotMorph(
+                            null, // text
+                            false, // non-numeric
+                            null,
+                            false
+                        );
+                        return part;
+                    }
+                ),
+            ];
         }
 
     }
