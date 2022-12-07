@@ -22,7 +22,8 @@ function readExtension(name) {
     const description = settings['description'];
     const scriptUrl = `https://extensions.netsblox.org/extensions/${name}/index.js`;
 
-    let scripts = [scriptUrl];
+    let scripts = [...(settings['dependencies'] ?? []), scriptUrl]
+
     let host = "https://editor.netsblox.org";
 
     if (settings['useDev']) {
