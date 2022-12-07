@@ -20,21 +20,23 @@ function readExtension(name) {
     const dirpath = path.join(EXTENSIONS_DIR, name);
     const settings = JSON.parse(fs.readFileSync(path.join(dirpath, 'extension.json'), 'utf8'));
     const description = settings['description'];
-    let linkUrl = "";
-    let scriptUrl = `https://extensions.netsblox.org/extensions/${name}/index.js`;
+    const scriptUrl = `https://extensions.netsblox.org/extensions/${name}/index.js`;
 
-    if (!settings['useDev']) {
-        linkUrl = `https://editor.netsblox.org/?extensions=[%22${scriptUrl}%22]#`;
-    } else {
-        linkUrl = `https://dev.netsblox.org/?extensions=[%22${scriptUrl}%22]#`;
+    let scripts = [scriptUrl];
+    let host = "https://editor.netsblox.org";
+
+    if (settings['useDev']) {
+        host = 'https://dev.netsblox.org';
     }
+
+    let linkUrl = `${host}/?extensions=[${scripts.map(script => "%22" + script + "%22").join(",")}]#`;
  
     return {
         name,
         displayName : settings['customName'] ?? name,
         description,
         linkUrl,
-        scriptUrl,
+        scriptUrl
     };
 }
 
