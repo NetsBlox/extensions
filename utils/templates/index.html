@@ -11,7 +11,7 @@
 
         <label for="multiSelect"><input type="checkbox" name="multiSelect" id="multiSelect" /> Enable multiple selections</label>
 
-        <% extensions.forEach(ext=> { %>
+        <% extensions.forEach(ext=> { if(!ext.hidden) { %>
         <details>
             <summary><input type="checkbox" class="extensionOption" name="<%= ext.name %>" style="margin-right: 10px" hidden /><a href="<%= ext.linkUrl %>" target="_blank"> <%= ext.displayName %> </a></summary>
             <p>
@@ -19,7 +19,7 @@
                 <%= ext.description %>
             </p>
         </details>
-        <% }) %>
+        <% }}) %>
 
         <hr />
 

@@ -37,7 +37,8 @@ function readExtension(name) {
         displayName : settings['customName'] ?? name,
         description,
         linkUrl,
-        scriptUrl
+        scriptUrl,
+        hidden: settings['hidden'] ?? false
     };
 }
 
