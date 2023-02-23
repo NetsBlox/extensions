@@ -1,0 +1,5 @@
+{
+    "customName": "Native Export",
+    "description": "Compiles a project into bytecode for the NetsBlox VM",
+    "useDev": false
+}
