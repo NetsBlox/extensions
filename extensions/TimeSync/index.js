@@ -55,7 +55,8 @@
         getPalette() {
             const blocks = [
                 new Extension.Palette.Block('timeSyncCalculate'),
-                new Extension.Palette.Block('timeSyncGet'),
+                new Extension.Palette.Block('timeSyncGetInfo'),
+                new Extension.Palette.Block('timeSyncGetServerTime'),
             ];
             return [
                 new Extension.PaletteCategory('network', blocks, SpriteMorph),
@@ -112,17 +113,23 @@
                             deltas.push(samples[i - 0][1] - (samples[i - 0][0] + oneWay));
                         }
 
-                        world.timeSyncInfo = snapify({
+                        world.timeSyncInfo = {
                             'round trip': discardAvg(roundTrips) / 1000,
                             'clock delta': discardAvg(deltas) / 1000,
-                        });
+                        };
                     }, { args: [], timeout: I32_MAX });
                 }),
-                block('timeSyncGet', 'reporter', 'network', 'time sync info', [], function () {
+                block('timeSyncGetInfo', 'reporter', 'network', 'time sync info', [], function () {
                     if (!world.timeSyncInfo) {
                         throw Error('You must calculate time sync info before reading it!');
                     }
-                    return world.timeSyncInfo;
+                    return snapify(world.timeSyncInfo);
+                }),
+                block('timeSyncGetServerTime', 'reporter', 'network', 'server time', [], function () {
+                    if (!world.timeSyncInfo) {
+                        throw Error('You must calculate time sync info before reading it!');
+                    }
+                    return Date.now() + world.timeSyncInfo['clock delta'] * 1000;
                 }),
             ];
         }
