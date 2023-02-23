@@ -1,0 +1,134 @@
+(function () {
+    const TIME_SYNC_URL = 'wss://timesync.netsblox.org';
+    const TIME_SYNC_ITERS = 100;
+    const DISCARD_FRAC = 0.2; // discards the upper and lower fraction of data
+
+    // --------------------------------------------------------
+
+    const I32_MAX = 2147483647;
+
+    async function sleep(ms) {
+        return new Promise(resolve => {
+            setTimeout(resolve, ms);
+        })
+    }
+
+    function discardAvg(vals) {
+        const idx = Math.round(DISCARD_FRAC * vals.length);
+        if (2 * idx >= vals.length) throw Error('computed average of empty list');
+
+        vals.sort((a, b) => a - b);
+
+        let sum = 0;
+        for (let i = idx; i < vals.length - idx; ++i) {
+            sum += vals[i];
+        }
+        return sum / (vals.length - 2 * idx);
+    }
+
+    function snapify(val) {
+        if (Array.isArray(val)) {
+            return new List(val.map(snapify));
+        } else if (typeof(val) === 'object') {
+            const res = [];
+            for (const key in val) {
+                res.push([key, val[key]]);
+            }
+            return snapify(res);
+        } else {
+            return val;
+        }
+    }
+
+    class TimeSync extends Extension {
+        constructor(ide) {
+            super('TimeSync');
+            this.ide = ide;
+        }
+
+        onOpenRole() {}
+
+        getMenu() { return {}; }
+
+        getCategories() { return []; }
+
+        getPalette() {
+            const blocks = [
+                new Extension.Palette.Block('timeSyncCalculate'),
+                new Extension.Palette.Block('timeSyncGet'),
+            ];
+            return [
+                new Extension.PaletteCategory('network', blocks, SpriteMorph),
+                new Extension.PaletteCategory('network', blocks, StageMorph),
+            ];
+        }
+
+        getBlocks() {
+            function block(name, type, category, spec, defaults, action) {
+                return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
+            }
+            return [
+                block('timeSyncCalculate', 'command', 'network', 'calculate time sync info', [], function () {
+                    this.runAsyncFn(async () => {
+                        const socket = new WebSocket(TIME_SYNC_URL);
+                        const messages = [];
+                        const state = { running: true, error: null };
+
+                        socket.onopen = () => {
+                            console.log('time sync starting');
+                            socket.send(Date.now().toString());
+                        };
+                        socket.onmessage = msg => {
+                            messages.push(msg.data);
+                            if (messages.length < TIME_SYNC_ITERS) {
+                                socket.send(Date.now().toString());
+                            } else {
+                                socket.close();
+                            }
+                        };
+                        socket.onerror = () => {
+                            state.error = 'error contacting time sync server';
+                            socket.close();
+                        };
+                        socket.onclose = () => {
+                            console.log('time sync completed');
+                            state.running = false;
+                        };
+
+                        while (state.running) await sleep(10);
+                        if (state.error) throw Error(state.error);
+
+                        const samples = messages.map(msg => msg.split(',').map(x => +x));
+                        const roundTrips = [];
+                        const deltas = [];
+
+                        for (let i = 1; i < samples.length; ++i) {
+                            roundTrips.push(samples[i][0] - samples[i - 1][0]);
+                        }
+
+                        for (let i = 1; i < samples.length; ++i) {
+                            const oneWay = roundTrips[i - 1] / 2;
+                            deltas.push(samples[i - 1][1] - (samples[i - 1][0] + oneWay));
+                            deltas.push(samples[i - 0][1] - (samples[i - 0][0] + oneWay));
+                        }
+
+                        world.timeSyncInfo = snapify({
+                            'round trip': discardAvg(roundTrips) / 1000,
+                            'clock delta': discardAvg(deltas) / 1000,
+                        });
+                    }, { args: [], timeout: I32_MAX });
+                }),
+                block('timeSyncGet', 'reporter', 'network', 'time sync info', [], function () {
+                    if (!world.timeSyncInfo) {
+                        throw Error('You must calculate time sync info before reading it!');
+                    }
+                    return world.timeSyncInfo;
+                }),
+            ];
+        }
+
+        getLabelParts() { return []; }
+    }
+
+    NetsBloxExtensions.register(TimeSync);
+})();
