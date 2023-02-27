@@ -33,8 +33,8 @@
                 return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
             }
             return [
-                block('playSingleTrack', 'reporter', 'music', 'play single track %playSingleTrack', [], function (){return Date.now()}),
-                block('playMultipleTracks', 'command', 'music', [], x => x),
+                block('playSingleTrack', 'reporter', 'music', 'play single track', [], function (){return Date.now()}),
+                block('playMultipleTracks', 'command', 'music', 'play multiple tracks', [], x => x),
 
             ];
         }
