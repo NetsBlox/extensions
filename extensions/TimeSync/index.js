@@ -1,19 +1,24 @@
 (function () {
     const TIME_SYNC_URL = 'wss://timesync.netsblox.org';
-    const TIME_SYNC_ITERS = 100;
+    const TIME_SYNC_ITERS = 1000;
     const DISCARD_FRAC = 0.2; // discards the upper and lower fraction of data
+    const SLEEP_MS = 0; // sleep time between receiving a message and sending the next message
 
     // --------------------------------------------------------
 
     const I32_MAX = 2147483647;
 
     async function sleep(ms) {
-        return new Promise(resolve => {
-            setTimeout(resolve, ms);
-        })
+        if (ms > 0) {
+            return new Promise(resolve => {
+                setTimeout(resolve, ms);
+            });
+        }
     }
 
     function discardAvg(vals) {
+        vals = [...vals];
+
         const idx = Math.round(DISCARD_FRAC * vals.length);
         if (2 * idx >= vals.length) throw Error('computed average of empty list');
 
@@ -79,9 +84,10 @@
                             console.log('time sync starting');
                             socket.send(Date.now().toString());
                         };
-                        socket.onmessage = msg => {
-                            messages.push(msg.data);
+                        socket.onmessage = async msg => {
+                            messages.push(`${msg.data},${Date.now()}`);
                             if (messages.length < TIME_SYNC_ITERS) {
+                                await sleep(SLEEP_MS);
                                 socket.send(Date.now().toString());
                             } else {
                                 socket.close();
@@ -92,26 +98,17 @@
                             socket.close();
                         };
                         socket.onclose = () => {
-                            console.log('time sync completed');
+                            console.log(`time sync completed (${messages.length} samples)`);
                             state.running = false;
                         };
 
-                        while (state.running) await sleep(10);
+                        while (state.running) await sleep(100);
                         if (state.error) throw Error(state.error);
 
                         const samples = messages.map(msg => msg.split(',').map(x => +x));
-                        const roundTrips = [];
-                        const deltas = [];
 
-                        for (let i = 1; i < samples.length; ++i) {
-                            roundTrips.push(samples[i][0] - samples[i - 1][0]);
-                        }
-
-                        for (let i = 1; i < samples.length; ++i) {
-                            const oneWay = roundTrips[i - 1] / 2;
-                            deltas.push(samples[i - 1][1] - (samples[i - 1][0] + oneWay));
-                            deltas.push(samples[i - 0][1] - (samples[i - 0][0] + oneWay));
-                        }
+                        const roundTrips = samples.map(t => t[2] - t[0]);
+                        const deltas = samples.map(t => (2 * t[1] - (t[0] + t[2])) / 2);
 
                         world.timeSyncInfo = {
                             'round trip': discardAvg(roundTrips) / 1000,
