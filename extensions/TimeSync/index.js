@@ -1,6 +1,6 @@
 (function () {
     const TIME_SYNC_URL = 'wss://timesync.netsblox.org';
-    const TIME_SYNC_ITERS = 1000;
+    const TIME_SYNC_ITERS = 100;
     const DISCARD_FRAC = 0.2; // discards the upper and lower fraction of data
     const SLEEP_MS = 0; // sleep time between receiving a message and sending the next message
 
