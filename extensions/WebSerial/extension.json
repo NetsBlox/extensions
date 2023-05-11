@@ -1,0 +1,4 @@
+{
+    "description": "Provides blocks for connecting to a device, e.g. an Arduino, over WebSerial",
+    "useDev": false
+}

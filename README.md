@@ -12,6 +12,8 @@ Extensions currently included in this repository:
  
  - [TuneScope](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/TuneScope/index.js%22]#) - Music Notation, Instruments, Drums, Tones, Chords, Tracks, from the University of Virginia (Glen Bull)
  
+ - [WebSerial](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/WebSerial/index.js%22]#) - Provides blocks for connecting to a device, e.g. an Arduino, over WebSerial
+ 
  - [WhenKeyPressedLogger](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/WhenKeyPressedLogger/index.js%22]#) - Logs 'When [key] key pressed' block activations for Ben
  
 
