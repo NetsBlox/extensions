@@ -28,7 +28,7 @@
         }
 
         onOpenRole() {
-            
+
         }
 
         getSettings() {
@@ -81,7 +81,7 @@
                     function (baud) { return this.runAsyncFn(async () => {
                         let port = await navigator.serial.requestPort();
                         let info = JSON.stringify(port.getInfo());
-                        if(!Object.keys(info).includes(info)) {
+                        if(!Object.keys(_ports).includes(info) && !port.readable) {
                             await port.open({baudRate: baud || 9600 });       
                             console.log(port);
                             _ports[info] = {port, id: _lastID, writer: port.writable.getWriter()};
