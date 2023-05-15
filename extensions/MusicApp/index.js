@@ -1,4 +1,13 @@
 (function () {
+
+    const I32_MAX = 2147483647;
+
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    var audioContext = new AudioContext();
+
+    function playAudio(){
+        return "Done";
+    }
     // ----------------------------------------------------------------------
 
     class MusicApp extends Extension {
@@ -19,8 +28,7 @@
 
         getPalette() {
             const blocks = [
-                new Extension.Palette.Block('playSingleTrack'),
-                new Extension.Palette.Block('playMultipleTracks'),
+                new Extension.Palette.Block('playAudio')
             ];
             return [
                 new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -33,9 +41,11 @@
                 return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
             }
             return [
-                block('playSingleTrack', 'reporter', 'music', 'play single track', [], function (){return Date.now()}),
-                block('playMultipleTracks', 'command', 'music', 'play multiple tracks', [], x => x),
-
+                block('playAudio', 'command', 'music', 'play audio %s', [], function (audio){
+                    this.runAsyncFn(async () =>{
+                        playAudio();
+                    },{ args: [], timeout: I32_MAX });
+                })
             ];
         }
         getLabelParts() { return []; }

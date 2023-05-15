@@ -1,2 +1,2 @@
-New Music Application.
-We will see where this goes.
+Music Application
+Adds new blocks and functionality
