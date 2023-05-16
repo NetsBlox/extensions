@@ -55,12 +55,12 @@
                         playAudio();
                     },{ args: [], timeout: I32_MAX });
                 }),
-                block('playbackControls', 'command', 'music', 'playback controls %s', [], function (audio){
+                block('playbackControls', 'command', 'music', 'playback %s time sig. %bpmNotes BPM = %n', ['4/4', 'Quarter', '120'], function (audio){
                     this.runAsyncFn(async () =>{
                         playAudio();
                     },{ args: [], timeout: I32_MAX });
                 }),
-                block('track', 'command', 'music', 'track %s', [], function (audio){
+                block('track', 'command', 'music', 'track %s %enabled %cs ', ['Name','Enabled'], function (tracks){
                     this.runAsyncFn(async () =>{
                         playAudio();
                     },{ args: [], timeout: I32_MAX });
@@ -102,7 +102,38 @@
                 })
             ];
         }
-        getLabelParts() { return []; }
+        getLabelParts() { 
+            function identityMap(s) {
+                const res = {};
+                for (const x of s) res[x] = x;
+                return res;
+            }
+            function unionMaps(maps) {
+                const res = {};
+                for (const map of maps) {
+                    for (const key in map) res[key] = map[key];
+                }
+                return res;
+            }
+            return [
+            new Extension.LabelPart('bpmNotes', () => new InputSlotMorph(
+                null, //text
+                false, // numeric
+                unionMaps([
+                    identityMap([ 'Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'Thirtysecondth']),
+                ]),
+                false,
+            )),
+            new Extension.LabelPart('enabled', () => new InputSlotMorph(
+                null, //text
+                false, //numeric
+                unionMaps([
+                    identityMap(['Enabled', 'Disabled']),
+                ]),
+                false,
+            )),
+        ]; 
+    }
 
     }
 
