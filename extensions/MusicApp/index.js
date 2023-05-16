@@ -28,7 +28,16 @@
 
         getPalette() {
             const blocks = [
-                new Extension.Palette.Block('playAudio')
+                new Extension.Palette.Block('playClip'),
+                new Extension.Palette.Block('playbackControls'),
+                new Extension.Palette.Block('track'),
+                new Extension.Palette.Block('masterVolume'),
+                new Extension.Palette.Block('trackVolume'),
+                new Extension.Palette.Block('playAll'),
+                new Extension.Palette.Block('stopAll'),
+                new Extension.Palette.Block('pauseAll'),
+                new Extension.Palette.Block('resumeAll'),
+                new Extension.Palette.Block('loopForever'),
             ];
             return [
                 new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -41,7 +50,52 @@
                 return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
             }
             return [
-                block('playAudio', 'command', 'music', 'play audio %s', [], function (audio){
+                block('playClip', 'command', 'music', 'play clip %s', [], function (audio){
+                    this.runAsyncFn(async () =>{
+                        playAudio();
+                    },{ args: [], timeout: I32_MAX });
+                }),
+                block('playbackControls', 'command', 'music', 'playback controls %s', [], function (audio){
+                    this.runAsyncFn(async () =>{
+                        playAudio();
+                    },{ args: [], timeout: I32_MAX });
+                }),
+                block('track', 'command', 'music', 'track %s', [], function (audio){
+                    this.runAsyncFn(async () =>{
+                        playAudio();
+                    },{ args: [], timeout: I32_MAX });
+                }),
+                block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (value){
+                    this.runAsyncFn(async () =>{
+                        playAudio();
+                    },{ args: [], timeout: I32_MAX });
+                }),
+                block('trackVolume', 'command', 'music', 'track volume %n %', ['50'], function (value){
+                    this.runAsyncFn(async () =>{
+                        playAudio();
+                    },{ args: [], timeout: I32_MAX });
+                }),
+                block('playAll', 'command', 'music', 'play all', [], function (){
+                    this.runAsyncFn(async () =>{
+                        playAudio();
+                    },{ args: [], timeout: I32_MAX });
+                }),
+                block('stopAll', 'command', 'music', 'stop all', [], function (){
+                    this.runAsyncFn(async () =>{
+                        playAudio();
+                    },{ args: [], timeout: I32_MAX });
+                }),
+                block('pauseAll', 'command', 'music', 'pause all', [], function (){
+                    this.runAsyncFn(async () =>{
+                        playAudio();
+                    },{ args: [], timeout: I32_MAX });
+                }),
+                block('resumeAll', 'command', 'music', 'resume all', [], function (){
+                    this.runAsyncFn(async () =>{
+                        playAudio();
+                    },{ args: [], timeout: I32_MAX });
+                }),
+                block('loopForever', 'command', 'music', 'loop forever', [], function (){
                     this.runAsyncFn(async () =>{
                         playAudio();
                     },{ args: [], timeout: I32_MAX });
