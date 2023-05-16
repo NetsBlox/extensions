@@ -60,7 +60,7 @@
                         playAudio();
                     },{ args: [], timeout: I32_MAX });
                 }),
-                block('track', 'command', 'music', 'track %s %enabled %cs ', ['Name','Enabled'], function (tracks){
+                block('track', 'command', 'music', 'track %s %enabled %cs', ['Name','Enabled'], function (tracks){
                     this.runAsyncFn(async () =>{
                         playAudio();
                     },{ args: [], timeout: I32_MAX });
