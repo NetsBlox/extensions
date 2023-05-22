@@ -1,0 +1,3 @@
+[submodule "extensions/MusicApp/WebAudioAPI"]
+	path = extensions/MusicApp/WebAudioAPI
+	url = git@github.com:hedgecrw/WebAudioAPI.git
