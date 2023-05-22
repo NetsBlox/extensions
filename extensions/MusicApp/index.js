@@ -1,20 +1,21 @@
-// import { Track } from 'audioLibrary/scripts/Track.js';
-(
-    function () {
+import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
+
+(function () {
     const I32_MAX = 2147483647;
 
     window.AudioContext = window.AudioContext || window.webkitAudioContext;
     var audioContext = new AudioContext();
 
+
     function playAudio(audio){
-        // Track.playClip(audio);
+        return "Done";
     }
     // ----------------------------------------------------------------------
-
     class MusicApp extends Extension {
-        constructor(ide) {
+        constructor(ide, audioAPI) {
             super('MusicApp');
             this.ide = ide;
+            this.audioAPI = new WebAudioAPI();
         }
 
         onOpenRole() {}
