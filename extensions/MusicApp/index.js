@@ -1,12 +1,13 @@
-(function () {
-
+// import { Track } from 'audioLibrary/scripts/Track.js';
+(
+    function () {
     const I32_MAX = 2147483647;
 
     window.AudioContext = window.AudioContext || window.webkitAudioContext;
     var audioContext = new AudioContext();
 
-    function playAudio(){
-        return "Done";
+    function playAudio(audio){
+        // Track.playClip(audio);
     }
     // ----------------------------------------------------------------------
 
@@ -47,27 +48,27 @@
             return [
                 block('playClip', 'command', 'music', 'play clip %s', [], function (audio){
                     this.runAsyncFn(async () =>{
-                        playAudio();
+                        playAudio(audio);
                     },{ args: [], timeout: I32_MAX });
                 }),
                 block('playbackControls', 'command', 'music', 'playback %s time sig. %bpmNotes BPM = %n', ['4/4', 'Quarter', '120'], function (audio){
                     this.runAsyncFn(async () =>{
-                        playAudio();
+                        playAudio(audio);
                     },{ args: [], timeout: I32_MAX });
                 }),
                 block('track', 'command', 'music', 'track %s %enabled %cs', ['Name','Enabled'], function (tracks){
                     this.runAsyncFn(async () =>{
-                        playAudio();
+                        playAudio(tracks);
                     },{ args: [], timeout: I32_MAX });
                 }),
                 block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (value){
                     this.runAsyncFn(async () =>{
-                        playAudio();
+                        playAudio(value);
                     },{ args: [], timeout: I32_MAX });
                 }),
                 block('trackVolume', 'command', 'music', 'track volume %n %', ['50'], function (value){
                     this.runAsyncFn(async () =>{
-                        playAudio();
+                        playAudio(value);
                     },{ args: [], timeout: I32_MAX });
                 })
             ];
