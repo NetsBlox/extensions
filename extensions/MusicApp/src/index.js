@@ -1,21 +1,21 @@
 import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
 
 (function () {
+   const audioAPI = new WebAudioAPI();
     const I32_MAX = 2147483647;
+    audioAPI.start();
 
-    window.AudioContext = window.AudioContext || window.webkitAudioContext;
-    var audioContext = new AudioContext();
-
-
-    function playAudio(audio){
-        return "Done";
+    function playAudio(buffer){
+        return audioAPI.playClip(buffer, 0)
+    }
+    function createTrack(trackName){
+        return audioAPI.createTrack(trackName);
     }
     // ----------------------------------------------------------------------
     class MusicApp extends Extension {
-        constructor(ide, audioAPI) {
+        constructor(ide) {
             super('MusicApp');
             this.ide = ide;
-            this.audioAPI = new WebAudioAPI();
         }
 
         onOpenRole() {}
@@ -47,9 +47,9 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
                 return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
             }
             return [
-                block('playClip', 'command', 'music', 'play clip %s', [], function (audio){
+                block('playClip', 'command', 'music', 'play clip %s', [], function (audioBuffer){
                     this.runAsyncFn(async () =>{
-                        playAudio(audio);
+                        playAudio(audioBuffer);
                     },{ args: [], timeout: I32_MAX });
                 }),
                 block('playbackControls', 'command', 'music', 'playback %s time sig. %bpmNotes BPM = %n', ['4/4', 'Quarter', '120'], function (audio){
@@ -57,9 +57,9 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
                         playAudio(audio);
                     },{ args: [], timeout: I32_MAX });
                 }),
-                block('track', 'command', 'music', 'track %s %enabled %cs', ['Name','Enabled'], function (tracks){
+                block('track', 'command', 'music', 'track %s %enabled %cs', ['Name','Enabled'], function (trackName){
                     this.runAsyncFn(async () =>{
-                        playAudio(tracks);
+                        createTrack(trackName);
                     },{ args: [], timeout: I32_MAX });
                 }),
                 block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (value){
