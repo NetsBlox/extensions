@@ -112,13 +112,14 @@
       async playFile(file, startTime) {
          const response = await fetch(file);
          const arrayBuffer = await response.arrayBuffer();
+         console.log(`THIS IS THE EXPECTED ARRAY BUFFER ${arrayBuffer}`);
          return await this.playClip(arrayBuffer, startTime);
       }
 
       delete() {
          for (const source of this.#audioSources)
             source.stop();
-         for (const source in this.#asyncAudioSources)
+         for (const source of this.#asyncAudioSources)
             source.sourceNode.stop();
          if (this.panningControlAsync != null)
             this.panningControlAsync.disconnect();
@@ -770,8 +771,8 @@
       }
 
       createTrack(trackName) {
-         // if (trackName in this.#tracks)
-         //    this.#tracks[trackName].delete();
+         if (trackName in this.#tracks)
+            this.#tracks[trackName].delete();
          this.#tracks[trackName] = new Track(this, trackName, this.sourceSinkNode);
          return this.#tracks[trackName];
       }
@@ -867,12 +868,15 @@
       const audioAPI = new WebAudioAPI();
        const I32_MAX = 2147483647;
        audioAPI.start();
+   //make invisble track to play clip without REAL track 
 
        function playAudio(buffer){
-           return audioAPI.playClip(buffer, 0)
+           console.log(`I AM PLAYING AUDIO`);
+           audioAPI.playClip(buffer, 0);
        }
        function createTrack(trackName){
-           return audioAPI.createTrack(trackName);
+           console.log(`I MADE A TRACK`);
+           audioAPI.createTrack(trackName);
        }
        // ----------------------------------------------------------------------
        class MusicApp extends Extension {
@@ -907,7 +911,7 @@
 
            getBlocks() {
                function block(name, type, category, spec, defaults, action) {
-                   return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
+                   return new Extension.Block(name, type, category, spec, defaults, action)
                }
                return [
                    block('playClip', 'command', 'music', 'play clip %s', [], function (audioBuffer){
@@ -920,9 +924,11 @@
                            playAudio(audio);
                        },{ args: [], timeout: I32_MAX });
                    }),
-                   block('track', 'command', 'music', 'track %s %enabled %cs', ['Name','Enabled'], function (trackName){
+                   block('track', 'command', 'music', 'track %s %cs', ['Name'], function (trackName){
+                       var block = this.context.expression;
                        this.runAsyncFn(async () =>{
                            createTrack(trackName);
+                           this.pushContext(block);
                        },{ args: [], timeout: I32_MAX });
                    }),
                    block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (value){
