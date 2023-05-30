@@ -99,7 +99,9 @@
       }
 
       async playClip(buffer, startTime) {
-         const audioBuffer = await this.audioContext.decodeAudioData(buffer);
+         console.log(`WE HIT THE PLAY CLIP FUNC`);
+         const arrayBuf = this.str2ab(buffer);
+         const audioBuffer = await this.audioContext.decodeAudioData(arrayBuf);
          const clipSource = this.audioContext.createBufferSource();
          clipSource.buffer = audioBuffer;
          clipSource.connect(this.audioSink);
@@ -110,9 +112,10 @@
       }
 
       async playFile(file, startTime) {
+         console.log(`WE HIT THE PLAY FILE FUNC`);
          const response = await fetch(file);
          const arrayBuffer = await response.arrayBuffer();
-         console.log(`THIS IS THE EXPECTED ARRAY BUFFER ${arrayBuffer}`);
+         console.log(`THIS IS THE EXPECTED BUFFER ${arrayBuffer}`);
          return await this.playClip(arrayBuffer, startTime);
       }
 
@@ -868,11 +871,12 @@
       const audioAPI = new WebAudioAPI();
        const I32_MAX = 2147483647;
        audioAPI.start();
+       const backgroundTrack = audioAPI.createTrack("backgroundTrack");
    //make invisble track to play clip without REAL track 
 
-       function playAudio(buffer){
+       async function playAudio(buffer){
            console.log(`I AM PLAYING AUDIO`);
-           audioAPI.playClip(buffer, 0);
+           return backgroundTrack.playClip(buffer,0);
        }
        function createTrack(trackName){
            console.log(`I MADE A TRACK`);
@@ -925,10 +929,10 @@
                        },{ args: [], timeout: I32_MAX });
                    }),
                    block('track', 'command', 'music', 'track %s %cs', ['Name'], function (trackName){
-                       var block = this.context.expression;
+                       // var block = this.context.expression;
+                       // console.log({arguments, "this": this})
                        this.runAsyncFn(async () =>{
                            createTrack(trackName);
-                           this.pushContext(block);
                        },{ args: [], timeout: I32_MAX });
                    }),
                    block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (value){

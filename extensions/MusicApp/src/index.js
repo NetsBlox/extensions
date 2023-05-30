@@ -4,11 +4,12 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
    const audioAPI = new WebAudioAPI();
     const I32_MAX = 2147483647;
     audioAPI.start();
+    const backgroundTrack = audioAPI.createTrack("backgroundTrack");
 //make invisble track to play clip without REAL track 
 
-    function playAudio(buffer){
+    async function playAudio(buffer){
         console.log(`I AM PLAYING AUDIO`);
-        audioAPI.playClip(buffer, 0)
+        return backgroundTrack.playClip(buffer,0);
     }
     function createTrack(trackName){
         console.log(`I MADE A TRACK`);
@@ -61,10 +62,10 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
                     },{ args: [], timeout: I32_MAX });
                 }),
                 block('track', 'command', 'music', 'track %s %cs', ['Name'], function (trackName){
-                    var block = this.context.expression;
+                    // var block = this.context.expression;
+                    // console.log({arguments, "this": this})
                     this.runAsyncFn(async () =>{
                         createTrack(trackName);
-                        this.pushContext(block)
                     },{ args: [], timeout: I32_MAX });
                 }),
                 block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (value){
