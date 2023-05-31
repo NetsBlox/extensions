@@ -9,7 +9,7 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
 
     async function playAudio(buffer){
         console.log(`I AM PLAYING AUDIO`);
-        return backgroundTrack.playClip(buffer,0);
+        await backgroundTrack.playFile("http://localhost:8000/extensions/MusicApp/AK_UNDOG_ACOUSTIC_GUITAR_4.mp3",0);
     }
     function createTrack(trackName){
         console.log(`I MADE A TRACK`);

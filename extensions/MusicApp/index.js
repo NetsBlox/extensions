@@ -99,23 +99,22 @@
       }
 
       async playClip(buffer, startTime) {
-         console.log(`WE HIT THE PLAY CLIP FUNC`);
-         const arrayBuf = this.str2ab(buffer);
-         const audioBuffer = await this.audioContext.decodeAudioData(arrayBuf);
+         const audioBuffer = await this.audioContext.decodeAudioData(buffer);
          const clipSource = this.audioContext.createBufferSource();
          clipSource.buffer = audioBuffer;
          clipSource.connect(this.audioSink);
          clipSource.onended = this.#sourceEnded.bind(this, clipSource, null);
          this.#audioSources.push(clipSource);
-         clipSource.start(startTime);
-         return audioBuffer.duration;
+         return clipSource.start(startTime);
+         // return audioBuffer.duration;
       }
 
       async playFile(file, startTime) {
          console.log(`WE HIT THE PLAY FILE FUNC`);
          const response = await fetch(file);
          const arrayBuffer = await response.arrayBuffer();
-         console.log(`THIS IS THE EXPECTED BUFFER ${arrayBuffer}`);
+         console.log(`THIS IS THE EXPECTED ARRAY BUFFER`);
+         console.dir(arrayBuffer);
          return await this.playClip(arrayBuffer, startTime);
       }
 
@@ -876,7 +875,7 @@
 
        async function playAudio(buffer){
            console.log(`I AM PLAYING AUDIO`);
-           return backgroundTrack.playClip(buffer,0);
+           await backgroundTrack.playFile("http://localhost:8000/extensions/MusicApp/AK_UNDOG_ACOUSTIC_GUITAR_4.mp3",0);
        }
        function createTrack(trackName){
            console.log(`I MADE A TRACK`);
@@ -920,12 +919,12 @@
                return [
                    block('playClip', 'command', 'music', 'play clip %s', [], function (audioBuffer){
                        this.runAsyncFn(async () =>{
-                           playAudio(audioBuffer);
+                           playAudio();
                        },{ args: [], timeout: I32_MAX });
                    }),
                    block('playbackControls', 'command', 'music', 'playback %s time sig. %bpmNotes BPM = %n', ['4/4', 'Quarter', '120'], function (audio){
                        this.runAsyncFn(async () =>{
-                           playAudio(audio);
+                           playAudio();
                        },{ args: [], timeout: I32_MAX });
                    }),
                    block('track', 'command', 'music', 'track %s %cs', ['Name'], function (trackName){
@@ -937,12 +936,12 @@
                    }),
                    block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (value){
                        this.runAsyncFn(async () =>{
-                           playAudio(value);
+                           playAudio();
                        },{ args: [], timeout: I32_MAX });
                    }),
                    block('trackVolume', 'command', 'music', 'track volume %n %', ['50'], function (value){
                        this.runAsyncFn(async () =>{
-                           playAudio(value);
+                           playAudio();
                        },{ args: [], timeout: I32_MAX });
                    })
                ];
