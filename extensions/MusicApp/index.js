@@ -876,6 +876,7 @@
        const hiddenTrack = audioAPI.createTrack("backgroundTrack");
    //make invisble track to play clip without REAL track 
 
+
        async function playAudio(buffer, trackName){
            console.log(`HERE IS YOUR CURRENT TRACK NAME: ${trackName}`);
            audioAPI.start();
@@ -886,7 +887,7 @@
            }
            else {
                console.log(`I MADE IT INTO GET TRACK`);
-               return audioAPI.getTrack(trackName).playFile(buffer, 0);
+               return audioAPI.getTrack(trackName).playClip(buffer, 0);
            }
            
        }
@@ -908,6 +909,11 @@
            constructor(ide) {
                super('MusicApp');
                this.ide = ide;
+               // const oldStopAllActiveSounds = StageMorph.prototype.fireStopAllEvent.bind(this);
+               // StageMorph.prototype.fireStopAllEvent = function(){
+               //     oldStopAllActiveSounds();
+               //     stopAudio();
+               // }
            }
 
            onOpenRole() {}
