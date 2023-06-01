@@ -82,7 +82,7 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
                 }),
                 block('stopClips', 'command', 'music', 'stop all clips', [], function (){
                     stopAudio();
-                    // this.context.fireStopAllEvent();
+                    this.doStopAll();
                 }),
                 block('playbackControls', 'command', 'music', 'playback %s time sig. %bpmNotes BPM = %n', ['4/4', 'Quarter', '120'], function (audio){
                     this.runAsyncFn(async () =>{

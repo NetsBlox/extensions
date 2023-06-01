@@ -889,22 +889,18 @@
 
 
       async function playAudio(buffer, trackName){
-          console.log(`HERE IS YOUR CURRENT TRACK NAME: ${trackName}`);
           audioAPI.start();
           if(trackName === undefined){
-              console.log(`I AM PLAYING AUDIO`);
               return audioAPI.playFile("backgroundTrack","http://localhost:8000/extensions/MusicApp/AK_UNDOG_ACOUSTIC_GUITAR_4.mp3",0);
 
           }
           else {
-              console.log(`I MADE IT INTO GET TRACK`);
               return audioAPI.playClip(trackName, buffer, 0);
           }
           
       }
       function createTrack(trackName){
           audioAPI.createTrack(trackName);
-          console.log(`I MADE A TRACK`);
       }
 
       function stopAudio(){
@@ -966,7 +962,7 @@
                   }),
                   block('stopClips', 'command', 'music', 'stop all clips', [], function (){
                       stopAudio();
-                      this.context.fireStopAllEvent();
+                      this.doStopAll();
                   }),
                   block('playbackControls', 'command', 'music', 'playback %s time sig. %bpmNotes BPM = %n', ['4/4', 'Quarter', '120'], function (audio){
                       this.runAsyncFn(async () =>{
