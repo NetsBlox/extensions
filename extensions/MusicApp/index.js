@@ -891,7 +891,7 @@
       async function playAudio(buffer, trackName){
           audioAPI.start();
           if(trackName === undefined){
-              return audioAPI.playFile("backgroundTrack","http://localhost:8000/extensions/MusicApp/AK_UNDOG_ACOUSTIC_GUITAR_4.mp3",0);
+              return audioAPI.playClip("backgroundTrack",buffer,0);
 
           }
           else {
