@@ -36,7 +36,7 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
     }
     async function wait(duration) {
         return new Promise(resolve => {
-            setTimeout(resolve, duration * 1000);
+            setTimeout(resolve, duration * 800);
         })
     }
     // ----------------------------------------------------------------------
