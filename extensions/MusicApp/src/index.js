@@ -4,11 +4,19 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
    const audioAPI = new WebAudioAPI();
     const I32_MAX = 2147483647;
     audioAPI.start();
-    const hiddenTrack = audioAPI.createTrack("backgroundTrack");
 //make invisble track to play clip without REAL track 
 
+    function base64toArrayBuffer(base64){
+        var binaryString = atob(base64.replace("data:audio/mpeg;base64,", ""));
+        var bytes = new Uint8Array(binaryString.length);
+        for (var i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
 
-    async function playAudio(buffer, trackName){
+    async function playAudio(binaryString, trackName){
+        const buffer = base64toArrayBuffer(binaryString.audio.src);
         audioAPI.start();
         if(trackName === undefined){
             return audioAPI.playClip("backgroundTrack",buffer,0);
