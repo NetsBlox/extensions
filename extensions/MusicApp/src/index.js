@@ -34,6 +34,17 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
     function stopAudio(){
         return audioAPI.stop();
     }
+
+    function masterVolume(percent){
+        return audioAPI.updateVolume(null, percent, null);
+    }
+    function trackVolume(trackName, percent){
+        return audioAPI.updateVolume(trackName, percent, 0);
+    }
+    function  beatsPerMinute(bpm){
+        return audioAPI.updateBeatsPerMinute(bpm);
+    }
+
     async function wait(duration) {
         return new Promise(resolve => {
             setTimeout(resolve, duration * 800);
@@ -44,11 +55,11 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
         constructor(ide) {
             super('MusicApp');
             this.ide = ide;
-            // const oldStopAllActiveSounds = StageMorph.prototype.fireStopAllEvent.bind(this);
-            // StageMorph.prototype.fireStopAllEvent = function(){
-            //     oldStopAllActiveSounds();
-            //     stopAudio();
-            // }
+            const oldStopAllActiveSounds = StageMorph.prototype.doStopAll;
+            StageMorph.prototype.doStopAll = function(){
+                oldStopAllActiveSounds();
+                stopAudio();
+            }
         }
 
         onOpenRole() {}
@@ -69,6 +80,7 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
                 new Extension.Palette.Block('track'),
                 new Extension.Palette.Block('masterVolume'),
                 new Extension.Palette.Block('trackVolume'),
+                new Extension.Palette.Block('setGlobalBPM'),
             ];
             return [
                 new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -104,15 +116,15 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
                         createTrack(trackName);
                         this.trackName = trackName;
                 }),
-                block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (value){
-                    this.runAsyncFn(async () =>{
-                        playAudio(value);
-                    },{ args: [], timeout: I32_MAX });
+                block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (percent){
+                    masterVolume(percent);
                 }),
-                block('trackVolume', 'command', 'music', 'track volume %n %', ['50'], function (value){
-                    this.runAsyncFn(async () =>{
-                        playAudio(value);
-                    },{ args: [], timeout: I32_MAX });
+                block('trackVolume', 'command', 'music', 'track volume %n %', ['50'], function (percent){
+                    const trackName = this.trackName;
+                    trackVolume(trackName,percent);
+                }),
+                block('setGlobalBPM', 'command', 'music','set global BPM %n', ['120'], function (bpm){
+                    beatsPerMinute(bpm);
                 })
             ];
         }

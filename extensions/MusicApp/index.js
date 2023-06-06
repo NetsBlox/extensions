@@ -795,7 +795,7 @@
            delete this.#tracks[trackName];
         }
      }
-     
+
      deleteAllTracks() {
         this.volumeControl.gain.setTargetAtTime(0.0, this.audioContext.currentTime, 0.01);
         for (const trackName in this.#tracks) {
@@ -819,7 +819,9 @@
         this.beatsPerMinute = beatsPerMinute;
         this.measureLengthSeconds = (60.0 / beatsPerMinute) * beatBase * timeSignatureNumerator / timeSignatureDenominator;
      }
-
+     updateBeatsPerMinute(beatsPerMinute){
+        this.beatsPerMinute = beatsPerMinute;
+     }
      updateVolume(trackName, percent, updateTime) {
         if (trackName == null) {
            this.globalVolume = percent;
@@ -884,7 +886,6 @@
      const audioAPI = new WebAudioAPI();
       const I32_MAX = 2147483647;
       audioAPI.start();
-      audioAPI.createTrack("backgroundTrack");
   //make invisble track to play clip without REAL track 
 
       function base64toArrayBuffer(base64){
@@ -915,9 +916,20 @@
       function stopAudio(){
           return audioAPI.stop();
       }
+
+      function masterVolume(percent){
+          return audioAPI.updateVolume(null, percent, null);
+      }
+      function trackVolume(trackName, percent){
+          return audioAPI.updateVolume(trackName, percent, 0);
+      }
+      function  beatsPerMinute(bpm){
+          return audioAPI.updateBeatsPerMinute(bpm);
+      }
+
       async function wait(duration) {
           return new Promise(resolve => {
-              setTimeout(resolve, duration * 1000);
+              setTimeout(resolve, duration * 800);
           })
       }
       // ----------------------------------------------------------------------
@@ -925,11 +937,11 @@
           constructor(ide) {
               super('MusicApp');
               this.ide = ide;
-              // const oldStopAllActiveSounds = StageMorph.prototype.fireStopAllEvent.bind(this);
-              // StageMorph.prototype.fireStopAllEvent = function(){
-              //     oldStopAllActiveSounds();
-              //     stopAudio();
-              // }
+              const oldStopAllActiveSounds = StageMorph.prototype.doStopAll;
+              StageMorph.prototype.doStopAll = function(){
+                  oldStopAllActiveSounds();
+                  stopAudio();
+              };
           }
 
           onOpenRole() {}
@@ -950,6 +962,7 @@
                   new Extension.Palette.Block('track'),
                   new Extension.Palette.Block('masterVolume'),
                   new Extension.Palette.Block('trackVolume'),
+                  new Extension.Palette.Block('setGlobalBPM'),
               ];
               return [
                   new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -985,15 +998,15 @@
                           createTrack(trackName);
                           this.trackName = trackName;
                   }),
-                  block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (value){
-                      this.runAsyncFn(async () =>{
-                          playAudio(value);
-                      },{ args: [], timeout: I32_MAX });
+                  block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (percent){
+                      masterVolume(percent);
                   }),
-                  block('trackVolume', 'command', 'music', 'track volume %n %', ['50'], function (value){
-                      this.runAsyncFn(async () =>{
-                          playAudio(value);
-                      },{ args: [], timeout: I32_MAX });
+                  block('trackVolume', 'command', 'music', 'track volume %n %', ['50'], function (percent){
+                      const trackName = this.trackName;
+                      trackVolume(trackName,percent);
+                  }),
+                  block('setGlobalBPM', 'command', 'music','set global BPM %n', ['120'], function (bpm){
+                      beatsPerMinute(bpm);
                   })
               ];
           }
