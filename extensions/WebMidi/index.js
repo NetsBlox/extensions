@@ -116,6 +116,7 @@
                 new Extension.Palette.Block("webMidiGetNote"),
                 new Extension.Palette.Block("webMidiGetNoteFrequency"),
                 new Extension.Palette.Block("webMidiGetNoteVelocity"),
+                new Extension.Palette.Block("webMidiGetNoteName"),
                 new Extension.Palette.Block("webMidiPlaySound"),
                 new Extension.Palette.Block("webMidiStopSound"),
                 new Extension.Palette.Block("webMidiWaveType"),
@@ -148,6 +149,10 @@
                 block("webMidiGetNoteVelocity", "reporter", "music", "Get Velocity", [null],
                     function() {
                         return getNoteVelocity();
+                }),
+                block("webMidiGetNoteName", "reporter", "music", "Get Note Name: %n", [null], 
+                    function(note) {
+                        return AudioStream.noteValues[note];
                 }),
                 block("webMidiPlaySound", "command", "music", 
                     "Play Sound - Note: %n Velocity: %n Wave: %webMidiWaveType", 

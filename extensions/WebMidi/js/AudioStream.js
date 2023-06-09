@@ -18,6 +18,61 @@ class AudioStream {
     ];
 
     /**
+     * Creates an array similar to noteFrequencies storing all the note values for each MIDI note.
+     * @private
+     * @returns an array of Strings.
+     */
+    static calcNoteValues() {
+        let temp = [];
+        for (let i = 0; i < 21; i++) {
+            temp.push("null");
+        }
+        for (let i = 0; i < this.noteFrequencies.length - 20; i++) {
+            switch (i % 12) {
+                case 0:
+                    temp.push("A");
+                    break;
+                case 1:
+                    temp.push("A#/Bb");
+                    break;
+                case 2:
+                    temp.push("B");
+                    break;
+                case 3:
+                    temp.push("C");
+                    break;
+                case 4:
+                    temp.push("C#/Db");
+                    break;
+                case 5:
+                    temp.push("D");
+                    break;
+                case 6:
+                    temp.push("D#/Eb");
+                    break;
+                case 7:
+                    temp.push("E");
+                    break;
+                case 8:
+                    temp.push("F");
+                    break;
+                case 9:
+                    temp.push("F#/Gb");
+                    break;
+                case 10:
+                    temp.push("G");
+                    break;
+                case 11:
+                    temp.push("G#/Ab");
+                    break;
+            }
+        }
+        return temp;
+    }
+
+    static noteValues = this.calcNoteValues();
+
+    /**
      * Creates and oscillator using the given MIDI data and plays it.
      * @param {MIDIMessage} midiMessage - MIDI data taken from the user.
      * @param {String} waveType - The type of sound wave being generated.
