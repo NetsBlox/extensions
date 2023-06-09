@@ -3,8 +3,10 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
 (function () {
    const audioAPI = new WebAudioAPI();
     const I32_MAX = 2147483647;
+  
+    const backgroundTrack = audioAPI.createTrack("backgroundTrack");
     audioAPI.start();
-//make invisble track to play clip without REAL track 
+    const initialClock = audioAPI.currentTime;
 
     function base64toArrayBuffer(base64){
         var binaryString = atob(base64.replace("data:audio/mpeg;base64,", ""));
@@ -16,6 +18,7 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
     }
 
     async function playAudio(binaryString, trackName){
+        console.log(`HERE IS THE CLOCK: ${audioAPI.currentTime}`);
         const buffer = base64toArrayBuffer(binaryString.audio.src);
         audioAPI.start();
         if(trackName === undefined){
@@ -32,7 +35,8 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
     }
 
     function stopAudio(){
-        return audioAPI.stop();
+        audioAPI.stop();
+        audioAPI.deleteAllTracks();
     }
 
     function masterVolume(percent){
@@ -47,7 +51,7 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
 
     async function wait(duration) {
         return new Promise(resolve => {
-            setTimeout(resolve, duration * 800);
+            setTimeout(resolve, duration * 1000);
         })
     }
     // ----------------------------------------------------------------------
@@ -97,7 +101,8 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
                     this.runAsyncFn(async () =>{
                         const trackName = this.trackName;
                         const duration = await playAudio(audioBuffer, trackName);
-                        await wait(duration);
+                        console.log(`HERE IS THE CLIP CLOCK: ${audioAPI.currentTime}`);
+                        await wait(duration-.02);
                     },{ args: [], timeout: I32_MAX });
                 }),
                 block('stopClips', 'command', 'music', 'stop all clips', [], function (){
@@ -117,11 +122,11 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
                         this.trackName = trackName;
                 }),
                 block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (percent){
-                    masterVolume(percent);
+                    masterVolume(percent * 0.01);
                 }),
                 block('trackVolume', 'command', 'music', 'track volume %n %', ['50'], function (percent){
                     const trackName = this.trackName;
-                    trackVolume(trackName,percent);
+                    trackVolume(trackName,percent* 0.01);
                 }),
                 block('setGlobalBPM', 'command', 'music','set global BPM %n', ['120'], function (bpm){
                     beatsPerMinute(bpm);
