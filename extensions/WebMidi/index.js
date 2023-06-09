@@ -50,6 +50,26 @@
     }
 
     /**
+     * @returns The last command entered by the MIDI controller.
+     */
+    function getNoteCommand() {
+        if (mostRecentMidiMessage != null) {
+            return mostRecentMidiMessage.getCommand();
+        }
+        return 0;
+    }
+
+    /**
+     * @returns The last note played by the MIDI controller.
+     */
+    function getNote() {
+        if (mostRecentMidiMessage != null) {
+            return mostRecentMidiMessage.getNote();
+        }
+        return 0;
+    }
+
+    /**
      * Determines the frequency of the note being played by the MIDI keyboard.
      * @returns the frequency of the note being played.
      */
@@ -58,6 +78,16 @@
             if (mostRecentMidiMessage.checkNoteStatus()) {
                 return AudioStream.noteFrequencies[mostRecentMidiMessage.getNote()];
             }
+        }
+        return 0;
+    }
+
+    /**
+     * @returns The last velocity entered by the MIDI controller.
+     */
+    function getNoteVelocity() {
+        if (mostRecentMidiMessage != null) {
+            return mostRecentMidiMessage.getVelocity();
         }
         return 0;
     }
@@ -82,7 +112,13 @@
         getPalette() {
             const blocks = [
                 new Extension.Palette.Block("webMidiReadMidi"),
+                new Extension.Palette.Block("webMidiGetNoteCommand"),
+                new Extension.Palette.Block("webMidiGetNote"),
                 new Extension.Palette.Block("webMidiGetNoteFrequency"),
+                new Extension.Palette.Block("webMidiGetNoteVelocity"),
+                new Extension.Palette.Block("webMidiPlaySound"),
+                new Extension.Palette.Block("webMidiStopSound"),
+                new Extension.Palette.Block("webMidiWaveType"),
             ];
             return [
                 new Extension.PaletteCategory("music", blocks, SpriteMorph),
@@ -98,11 +134,51 @@
                 block("webMidiReadMidi", "command", "music", "Listen for MIDI", [null], function() {
                     readMIDI();
                 }),
+                block("webMidiGetNoteCommand", "reporter", "music", "Get Command", [null], 
+                    function() {
+                        return getNoteCommand();
+                }),
+                block("webMidiGetNote", "reporter", "music", "Get Note", [null], function () {
+                    return getNote();
+                }),
                 block("webMidiGetNoteFrequency", "reporter", "music", "Get Frequency", [null], 
                     function() {
                         return getNoteFrequency();
                 }),
-            ]
+                block("webMidiGetNoteVelocity", "reporter", "music", "Get Velocity", [null],
+                    function() {
+                        return getNoteVelocity();
+                }),
+                block("webMidiPlaySound", "command", "music", 
+                    "Play Sound - Note: %n Velocity: %n Wave: %webMidiWaveType", 
+                    [0, 0, "sine"], function(note, vel, wave) {
+                        const message = new MIDIMessage(144, note, vel);
+                        AudioStream.startSound(message, wave);
+                }),
+                block("webMidiStopSound", "command", "music", "Stop Sound - Note: %n", [0], 
+                    function(note) {
+                        AudioStream.stopSound(note);
+                }),
+                block("webMidiWaveType", "reporter", "music", "Wave: %webMidiWaveType", ["sine"], 
+                    x => x
+                ),
+            ];
+        }
+
+        getLabelParts() {
+            function identityMap(s) {
+                const res = {};
+                for (const x of s) res[x] = x;
+                return res;
+            }
+            return [
+                new Extension.LabelPart("webMidiWaveType", () => new InputSlotMorph(
+                    null, // text
+                    false, //numeric
+                    identityMap(["sine", "square", "sawtooth", "triangle"]),
+                    true, // readonly (no arbitrary text)
+                ))
+            ];
         }
     }
 

@@ -1,4 +1,5 @@
 const oscillators = new Map();
+let waveType = "sine";
 
 class AudioStream {
     static noteFrequencies = [
@@ -19,32 +20,36 @@ class AudioStream {
     /**
      * Creates and oscillator using the given MIDI data and plays it.
      * @param {MIDIMessage} midiMessage - MIDI data taken from the user.
+     * @param {String} waveType - The type of sound wave being generated.
      */
-    static startSound(midiMessage) {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    static startSound(midiMessage, waveType) {
+        if (!oscillators.has(midiMessage.getNote())) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-        const oscillator = audioContext.createOscillator();
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(
-            this.noteFrequencies[midiMessage.getNote()],
-            audioContext.currentTime
-        );
-        oscillators.set(midiMessage.getNote(), oscillator);
+            const oscillator = audioContext.createOscillator();
+            oscillator.type = waveType;
+            oscillator.frequency.setValueAtTime(
+                this.noteFrequencies[midiMessage.getNote()],
+                audioContext.currentTime
+            );
+            oscillators.set(midiMessage.getNote(), oscillator);
 
-        const volume = audioContext.createGain();
-        volume.gain.value = midiMessage.getVelocity() * 0.01;
+            const volume = audioContext.createGain();
+            volume.gain.value = midiMessage.getVelocity() * 0.01;
 
-        oscillator.connect(volume).connect(audioContext.destination);
-        oscillator.start();
+            oscillator.connect(volume).connect(audioContext.destination);
+            oscillator.start();
+        }
     }
 
     /**
      * Removes and oscillator using the given MIDI data and stops it.
      * @param {MIDIMessage} midiMessage - MIDI data taken from the user.
      */
-    static stopSound(midiMessage) {
-        const oscillator = oscillators.get(midiMessage.getNote());
-        oscillators.delete(midiMessage.getNote());
-        oscillator.stop();
+    static stopSound(note) {
+        if (oscillators.has(note)) {
+            oscillators.get(note).stop();
+            oscillators.delete(note);
+        }
     }
 }
