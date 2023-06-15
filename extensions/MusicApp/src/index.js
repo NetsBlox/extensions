@@ -18,7 +18,19 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
     }
 
     async function playAudio(binaryString, trackName){
-        console.log(`HERE IS THE CLOCK: ${audioAPI.currentTime}`);
+        const buffer = base64toArrayBuffer(binaryString.audio.src);
+        audioAPI.start();
+        if(trackName === undefined){
+            return audioAPI.playClip("backgroundTrack",buffer,0);
+
+        }
+        else {
+            return audioAPI.playClip(trackName, buffer, 0);
+        }
+        
+    }
+
+    async function playAudioForDuration(binaryString, trackName, duration){
         const buffer = base64toArrayBuffer(binaryString.audio.src);
         audioAPI.start();
         if(trackName === undefined){
@@ -79,6 +91,7 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
         getPalette() {
             const blocks = [
                 new Extension.Palette.Block('playClip'),
+                new Extension.Palette.Block('playClipforDuration'),
                 new Extension.Palette.Block('stopClips'),
                 new Extension.Palette.Block('playbackControls'),
                 new Extension.Palette.Block('track'),
@@ -101,7 +114,13 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
                     this.runAsyncFn(async () =>{
                         const trackName = this.trackName;
                         const duration = await playAudio(audioBuffer, trackName);
-                        console.log(`HERE IS THE CLIP CLOCK: ${audioAPI.currentTime}`);
+                        await wait(duration-.02);
+                    },{ args: [], timeout: I32_MAX });
+                }),
+                block('playClipforDuration', 'command', 'music', 'play clip for duration %n %s', ['1'], function (duration,audioBuffer){
+                    this.runAsyncFn(async () =>{
+                        const trackName = this.trackName;
+                        const duration = await playAudio(audioBuffer, trackName);
                         await wait(duration-.02);
                     },{ args: [], timeout: I32_MAX });
                 }),
