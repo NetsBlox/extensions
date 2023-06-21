@@ -120,6 +120,7 @@
                 new Extension.Palette.Block("webMidiPlaySound"),
                 new Extension.Palette.Block("webMidiStopSound"),
                 new Extension.Palette.Block("webMidiWaveType"),
+                new Extension.Palette.Block("webMidiShowStaff"),
             ];
             return [
                 new Extension.PaletteCategory("music", blocks, SpriteMorph),
@@ -159,14 +160,19 @@
                     [0, 0, "sine"], function(note, vel, wave) {
                         const message = new MIDIMessage(144, note, vel);
                         AudioStream.startSound(message, wave);
+                        NoteVisualiser.createNote(message);
                 }),
                 block("webMidiStopSound", "command", "music", "Stop Sound - Note: %n", [0], 
                     function(note) {
                         AudioStream.stopSound(note);
+                        NoteVisualiser.removeNote(note);
                 }),
                 block("webMidiWaveType", "reporter", "music", "Wave: %webMidiWaveType", ["sine"], 
                     x => x
                 ),
+                block("webMidiShowStaff", "command", "music", "Show Staff", [null], function() {
+                    showDialog(window.externalVariables['webmidilog']);
+                }),
             ];
         }
 
@@ -190,6 +196,7 @@
     const files = [
         "http://localhost:8181/extensions/WebMidi/js/AudioStream.js",
         "http://localhost:8181/extensions/WebMidi/js/MIDIMessage.js",
+        "http://localhost:8181/extensions/WebMidi/js/NoteVisualiser.js",
     ];
 
     for (let i = 0; i < files.length; i++) {
@@ -201,6 +208,46 @@
 
         console.log("Added file: " + files[i]);
     }
+
+    var element = document.createElement('link');
+    element.setAttribute('rel', 'stylesheet');
+    element.setAttribute('type', 'text/css');
+    element.setAttribute('href', 'https://gsteinltu.github.io/PseudoMorphic/style.css');
+    document.head.appendChild(element);
+
+    var element = document.createElement('link');
+    element.setAttribute('rel', 'stylesheet');
+    element.setAttribute('type', 'text/css');
+    element.setAttribute('href', 'https://gb0808.github.io/MidiVisualiser/style.css');
+    document.head.appendChild(element);
+
+    var scriptElement = document.createElement('script');
+
+    scriptElement.onload = () => {
+        var element = createDialog('WebMidi');
+        element.querySelector('content').innerHTML = 
+        '<div class="staffContainer" id="staffContainer">' +
+        '    <div class="staffLine" id = "5" >' +
+        '        <hr>' +
+        '    </div>' +
+        '    <div class="staffLine" id="4">' +
+        '        <hr>' +
+        '    </div>' +
+        '    <div class="staffLine" id="3">' +
+        '        <hr>' +
+        '    </div>' +
+        '    <div class="staffLine" id="2">' +
+        '        <hr>' +
+        '    </div>' +
+        '    <div class="staffLine" id="1">' +
+        '        <hr>' +
+        '    </div>' +
+        '</div > '; 
+        setupDialog(element);
+        window.externalVariables['webmidilog'] = element;
+    };
+    scriptElement.setAttribute('src', 'https://gsteinltu.github.io/PseudoMorphic/script.js');
+    document.head.appendChild(scriptElement);
 
     NetsBloxExtensions.register(WebMidi);
 })();
