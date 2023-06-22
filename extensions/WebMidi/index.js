@@ -1,6 +1,7 @@
 (function () {
 
     let mostRecentMidiMessage = null;
+    let midiDevices = [];
 
     /**
      * Sets up the broswer to listen for MIDI Data
@@ -92,6 +93,49 @@
         return 0;
     }
 
+    function loadWebAudioAPI() {
+        window.audioAPI = new WebAudioAPI();
+        window.audioAPI.createTrack('defaultTrack');
+    }
+
+    function getMidiDevices() {
+        window.audioAPI.getAvailableMidiDevices().then(returnDevice, fail);
+    }
+
+    function returnDevice(devices) {
+        midiDevices = devices;
+        console.log(devices);
+    }
+
+    function fail() {
+        midiDevices = [];
+        console.log("something went wrong");
+    }
+
+    function midiCallback(event) {
+        console.log(event);
+    }
+
+    function midiConnect(device) {
+        if (device != "") {
+            window.audioAPI.registerMidiDeviceCallback(device, midiCallback);
+            // window.audioAPI.connectMidiDeviceToTrack('defaultTrack', device).then((value) => {
+            //     console.log('Connected to MIDI device!');
+            //     console.log(value);
+            // });
+        }
+    }
+
+    function changeInsturment(instrument) {
+        window.audioAPI.start();
+        window.audioAPI.getAvailableInstruments('/extensions/WebMidi/webAudioAPI-instruments').then((device) => {
+            console.log(device);
+        });
+        window.audioAPI.updateInstrument('defaultTrack', instrument).then(() => {
+            console.log('Instrument loading complete!');
+        });
+    }
+
     class WebMidi extends Extension {
         
         constructor (ide) {
@@ -111,6 +155,9 @@
 
         getPalette() {
             const blocks = [
+                new Extension.Palette.Block("webMidiSetMidiDevice"),
+                new Extension.Palette.Block("webMidiSetInstrument"),
+
                 new Extension.Palette.Block("webMidiReadMidi"),
                 new Extension.Palette.Block("webMidiGetNoteCommand"),
                 new Extension.Palette.Block("webMidiGetNote"),
@@ -133,6 +180,17 @@
                 return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph);
             }
             return [
+                block('webMidiSetInstrument', 'command', 'music', 'Instrument %webMidiInstrument', 
+                [""], function (instrument) {
+                    console.log(instrument);
+                    changeInsturment(instrument);
+                }),
+                block('webMidiSetMidiDevice', 'command', 'music', 'Midi Device: %webMidiDevice', 
+                [""], function (device) {
+                    console.log(device);
+                    midiConnect(device);
+                }),
+                
                 block("webMidiReadMidi", "command", "music", "Listen for MIDI", [null], function() {
                     readMIDI();
                 }),
@@ -153,7 +211,8 @@
                 }),
                 block("webMidiGetNoteName", "reporter", "music", "Get Note Name: %n", [null], 
                     function(note) {
-                        return AudioStream.noteValues[note];
+                        const noteName = AudioStream.noteValues[note];
+                        return noteName.substring(0, noteName.length - 2);
                 }),
                 block("webMidiPlaySound", "command", "music", 
                     "Play Sound - Note: %n Velocity: %n Wave: %webMidiWaveType", 
@@ -177,6 +236,8 @@
         }
 
         getLabelParts() {
+            loadWebAudioAPI();
+            getMidiDevices();
             function identityMap(s) {
                 const res = {};
                 for (const x of s) res[x] = x;
@@ -188,12 +249,35 @@
                     false, //numeric
                     identityMap(["sine", "square", "sawtooth", "triangle"]),
                     true, // readonly (no arbitrary text)
-                ))
+                )),
+                new Extension.LabelPart('webMidiInstrument', () => new InputSlotMorph(
+                    null, // text
+                    false, //numeric
+                    identityMap([
+                        "Grand Piano", "Electric Bass", "Bassoon", "Cello", "Acoustic Guitar", 
+                        "Electric Guitar", "Nylon Guitar", "Harp", "Pipe Organ", "Violin"
+                    ]),
+                    true, // readonly (no arbitrary text)
+                )),
+                new Extension.LabelPart('webMidiDevice', () => new InputSlotMorph(
+                    null, // text
+                    false, //numeric
+                    identityMap(midiDevices),
+                    true, // readonly (no arbitrary text)
+                )),
             ];
         }
     }
 
+    const script = document.createElement("script");
+    script.type = "module";
+    script.src = 'https://hedgecrw.github.io/WebAudioAPI/lib/webAudioAPI.js';
+    document.body.appendChild(script);
+    console.log("Added file: " + script.src);
+
     const files = [
+        "https://cdn.jsdelivr.net/npm/vexflow@4.0.3/build/cjs/vexflow.js",
+        "http://localhost:8181/extensions/WebMidi/js/vex.js",
         "http://localhost:8181/extensions/WebMidi/js/AudioStream.js",
         "http://localhost:8181/extensions/WebMidi/js/MIDIMessage.js",
         "http://localhost:8181/extensions/WebMidi/js/NoteVisualiser.js",
@@ -226,22 +310,7 @@
     scriptElement.onload = () => {
         var element = createDialog('WebMidi');
         element.querySelector('content').innerHTML = 
-        '<div class="staffContainer" id="staffContainer">' +
-        '    <div class="staffLine" id = "5" >' +
-        '        <hr>' +
-        '    </div>' +
-        '    <div class="staffLine" id="4">' +
-        '        <hr>' +
-        '    </div>' +
-        '    <div class="staffLine" id="3">' +
-        '        <hr>' +
-        '    </div>' +
-        '    <div class="staffLine" id="2">' +
-        '        <hr>' +
-        '    </div>' +
-        '    <div class="staffLine" id="1">' +
-        '        <hr>' +
-        '    </div>' +
+        '<div id="output"></div>' +
         '</div > '; 
         setupDialog(element);
         window.externalVariables['webmidilog'] = element;

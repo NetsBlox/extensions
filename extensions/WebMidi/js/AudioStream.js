@@ -23,6 +23,7 @@ class AudioStream {
      * @returns an array of Strings.
      */
     static calcNoteValues() {
+        let octave = 0;
         let temp = [];
         for (let i = 0; i < 21; i++) {
             temp.push("null");
@@ -30,40 +31,41 @@ class AudioStream {
         for (let i = 0; i < this.noteFrequencies.length - 20; i++) {
             switch (i % 12) {
                 case 0:
-                    temp.push("A");
+                    temp.push("A/" + octave);
                     break;
                 case 1:
-                    temp.push("A#/Bb");
+                    temp.push("Bb/" + octave);
                     break;
                 case 2:
-                    temp.push("B");
+                    temp.push("B/" + octave);
                     break;
                 case 3:
-                    temp.push("C");
+                    octave++;
+                    temp.push("C/" + octave);
                     break;
                 case 4:
-                    temp.push("C#/Db");
+                    temp.push("C#/" + octave);
                     break;
                 case 5:
-                    temp.push("D");
+                    temp.push("D/" + octave);
                     break;
                 case 6:
-                    temp.push("D#/Eb");
+                    temp.push("Eb/" + octave);
                     break;
                 case 7:
-                    temp.push("E");
+                    temp.push("E/" + octave);
                     break;
                 case 8:
-                    temp.push("F");
+                    temp.push("F/" + octave);
                     break;
                 case 9:
-                    temp.push("F#/Gb");
+                    temp.push("F#/" + octave);
                     break;
                 case 10:
-                    temp.push("G");
+                    temp.push("G/" + octave);
                     break;
                 case 11:
-                    temp.push("G#/Ab");
+                    temp.push("Ab/" + octave);
                     break;
             }
         }
