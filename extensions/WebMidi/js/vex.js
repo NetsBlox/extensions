@@ -1,4 +1,4 @@
-const { Renderer, Stave, StaveNote, Voice, Formatter } = Vex.Flow;
+const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } = Vex.Flow;
 
 // Create an SVG renderer and attach it to the DIV element named "boo".
 const div = document.getElementById("output");
@@ -43,11 +43,25 @@ class Note_v {
                 this.#clef = staveBass;
                 break;
         }
-        this.#note.push(new StaveNote({ 
-            keys: [noteName], 
-            duration: "w", 
-            clef: this.#getNoteClef(),
-        }));
+        if (this.#noteName.includes('b')) {
+            this.#note.push(new StaveNote({
+                keys: [noteName],
+                duration: "w",
+                clef: this.#getNoteClef(),
+            }).addModifier(new Accidental("b")));
+        } else if (this.#noteName.includes('#')) {
+            this.#note.push(new StaveNote({
+                keys: [noteName],
+                duration: "w",
+                clef: this.#getNoteClef(),
+            }).addModifier(new Accidental("#")));
+        } else {
+            this.#note.push(new StaveNote({
+                keys: [noteName],
+                duration: "w",
+                clef: this.#getNoteClef(),
+            }));
+        }
     }
 
     /**
