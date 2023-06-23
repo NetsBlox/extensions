@@ -2,6 +2,9 @@
 
     let midiDevices = [];
     let midiInstruments = [];
+    let midiTracks = new Map();
+    let recordStatus = false;
+    let hotTrack;
 
     function loadWebAudioAPI() {
         window.audioAPI = new WebAudioAPI();
@@ -33,9 +36,13 @@
         const cmd = event.data[0];
         const note = event.data[1];
         const vel = event.data[2];
+        const message = new MIDIMessage(cmd, note, vel);
+
+        if (recordStatus) {
+            hotTrack.addNote(message, window.audioAPI.getCurrentTime());
+        }
 
         if (cmd == 144) {
-            const message = new MIDIMessage(cmd, note, vel);
             NoteVisualiser.createNote(message);
         } else {
             NoteVisualiser.removeNote(note);
@@ -80,6 +87,11 @@
                 new Extension.Palette.Block("webMidiSetMidiDevice"),
                 new Extension.Palette.Block("webMidiSetInstrument"),
                 new Extension.Palette.Block("webMidiShowStaff"),
+                new Extension.Palette.Block("webMidiMidiTrack"),
+                new Extension.Palette.Block("webMidiPlayTrack"),
+                new Extension.Palette.Block("webMidiStartRecording"),
+                new Extension.Palette.Block("webMidiStopRecording"),
+                new Extension.Palette.Block("webMidiClearTrack"),
             ];
             return [
                 new Extension.PaletteCategory("music", blocks, SpriteMorph),
@@ -104,6 +116,45 @@
                 }),
                 block("webMidiShowStaff", "command", "music", "Show Staff", [null], function() {
                     showDialog(window.externalVariables['webmidilog']);
+                }),
+                block("webMidiMidiTrack", "command", "music", "Create Track %s", [""], 
+                function(name) {
+                    console.log("Track created: " + name);
+                    midiTracks.set(name, new MidiTrack());
+                }),
+                block("webMidiPlayTrack", "command", "music", "Play Track %s", [""],
+                function(name) {
+                    if (midiTracks.has(name)) {
+                        console.log("Track played: " + name);
+                        midiTracks.get(name).playTrack().then(() => console.log("EOF"));
+                    } else {
+                        console.log('track not found');
+                    }
+                }),
+                block("webMidiStartRecording", "command", "music", "Start Recording %s", [""],
+                function (name) {
+                    if (midiTracks.has(name)) {
+                        console.log("Track armed: " + name);
+                        hotTrack = midiTracks.get(name);
+                        hotTrack.startRecord(window.audioAPI.getCurrentTime());
+                        console.log(hotTrack);
+                        recordStatus = true;
+                    } else {
+                        console.log('track not found');
+                    }
+                }),
+                block("webMidiStopRecording", "command", "music", "Stop Recording %s", [""],
+                function (name) {
+                    if (midiTracks.has(name)) {
+                        console.log("Track disarmed: " + name);
+                        recordStatus = false;
+                    } else {
+                        console.log('track not found');
+                    }
+                }),
+                block("webMidiClearTrack", "command", "music", "Clear Track %s", [""], 
+                function (name) {
+                    midiTracks.get(name).clearTrack();
                 }),
             ];
         }
@@ -130,6 +181,12 @@
                     identityMap(midiDevices),
                     true, // readonly (no arbitrary text)
                 )),
+                new Extension.LabelPart('webMidiTrackName', () => new InputSlotMorph(
+                    null, // text
+                    false, //numeric
+                    identityMap(Object.keys(midiTracks)),
+                    true, // readonly (no arbitrary text)
+                )),
             ];
         }
     }
@@ -146,6 +203,7 @@
         "http://localhost:8000/extensions/WebMidi/js/AudioStream.js",
         "http://localhost:8000/extensions/WebMidi/js/MIDIMessage.js",
         "http://localhost:8000/extensions/WebMidi/js/NoteVisualiser.js",
+        "http://localhost:8000/extensions/WebMidi/js/MidiTrack.js",
     ];
 
     for (let i = 0; i < files.length; i++) {
