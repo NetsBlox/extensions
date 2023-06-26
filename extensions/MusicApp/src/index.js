@@ -1,8 +1,9 @@
-import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
+import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
 
 (function () {
    const audioAPI = new WebAudioAPI();
-    const I32_MAX = 2147483647;
+   const I32_MAX = 2147483647;
+   const tito = "Tito";
   
     const backgroundTrack = audioAPI.createTrack("backgroundTrack");
     audioAPI.start();
@@ -34,11 +35,11 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
         const buffer = base64toArrayBuffer(binaryString.audio.src);
         audioAPI.start();
         if(trackName === undefined){
-            return audioAPI.playClip("backgroundTrack",buffer,0);
+            return audioAPI.playClip("backgroundTrack",buffer,duration);
 
         }
         else {
-            return audioAPI.playClip(trackName, buffer, 0);
+            return audioAPI.playClip(trackName, buffer, duration);
         }
         
     }
@@ -90,8 +91,8 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
 
         getPalette() {
             const blocks = [
-                new Extension.Palette.Block('playClip'),
-                new Extension.Palette.Block('playClipforDuration'),
+                new Extension.Palette.Block('playAudioClip'),
+                new Extension.Palette.Block('playAudioClipforDuration'),
                 new Extension.Palette.Block('stopClips'),
                 new Extension.Palette.Block('playbackControls'),
                 new Extension.Palette.Block('track'),
@@ -110,17 +111,17 @@ import {WebAudioAPI} from "./WebAudioAPI/library/webaudioapi/webAudioAPI";
                 return new Extension.Block(name, type, category, spec, defaults, action)
             }
             return [
-                block('playClip', 'command', 'music', 'play clip %s', [], function (audioBuffer){
+                block('playAudioClip', 'command', 'music', 'play audio clip %s', ['clip'], function (audioBuffer){
                     this.runAsyncFn(async () =>{
                         const trackName = this.trackName;
                         const duration = await playAudio(audioBuffer, trackName);
                         await wait(duration-.02);
                     },{ args: [], timeout: I32_MAX });
                 }),
-                block('playClipforDuration', 'command', 'music', 'play clip for duration %n %s', ['1'], function (duration,audioBuffer){
+                block('playAudioClipforDuration', 'command', 'music', 'play audio clip for duration %n %s', ['1', 'clip'], function (dur,audioBuffer){
                     this.runAsyncFn(async () =>{
                         const trackName = this.trackName;
-                        const duration = await playAudio(audioBuffer, trackName);
+                        const duration = await playAudioForDuration(audioBuffer, trackName, dur);
                         await wait(duration-.02);
                     },{ args: [], timeout: I32_MAX });
                 }),
