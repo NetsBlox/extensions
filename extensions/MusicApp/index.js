@@ -1603,10 +1603,7 @@
   (function () {
      const audioAPI = new WebAudioAPI();
      const I32_MAX = 2147483647;
-    
-      audioAPI.createTrack("backgroundTrack");
-      audioAPI.start();
-      audioAPI.currentTime;
+     let syncStart = 0;
 
       function base64toArrayBuffer(base64){
           var binaryString = atob(base64.replace("data:audio/mpeg;base64,", ""));
@@ -1617,28 +1614,42 @@
           return bytes.buffer;
       }
 
-      async function playAudio(binaryString, trackName){
-          const buffer = base64toArrayBuffer(binaryString.audio.src);
+      async function synchronize(){
+          let currentStart = syncStart++;
+          await wait(.005);
+          do {
+              currentStart++;
+              await wait(.005);
+          } while (currentStart != syncStart);
           audioAPI.start();
+      }
+
+      async function playAudio(binaryString, trackName){
           if(trackName === undefined){
-              return audioAPI.playClip("backgroundTrack",buffer,0);
+              await synchronize();
+          }
+          const buffer = base64toArrayBuffer(binaryString.audio.src);
+          if(trackName === undefined){
+              return audioAPI.playClip("backgroundTrack",buffer,audioAPI.getCurrentTime(),0);
 
           }
           else {
-              return audioAPI.playClip(trackName, buffer, 0);
+              return audioAPI.playClip(trackName, buffer, audioAPI.getCurrentTime(),0);
           }
           
       }
 
-      async function playAudioForDuration(binaryString, trackName, duration){
-          const buffer = base64toArrayBuffer(binaryString.audio.src);
-          audioAPI.start();
+      async function playAudioForDuration(binaryString, trackName, dur){
           if(trackName === undefined){
-              return audioAPI.playClip("backgroundTrack",buffer,duration);
+              await synchronize();
+          }
+          const buffer = base64toArrayBuffer(binaryString.audio.src);
+          if(trackName === undefined){
+              return audioAPI.playClip("backgroundTrack",buffer,audioAPI.getCurrentTime(), dur);
 
           }
           else {
-              return audioAPI.playClip(trackName, buffer, duration);
+              return audioAPI.playClip(trackName, buffer,audioAPI.getCurrentTime(),  dur);
           }
           
       }
@@ -1648,14 +1659,14 @@
 
       function stopAudio(){
           audioAPI.stop();
-          audioAPI.deleteAllTracks();
+          audioAPI.removeAllTracks();
       }
 
       function masterVolume(percent){
-          return audioAPI.updateVolume(null, percent, null);
+          return audioAPI.updateMasterVolume(percent, null);
       }
       function trackVolume(trackName, percent){
-          return audioAPI.updateVolume(trackName, percent, 0);
+          return audioAPI.updateTrackVolume(trackName, percent, 0);
       }
       function  beatsPerMinute(bpm){
           return audioAPI.updateBeatsPerMinute(bpm);
@@ -1698,6 +1709,7 @@
                   new Extension.Palette.Block('masterVolume'),
                   new Extension.Palette.Block('trackVolume'),
                   new Extension.Palette.Block('setGlobalBPM'),
+                  new Extension.Palette.Block('visualizeClip'),
               ];
               return [
                   new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -1721,6 +1733,7 @@
                       this.runAsyncFn(async () =>{
                           const trackName = this.trackName;
                           const duration = await playAudioForDuration(audioBuffer, trackName, dur);
+                          // console.log(`THIS IS WHAT I RECIEVED: ${duration}`);
                           await wait(duration-.02);
                       },{ args: [], timeout: I32_MAX });
                   }),
@@ -1749,6 +1762,9 @@
                   }),
                   block('setGlobalBPM', 'command', 'music','set global BPM %n', ['120'], function (bpm){
                       beatsPerMinute(bpm);
+                  }),
+                  block('visualizeClip', 'reporter', 'music','visualizeClip %s', ['clip'], function (binaryString){
+                      window.externalVariables['musicAppDialog'].show();
                   })
               ];
           }
@@ -1786,6 +1802,26 @@
       }
 
       }
+      var element = document.createElement('link');
+  	element.setAttribute('rel', 'stylesheet');
+  	element.setAttribute('type', 'text/css');
+  	element.setAttribute('href', 'https://gsteinltu.github.io/PseudoMorphic/style.css');
+  	document.head.appendChild(element);
+
+  	var scriptElement = document.createElement('script');
+
+  	scriptElement.onload = () => {
+  		var element = createDialog('MusicApp');
+  		// const canvas = document.createElement('canvas');
+  		// canvas.id = 'roboscape-canvas';
+  		// element.querySelector('content').appendChild(canvas);
+          element.querySelector('content').innerHTML = 
+                      '<div id="waveform"></div><script type="module">import WaveSurfer from \'https://unpkg.com/wavesurfer.js@beta\' const wavesurfer = WaveSurfer.create({container: \'#waveform\', waveColor: \'violet\', progressColor: \'purple\'});      wavesurfer.once(\'interaction\', () => {wavesurfer.play()})</script>';
+          setupDialog(element);
+  		window.externalVariables['musicAppDialog'] = element;
+  	};
+  	scriptElement.setAttribute('src', 'https://gsteinltu.github.io/PseudoMorphic/script.js');
+  	document.head.appendChild(scriptElement);
 
       NetsBloxExtensions.register(MusicApp);
   })();
