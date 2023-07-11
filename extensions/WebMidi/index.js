@@ -173,7 +173,9 @@
                             if (midiTracks.has(name)) {
                                 console.log(midiTracks.get(name));
                                 await midiTracks.get(name).renderTrack();
-                                return midiTracks.get(name).getRenderedTrack();
+                                const buffer =
+                                    new WaveFile("Test", midiTracks.get(name).getRenderedTrack());
+                                return buffer.writeFile();
                             } else {
                                 throw Error('track not found');
                             }

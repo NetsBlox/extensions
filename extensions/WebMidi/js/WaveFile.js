@@ -59,6 +59,7 @@ class WaveFile {
         console.log(view.buffer);
 
         // create Blob
+        return view.buffer
         return new Blob([buffer], { type: "audio/wav" });
 
         function setUint16(data) {
