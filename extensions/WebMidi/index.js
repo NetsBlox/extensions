@@ -123,16 +123,25 @@
                 }),
                 block("webMidiMidiTrack", "command", "music", "Create Track %s", [""], 
                 function(name) {
-                    console.log("Track created: " + name);
-                    midiTracks.set(name, new MidiTrack());
+                    if (!midiTracks.has(name)) {
+                        console.log("Track created: " + name);
+                        midiTracks.set(name, new MidiTrack());
+                    } else {
+                        throw Error('track already exists');
+                    }
                 }),
                 block("webMidiPlayTrack", "command", "music", "Play Track %s", [""],
                 function(name) {
                     if (midiTracks.has(name)) {
-                        console.log("Track played: " + name);
-                        midiTracks.get(name).playTrack();
+                        if (midiTracks.get(name).getRenderedTrack() != null) {
+                            console.log("Track played: " + name);
+                            midiTracks.get(name).playTrack();
+                        }
+                        else {
+                            throw Error('track not rendered');
+                        }
                     } else {
-                        console.log('track not found');
+                        throw Error('track not found');
                     }
                 }),
                 block("webMidiStartRecording", "command", "music", "Start Recording %s", [""],
@@ -143,7 +152,7 @@
                         hotTrack.startRecord(window.audioAPI.getCurrentTime());
                         recordStatus = true;
                     } else {
-                        console.log('track not found');
+                        throw Error('track not found');
                     }
                 }),
                 block("webMidiStopRecording", "command", "music", "Stop Recording %s", [""],
@@ -153,12 +162,16 @@
                         recordStatus = false;
                         midiTracks.get(name).stopRecord(window.audioAPI.getCurrentTime());
                     } else {
-                        console.log('track not found');
+                        throw Error('track not found');
                     }
                 }),
                 block("webMidiClearTrack", "command", "music", "Clear Track %s", [""], 
                 function (name) {
-                    midiTracks.get(name).clearTrack();
+                    if (midiTracks.has(name)) {
+                        midiTracks.get(name).clearTrack();
+                    } else {
+                        throw Error('track not found');
+                    }
                 }),
                 block("webMidiRenderTrack", "command", "music", "Render Track %s", [""], 
                 function (name) {
@@ -179,11 +192,16 @@
                     this.runAsyncFn(
                         async () => {
                             if (midiTracks.has(name)) {
-                                const wav = new WaveFile(name, midiTracks.get(name));
-                                const wavLink = document.getElementById("wav-link");
-                                const blob = wav.writeFile();
-                                wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
-                                wavLink.click();
+                                if (midiTracks.get(name).getRenderedTrack() != null) {
+                                    const wav = new WaveFile(name, midiTracks.get(name));
+                                    const wavLink = document.getElementById("wav-link");
+                                    const blob = wav.writeFile();
+                                    wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
+                                    wavLink.click();
+                                }
+                                else {
+                                    throw Error('track not rendered');
+                                }
                             } else {
                                 throw Error('track not found');
                             }
