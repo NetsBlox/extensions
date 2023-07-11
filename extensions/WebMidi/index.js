@@ -5,6 +5,7 @@
     let midiTracks = new Map();
     let recordStatus = false;
     let hotTrack;
+    const I32_MAX = 2147483647;
 
     function loadWebAudioAPI() {
         window.audioAPI = new WebAudioAPI();
@@ -63,6 +64,7 @@
         window.audioAPI.updateInstrument('defaultTrack', instrument).then(() => {
             console.log('Instrument loading complete!');
         });
+        window.instrumentName = instrument;
     }
 
     class WebMidi extends Extension {
@@ -92,6 +94,8 @@
                 new Extension.Palette.Block("webMidiStartRecording"),
                 new Extension.Palette.Block("webMidiStopRecording"),
                 new Extension.Palette.Block("webMidiClearTrack"),
+                new Extension.Palette.Block("webMidiRenderTrack"),
+                new Extension.Palette.Block("webMidiExportAudio"),
             ];
             return [
                 new Extension.PaletteCategory("music", blocks, SpriteMorph),
@@ -126,7 +130,7 @@
                 function(name) {
                     if (midiTracks.has(name)) {
                         console.log("Track played: " + name);
-                        midiTracks.get(name).playTrack().then(() => console.log("EOF"));
+                        midiTracks.get(name).playTrack();
                     } else {
                         console.log('track not found');
                     }
@@ -137,7 +141,6 @@
                         console.log("Track armed: " + name);
                         hotTrack = midiTracks.get(name);
                         hotTrack.startRecord(window.audioAPI.getCurrentTime());
-                        console.log(hotTrack);
                         recordStatus = true;
                     } else {
                         console.log('track not found');
@@ -148,6 +151,7 @@
                     if (midiTracks.has(name)) {
                         console.log("Track disarmed: " + name);
                         recordStatus = false;
+                        midiTracks.get(name).stopRecord(window.audioAPI.getCurrentTime());
                     } else {
                         console.log('track not found');
                     }
@@ -156,6 +160,37 @@
                 function (name) {
                     midiTracks.get(name).clearTrack();
                 }),
+                block("webMidiRenderTrack", "command", "music", "Render Track %s", [""], 
+                function (name) {
+                    this.runAsyncFn(
+                        async () => {
+                            if (midiTracks.has(name)) {
+                                console.log(midiTracks.get(name));
+                                await midiTracks.get(name).renderTrack();
+                            } else {
+                                throw Error('track not found');
+                            }
+                        },
+                        { args: [], timeout: I32_MAX }
+                    );
+                }),  
+                block("webMidiExportAudio", "command", "music", "Export Track %s", [""], 
+                function (name) {
+                    this.runAsyncFn(
+                        async () => {
+                            if (midiTracks.has(name)) {
+                                const wav = new WaveFile(name, midiTracks.get(name));
+                                const wavLink = document.getElementById("wav-link");
+                                const blob = wav.writeFile();
+                                wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
+                                wavLink.click();
+                            } else {
+                                throw Error('track not found');
+                            }
+                        },
+                        { args: [], timeout: I32_MAX }
+                    );
+                })
             ];
         }
 
@@ -193,7 +228,7 @@
 
     const script = document.createElement("script");
     script.type = "module";
-    script.src = 'https://hedgecrw.github.io/WebAudioAPI/lib/webAudioAPI.js';
+    script.src = 'http://localhost:8000/extensions/WebMidi/js/webAudioAPI.js';
     document.body.appendChild(script);
     console.log("Added file: " + script.src);
 
@@ -204,6 +239,7 @@
         "http://localhost:8000/extensions/WebMidi/js/MIDIMessage.js",
         "http://localhost:8000/extensions/WebMidi/js/NoteVisualiser.js",
         "http://localhost:8000/extensions/WebMidi/js/MidiTrack.js",
+        "http://localhost:8000/extensions/WebMidi/js/WaveFile.js",
     ];
 
     for (let i = 0; i < files.length; i++) {
@@ -234,7 +270,8 @@
         var element = createDialog('WebMidi');
         element.querySelector('content').innerHTML = 
         '<div id="output"></div>' +
-        '</div > '; 
+        '</div > ' + 
+        '<a id="wav-link" download="netsblox.wav" style="display: none;"></a>'; 
         setupDialog(element);
         window.externalVariables['webmidilog'] = element;
     };

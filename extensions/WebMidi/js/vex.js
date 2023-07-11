@@ -78,7 +78,6 @@ class Note_v {
      * Removes a note from the staff.
      */
     removeNote() {
-        console.log("remove note");
         const x = document.getElementsByClassName("vf-stavenote");
         for (let i = 0; i < x.length; i++) {
             x[i].remove();

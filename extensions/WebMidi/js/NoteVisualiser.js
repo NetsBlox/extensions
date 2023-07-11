@@ -12,7 +12,6 @@ class NoteVisualiser {
             const note = new Note_v(noteName);
             note.showNote();
             notes.set(noteName, note);
-            console.log(notes);
         }
     }
 
@@ -23,8 +22,6 @@ class NoteVisualiser {
     static removeNote(noteNumber) {
         const noteName = AudioStream.noteValues[noteNumber];
         if (notes.has(noteName)) {
-            console.log('here');
-            console.log(notes);
             notes.get(noteName).removeNote();
             notes.delete(noteName);
         }
