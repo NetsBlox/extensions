@@ -110,12 +110,10 @@
             return [
                 block('webMidiSetInstrument', 'command', 'music', 'Instrument %webMidiInstrument', 
                 [""], function (instrument) {
-                    console.log(instrument);
                     changeInsturment(instrument);
                 }),
                 block('webMidiSetMidiDevice', 'command', 'music', 'Midi Device: %webMidiDevice', 
                 [""], function (device) {
-                    console.log(device);
                     midiConnect(device);
                 }),
                 block("webMidiShowStaff", "command", "music", "Show Staff", [null], function() {
@@ -130,19 +128,14 @@
                         throw Error('track already exists');
                     }
                 }),
-                block("webMidiPlayTrack", "command", "music", "Play Track %s", [""],
-                function(name) {
-                    if (midiTracks.has(name)) {
-                        if (midiTracks.get(name).getRenderedTrack() != null) {
-                            console.log("Track played: " + name);
-                            midiTracks.get(name).playTrack();
-                        }
-                        else {
-                            throw Error('track not rendered');
-                        }
-                    } else {
-                        throw Error('track not found');
-                    }
+                block("webMidiPlayTrack", "command", "music", "Play Track %s", 
+                [""], function(renderedTrack) {
+                    const audioCtx = new AudioContext();
+                    const track = audioCtx.createBufferSource();
+                    track.buffer = renderedTrack;
+                    track.connect(audioCtx.destination);
+                    track.start();
+                    console.log("track played");
                 }),
                 block("webMidiStartRecording", "command", "music", "Start Recording %s", [""],
                 function (name) {
@@ -173,13 +166,14 @@
                         throw Error('track not found');
                     }
                 }),
-                block("webMidiRenderTrack", "command", "music", "Render Track %s", [""], 
+                block("webMidiRenderTrack", "reporter", "music", "Render Track %s", [""], 
                 function (name) {
-                    this.runAsyncFn(
+                    return this.runAsyncFn(
                         async () => {
                             if (midiTracks.has(name)) {
                                 console.log(midiTracks.get(name));
                                 await midiTracks.get(name).renderTrack();
+                                return midiTracks.get(name).getRenderedTrack();
                             } else {
                                 throw Error('track not found');
                             }
@@ -188,23 +182,14 @@
                     );
                 }),  
                 block("webMidiExportAudio", "command", "music", "Export Track %s", [""], 
-                function (name) {
+                function (renderedTrack) {
                     this.runAsyncFn(
                         async () => {
-                            if (midiTracks.has(name)) {
-                                if (midiTracks.get(name).getRenderedTrack() != null) {
-                                    const wav = new WaveFile(name, midiTracks.get(name));
-                                    const wavLink = document.getElementById("wav-link");
-                                    const blob = wav.writeFile();
-                                    wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
-                                    wavLink.click();
-                                }
-                                else {
-                                    throw Error('track not rendered');
-                                }
-                            } else {
-                                throw Error('track not found');
-                            }
+                            const wav = new WaveFile('NetsBlox', renderedTrack);
+                            const wavLink = document.getElementById("wav-link");
+                            const blob = wav.writeFile();
+                            wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
+                            wavLink.click();
                         },
                         { args: [], timeout: I32_MAX }
                     );

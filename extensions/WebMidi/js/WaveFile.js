@@ -15,7 +15,7 @@ class WaveFile {
     // Convert an AudioBuffer to a Blob using WAVE representation
     // Code taken from https://russellgood.com/how-to-convert-audiobuffer-to-audio-file/
     writeFile() {
-        const abuffer = this.#midiTrack.getRenderedTrack();
+        const abuffer = this.#midiTrack;
         const len = abuffer.length;
         var numOfChan = abuffer.numberOfChannels,
             length = len * numOfChan * 2 + 44,
