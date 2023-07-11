@@ -187,9 +187,8 @@
                 function (renderedTrack) {
                     this.runAsyncFn(
                         async () => {
-                            const wav = new WaveFile('NetsBlox', renderedTrack);
                             const wavLink = document.getElementById("wav-link");
-                            const blob = wav.writeFile();
+                            const blob = new Blob([renderedTrack], { type: "audio/wav" });;
                             wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
                             wavLink.click();
                         },
