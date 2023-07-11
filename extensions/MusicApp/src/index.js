@@ -4,6 +4,8 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
    const audioAPI = new WebAudioAPI();
    const I32_MAX = 2147483647;
    let syncStart = 0;
+   audioAPI.createTrack("backgroundTrack");
+   audioAPI.start();
 
     function base64toArrayBuffer(base64){
         var binaryString = atob(base64.replace("data:audio/mpeg;base64,", ""));
@@ -25,10 +27,13 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
     }
 
     async function playAudio(binaryString, trackName){
-        if(trackName === undefined){
-            await synchronize();
-        }
+        await synchronize();
+        // if(trackName === undefined){
+           
+        // }
+        
         const buffer = base64toArrayBuffer(binaryString.audio.src);
+        audioAPI.start();
         if(trackName === undefined){
             return audioAPI.playClip("backgroundTrack",buffer,audioAPI.getCurrentTime(),0);
 
@@ -40,10 +45,12 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
     }
 
     async function playAudioForDuration(binaryString, trackName, dur){
-        if(trackName === undefined){
-            await synchronize();
-        }
+        await synchronize();
+        // if(trackName === undefined){
+            
+        // }
         const buffer = base64toArrayBuffer(binaryString.audio.src);
+        audioAPI.start();
         if(trackName === undefined){
             return audioAPI.playClip("backgroundTrack",buffer,audioAPI.getCurrentTime(), dur);
 
