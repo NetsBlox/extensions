@@ -1,6 +1,7 @@
 /**
  * The ctor for an object holding data taken from a MIDI signal.
  * 
+ * @constructor
  * @param {Int} command       The command for the signal.
  * @param {Int} note          The note being played.
  * @param {Int} velocity      The velocity of the note.

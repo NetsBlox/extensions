@@ -5,6 +5,9 @@ class MidiTrack {
     #midiLog;
     #renderedTrack;
 
+    /**
+     * @constructor
+     */
     constructor() {
         this.#midiLog = new Map();
         this.#startTime = 0;
@@ -12,30 +15,57 @@ class MidiTrack {
         this.#renderedTrack = null;
     }
 
+    /**
+     * Caculates the track duration.
+     * @returns The track duration.
+     */
     getTrackDuration() {
         return this.#endTime - this.#startTime;
     }
 
+    /**
+     * @returns A map containing midi messages recorded.
+     */
     getMidiLog() {
         return this.#midiLog;
     }
 
+    /**
+     * @returns An ArrayBuffer containing rendered audio.
+     */
     getRenderedTrack() {
         return this.#renderedTrack;
     }
 
+    /**
+     * Adds a note to the midi log.
+     * @param {MIDIMessage} midiMessage - The MIDI message being recorded.
+     * @param {Number} time - The time this message was recorded.
+     */
     addNote(midiMessage, time) {
         this.#midiLog.set((time - this.#startTime), midiMessage);
     }
 
+    /**
+     * Sets the start time.
+     * @param {Number} startTime - The time the recording starts.
+     */
     startRecord(startTime) {
         this.#startTime = startTime;
     }
 
+    /**
+     * Sets the end time.
+     * @param {Number} endTime - The time the recording stops.
+     */
     stopRecord(endTime) {
         this.#endTime = endTime;
     }
 
+    /**
+     * Converts the MIDI log into an audio file.
+     * @async
+     */
     async renderTrack() {
         console.log("Rendering Track...");
 
@@ -66,15 +96,9 @@ class MidiTrack {
         console.log("...Render Complete");
     }
 
-    playTrack() {
-        const audioCtx = new AudioContext();
-        const track = audioCtx.createBufferSource();
-        track.buffer = this.#renderedTrack;
-        track.connect(audioCtx.destination);
-        track.start();
-        console.log("track played");
-    }
-
+    /**
+     * Resets a track.
+     */
     clearTrack() {
         for (let [key, value] of this.#midiLog) {
             this.#midiLog.delete(key);

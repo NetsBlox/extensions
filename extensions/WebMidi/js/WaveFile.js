@@ -3,17 +3,29 @@ class WaveFile {
     #name;
     #midiTrack;
 
+    /**
+     * @constructor
+     * @param {String} name - The name of the track being converted.
+     * @param {MidiTrack} midiTrack - The MidiTrack being converted.
+     */
     constructor(name, midiTrack) {
         this.#name = name;
         this.#midiTrack = midiTrack;
     }
 
+    /**
+     * Getter method
+     * @returns the name of the track.
+     */
     getName() {
         return this.#name;
     }
 
-    // Convert an AudioBuffer to a Blob using WAVE representation
-    // Code taken from https://russellgood.com/how-to-convert-audiobuffer-to-audio-file/
+    /**
+     * Convert an AudioBuffer to a Blob using WAVE representation.
+     * Code taken from https://russellgood.com/how-to-convert-audiobuffer-to-audio-file/
+     * @returns an ArrayBuffer containing an audio file.
+     */
     writeFile() {
         const abuffer = this.#midiTrack;
         const len = abuffer.length;
@@ -56,10 +68,8 @@ class WaveFile {
             offset++                                     // next source sample
         }
 
-        console.log(view.buffer);
-
         // create Blob
-        return view.buffer
+        return view.buffer;
 
         function setUint16(data) {
             view.setUint16(pos, data, true);

@@ -1,10 +1,8 @@
 (function () {
 
-    let midiDevices = [];
-    let midiInstruments = [];
-    let midiTracks = new Map();
-    let recordStatus = false;
-    let hotTrack;
+    // Global variables and constants
+    let midiDevices = [], midiInstruments = [], midiTracks = new Map(), recordStatus = false,
+        hotTrack = null;
     const I32_MAX = 2147483647;
 
     function loadWebAudioAPI() {
@@ -33,6 +31,10 @@
         );
     }
 
+    /**
+     * Runs when ever a midi signal comes in.
+     * @param {MIDIMessageEvent} event - Object containing the detected MIDI event.
+     */
     function midiCallback(event) {
         const cmd = event.data[0];
         const note = event.data[1];
@@ -50,6 +52,10 @@
         }
     }
 
+    /**
+     * Connects a MIDI device to the WebAudioAPI
+     * @param {String} device - Name of the MIDI device being connected.
+     */
     function midiConnect(device) {
         if (device != "") {
             window.audioAPI.connectMidiDeviceToTrack('defaultTrack', device).then(() => {
@@ -59,12 +65,114 @@
         }
     }
 
+    /**
+     * Connects an instrument sample to the WebAudioAPI
+     * @param {String} instrument - Name of instrument being loaded.
+     */
     function changeInsturment(instrument) {
         window.audioAPI.start();
         window.audioAPI.updateInstrument('defaultTrack', instrument).then(() => {
             console.log('Instrument loading complete!');
         });
         window.instrumentName = instrument;
+    }
+
+    /**
+     * Creates a new MIDI track to record audio.
+     * @param {String} name - Name of track being created.
+     * @throws an error if the track alread exists.
+     */
+    function createTrack(name) {
+        if (!midiTracks.has(name)) {
+            console.log("Track created: " + name);
+            midiTracks.set(name, new MidiTrack());
+        } else {
+            throw Error('track already exists');
+        }
+    }
+
+    /**
+     * Play an audio track.
+     * @param {ArrayBuffer} renderedTrack - An ArrayBuffer holding an audio file.
+     */
+    function playTrack(renderedTrack) {
+        const audioCtx = new AudioContext();
+        const track = audioCtx.createBufferSource();
+        track.buffer = renderedTrack;
+        track.connect(audioCtx.destination);
+        track.start();
+        console.log("track played");
+    }
+
+    /**
+     * Starts recording incoming MIDI messages into a specified track.
+     * @param {Strig} name - Name of the track being recorded to.
+     * @throws an error if the track does not exist.
+     */
+    function startRecording(name) {
+        if (midiTracks.has(name)) {
+            console.log("Track armed: " + name);
+            hotTrack = midiTracks.get(name);
+            hotTrack.startRecord(window.audioAPI.getCurrentTime());
+            recordStatus = true;
+        } else {
+            throw Error('track not found');
+        }
+    }
+
+    /**
+     * Stops recording incoming MIDI messages.
+     * @param {String} name - Name of the track to stop recording to.
+     * @throws an error if the track does not exist.
+     */
+    function stopRecording(name) {
+        if (midiTracks.has(name)) {
+            console.log("Track disarmed: " + name);
+            recordStatus = false;
+            midiTracks.get(name).stopRecord(window.audioAPI.getCurrentTime());
+        } else {
+            throw Error('track not found');
+        }
+    }
+
+    /**
+     * Clears a MidiTrack.
+     * @param {String} name - Name of the track being cleared.
+     * @throws an error if the track does not exist.
+     */
+    function clearTrack(name) {
+        if (midiTracks.has(name)) {
+            midiTracks.get(name).clearTrack();
+        } else {
+            throw Error('track not found');
+        }
+    }
+
+    /**
+     * Creates an ArrayBuffer (audio file) from a MidiTrack.
+     * @async
+     * @param {String} name - The name of the MidiTrack being exported.
+     * @returns an ArrayBuffer containing a .wav file.
+     */
+    async function renderTrack(name) {
+        if (midiTracks.has(name)) {
+            await midiTracks.get(name).renderTrack();
+            const buffer = new WaveFile("NetsBlox", midiTracks.get(name).getRenderedTrack());
+            return buffer.writeFile();
+        } else {
+            throw Error('track not found');
+        }
+    }
+
+    /**
+     * Converts an ArrayBuffer into a .wav file.
+     * @param {ArrayBuffer} renderedTrack - An ArrayBuffer holding an audio file.
+     */
+    function exportTrack(renderedTrack) {
+        const wavLink = document.getElementById("wav-link");
+        const blob = new Blob([renderedTrack], { type: "audio/wav" });;
+        wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
+        wavLink.click();
     }
 
     class WebMidi extends Extension {
@@ -86,16 +194,16 @@
 
         getPalette() {
             const blocks = [
-                new Extension.Palette.Block("webMidiSetMidiDevice"),
-                new Extension.Palette.Block("webMidiSetInstrument"),
-                new Extension.Palette.Block("webMidiShowStaff"),
-                new Extension.Palette.Block("webMidiMidiTrack"),
-                new Extension.Palette.Block("webMidiPlayTrack"),
-                new Extension.Palette.Block("webMidiStartRecording"),
-                new Extension.Palette.Block("webMidiStopRecording"),
-                new Extension.Palette.Block("webMidiClearTrack"),
-                new Extension.Palette.Block("webMidiRenderTrack"),
-                new Extension.Palette.Block("webMidiExportAudio"),
+                new Extension.Palette.Block("setMidiDevice"),
+                new Extension.Palette.Block("setInstrument"),
+                new Extension.Palette.Block("showStaff"),
+                new Extension.Palette.Block("midiTrack"),
+                new Extension.Palette.Block("playTrack"),
+                new Extension.Palette.Block("startRecording"),
+                new Extension.Palette.Block("stopRecording"),
+                new Extension.Palette.Block("clearTrack"),
+                new Extension.Palette.Block("renderTrack"),
+                new Extension.Palette.Block("exportAudio"),
             ];
             return [
                 new Extension.PaletteCategory("music", blocks, SpriteMorph),
@@ -108,92 +216,37 @@
                 return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph);
             }
             return [
-                block('webMidiSetInstrument', 'command', 'music', 'Instrument %webMidiInstrument', 
-                [""], function (instrument) {
+                block('setInstrument', 'command', 'music', 'Instrument %webMidiInstrument', [""], function (instrument) {
                     changeInsturment(instrument);
                 }),
-                block('webMidiSetMidiDevice', 'command', 'music', 'Midi Device: %webMidiDevice', 
-                [""], function (device) {
+                block('setMidiDevice', 'command', 'music', 'Midi Device: %webMidiDevice', [""], function (device) {
                     midiConnect(device);
                 }),
-                block("webMidiShowStaff", "command", "music", "Show Staff", [null], function() {
+                block("showStaff", "command", "music", "Show Staff", [null], function() {
                     showDialog(window.externalVariables['webmidilog']);
                 }),
-                block("webMidiMidiTrack", "command", "music", "Create Track %s", [""], 
-                function(name) {
-                    if (!midiTracks.has(name)) {
-                        console.log("Track created: " + name);
-                        midiTracks.set(name, new MidiTrack());
-                    } else {
-                        throw Error('track already exists');
-                    }
+                block("midiTrack", "command", "music", "Create Track %s", [""], function(name) {
+                    createTrack(name);
                 }),
-                block("webMidiPlayTrack", "command", "music", "Play Track %s", 
-                [""], function(renderedTrack) {
-                    const audioCtx = new AudioContext();
-                    const track = audioCtx.createBufferSource();
-                    track.buffer = renderedTrack;
-                    track.connect(audioCtx.destination);
-                    track.start();
-                    console.log("track played");
+                block("playTrack", "command", "music", "Play Track %s",  [""], function(renderedTrack) {
+                    playTrack(renderedTrack);
                 }),
-                block("webMidiStartRecording", "command", "music", "Start Recording %s", [""],
-                function (name) {
-                    if (midiTracks.has(name)) {
-                        console.log("Track armed: " + name);
-                        hotTrack = midiTracks.get(name);
-                        hotTrack.startRecord(window.audioAPI.getCurrentTime());
-                        recordStatus = true;
-                    } else {
-                        throw Error('track not found');
-                    }
+                block("startRecording", "command", "music", "Start Recording %s", [""], function (name) {
+                    startRecording(name);
                 }),
-                block("webMidiStopRecording", "command", "music", "Stop Recording %s", [""],
-                function (name) {
-                    if (midiTracks.has(name)) {
-                        console.log("Track disarmed: " + name);
-                        recordStatus = false;
-                        midiTracks.get(name).stopRecord(window.audioAPI.getCurrentTime());
-                    } else {
-                        throw Error('track not found');
-                    }
+                block("stopRecording", "command", "music", "Stop Recording %s", [""], function (name) {
+                    stopRecording(name);
                 }),
-                block("webMidiClearTrack", "command", "music", "Clear Track %s", [""], 
-                function (name) {
-                    if (midiTracks.has(name)) {
-                        midiTracks.get(name).clearTrack();
-                    } else {
-                        throw Error('track not found');
-                    }
+                block("clearTrack", "command", "music", "Clear Track %s", [""], function (name) {
+                    clearTrack(name);
                 }),
-                block("webMidiRenderTrack", "reporter", "music", "Render Track %s", [""], 
-                function (name) {
-                    return this.runAsyncFn(
-                        async () => {
-                            if (midiTracks.has(name)) {
-                                console.log(midiTracks.get(name));
-                                await midiTracks.get(name).renderTrack();
-                                const buffer =
-                                    new WaveFile("Test", midiTracks.get(name).getRenderedTrack());
-                                return buffer.writeFile();
-                            } else {
-                                throw Error('track not found');
-                            }
-                        },
-                        { args: [], timeout: I32_MAX }
-                    );
-                }),  
-                block("webMidiExportAudio", "command", "music", "Export Track %s", [""], 
-                function (renderedTrack) {
-                    this.runAsyncFn(
-                        async () => {
-                            const wavLink = document.getElementById("wav-link");
-                            const blob = new Blob([renderedTrack], { type: "audio/wav" });;
-                            wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
-                            wavLink.click();
-                        },
-                        { args: [], timeout: I32_MAX }
-                    );
+                block("renderTrack", "reporter", "music", "Render Track %s", [""], function (name) {
+                    return this.runAsyncFn(async () => {
+                        return renderTrack(name);
+                    }, { args: [], timeout: I32_MAX });
+                }), 
+                block("exportAudio", "command", "music", "Export Track %s", [""], function (renderedTrack) {
+                    exportTrack(renderedTrack);
                 })
             ];
         }
@@ -218,12 +271,6 @@
                     null, // text
                     false, //numeric
                     identityMap(midiDevices),
-                    true, // readonly (no arbitrary text)
-                )),
-                new Extension.LabelPart('webMidiTrackName', () => new InputSlotMorph(
-                    null, // text
-                    false, //numeric
-                    identityMap(Object.keys(midiTracks)),
                     true, // readonly (no arbitrary text)
                 )),
             ];
