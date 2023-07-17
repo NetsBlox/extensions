@@ -113,7 +113,10 @@
         if (midiTracks.has(name)) {
             console.log("Track armed: " + name);
             hotTrack = midiTracks.get(name);
-            hotTrack.startRecord(window.audioAPI.getCurrentTime());
+            const startTime = window.audioAPI.getCurrentTime();
+            hotTrack.startRecord(startTime);
+            hotTrack.addNote(new MIDIMessage(144, 60, 60), startTime + 1);
+            hotTrack.addNote(new MIDIMessage(128, 60, 60), startTime + 3);
             recordStatus = true;
         } else {
             throw Error('track not found');
@@ -149,30 +152,31 @@
     }
 
     /**
-     * Creates an ArrayBuffer (audio file) from a MidiTrack.
-     * @async
-     * @param {String} name - The name of the MidiTrack being exported.
-     * @returns an ArrayBuffer containing a .wav file.
+     * Converts a midi track to a Snap! Sound.
+     * @asyn
+     * @param {String} name - The name of the midi track being rendered.
+     * @returns A Snap! Sound.
      */
     async function renderTrack(name) {
         if (midiTracks.has(name)) {
             await midiTracks.get(name).renderTrack();
-            const buffer = new WaveFile("NetsBlox", midiTracks.get(name).getRenderedTrack());
-            return buffer.writeFile();
+            const wav = new WaveFile("test", midiTracks.get(name).getRenderedTrack());
+            const blob = wav.writeFile();
+            const audio = new Audio(URL.createObjectURL(blob, { type: "audio/wav" }));
+            const sound = new Sound(audio, name);
+            console.log(sound);
+            return sound;
         } else {
             throw Error('track not found');
         }
     }
 
     /**
-     * Converts an ArrayBuffer into a .wav file.
-     * @param {ArrayBuffer} renderedTrack - An ArrayBuffer holding an audio file.
+     * Exports a Snap! Sound as a .wav file.
+     * @param {Sound} sound - the sound being exported.
      */
-    function exportTrack(renderedTrack) {
-        const wavLink = document.getElementById("wav-link");
-        const blob = new Blob([renderedTrack], { type: "audio/wav" });;
-        wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
-        wavLink.click();
+    function exportTrack(sound) {
+        // TODO 
     }
 
     class WebMidi extends Extension {
@@ -204,6 +208,7 @@
                 new Extension.Palette.Block("clearTrack"),
                 new Extension.Palette.Block("renderTrack"),
                 new Extension.Palette.Block("exportAudio"),
+                new Extension.Palette.Block("consoleLog"),
             ];
             return [
                 new Extension.PaletteCategory("music", blocks, SpriteMorph),
@@ -247,7 +252,10 @@
                 }), 
                 block("exportAudio", "command", "music", "Export Track %s", [""], function (renderedTrack) {
                     exportTrack(renderedTrack);
-                })
+                }),
+                block("consoleLog", "command", "music", "Console Log %s", [""], function (x) {
+                    console.log(x);
+                }),
             ];
         }
 
