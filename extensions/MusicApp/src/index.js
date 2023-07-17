@@ -8,7 +8,7 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
    audioAPI.start();
 
     function base64toArrayBuffer(base64){
-        var binaryString = atob(base64.replace("data:audio/mpeg;base64,", ""));
+        var binaryString = window.atob(base64.replace("data:audio/mpeg;base64,", ""));
         var bytes = new Uint8Array(binaryString.length);
         for (var i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i);
@@ -27,11 +27,7 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
     }
 
     async function playAudio(binaryString, trackName){
-        await synchronize();
-        // if(trackName === undefined){
-           
-        // }
-        
+        await synchronize();  
         const buffer = base64toArrayBuffer(binaryString.audio.src);
         audioAPI.start();
         if(trackName === undefined){
@@ -46,9 +42,6 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
 
     async function playAudioForDuration(binaryString, trackName, dur){
         await synchronize();
-        // if(trackName === undefined){
-            
-        // }
         const buffer = base64toArrayBuffer(binaryString.audio.src);
         audioAPI.start();
         if(trackName === undefined){
@@ -59,6 +52,13 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
             return audioAPI.playClip(trackName, buffer,audioAPI.getCurrentTime(),  dur);
         }
         
+    }
+    async function changePanning(trackName, level){
+        console.log(`WE GOT TO THE PANNING: here is the track name ${trackName}`);
+        const effectOptions = { "leftToRightRatio":level};
+        await audioAPI.updateTrackEffect(trackName,"Panning",effectOptions);
+
+
     }
     function createTrack(trackName){
         audioAPI.createTrack(trackName);
@@ -126,7 +126,7 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
                 new Extension.Palette.Block('masterVolume'),
                 new Extension.Palette.Block('trackVolume'),
                 new Extension.Palette.Block('setGlobalBPM'),
-                new Extension.Palette.Block('visualizeClip'),
+                new Extension.Palette.Block('setTrackPanning'),
             ];
             return [
                 new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -151,7 +151,7 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
                         const trackName = this.trackName;
                         const duration = await playAudioForDuration(audioBuffer, trackName, dur);
                         // console.log(`THIS IS WHAT I RECIEVED: ${duration}`);
-                        await wait(duration-.02);
+                        await wait(duration-Math.max(.02,0));
                     },{ args: [], timeout: I32_MAX });
                 }),
                 block('stopClips', 'command', 'music', 'stop all clips', [], function (){
@@ -180,8 +180,12 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
                 block('setGlobalBPM', 'command', 'music','set global BPM %n', ['120'], function (bpm){
                     beatsPerMinute(bpm);
                 }),
-                block('visualizeClip', 'reporter', 'music','visualizeClip %s', ['clip'], function (binaryString){
-                    window.externalVariables['musicAppDialog'].show();
+                block('setTrackPanning', 'command', 'music','set track panning %n', ['0.5'], function (level){
+                    this.runAsyncFn(async () =>{
+                        const trackName = this.trackName;
+                        await changePanning(trackName, level);
+                  
+                    },{ args: [], timeout: I32_MAX });
                 })
             ];
         }

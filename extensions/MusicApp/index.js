@@ -88,6 +88,21 @@
   };
 
   /**
+   * Object representing a mapping between an effect type and its unique internal code.
+   * @constant {Object.<string, number>}
+   */
+  const EffectType = {
+     Panning: 31, Volume: 41, Compression: 42, LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54
+  };
+  /*export const EffectType = {
+     Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
+     Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
+     Panning: 31, Equalization: 32,                                                   // Spectral Effects
+     Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
+     LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
+  };*/
+
+  /**
    * Module containing all MIDI constants and functionality available in the {@link WebAudioAPI} library.
    * 
    * @module Midi
@@ -135,6 +150,1298 @@
      return (midiData[2] & 0x7F) / 127.0;
   }
 
+  /** Class representing all base-level WebAudioAPI effects */
+  class EffectBase {
+
+     // Reference to the stored global AudioContext
+     /** @type {AudioContext} */
+     audioContext = null;
+
+     /**
+      * Called by a concrete effect instance to initialize the inherited {@link EffectBase} data
+      * structure.
+      * 
+      * @param {AudioContext} audioContext - Reference to the global browser {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
+      */
+     constructor(audioContext) {
+        this.audioContext = audioContext;
+     }
+
+     /**
+      * Loads the necessary data to implement the corresponding {@link Effect}, which can then be
+      * applied to an individual {@link Track} or to the aggregate output of all tracks.
+      */
+     async load() { return; }
+
+     /**
+      * Updates the parameters of the effect at the specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {Object} effectOptions - Effect-specific options (TODO)
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update(effectOptions, updateTime) { return false; }
+     // TODO: Verify correct options within each concrete update() function, Errors.mjs
+
+     /**
+      * Returns a reference to the {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
+      * to which all source {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNodes}
+      * should be connected in order to activate this {@link Effect}.
+      * 
+      * @returns {AudioNode} Reference to the first {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode} in the effect sequencing pipeline
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
+      */
+     getInputNode() { return undefined; }
+
+     /**
+      * Returns a reference to the {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
+      * from which all effect-modified output audio is produced.
+      * 
+      * @returns {AudioNode} Reference to the final {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode} in the effect sequencing pipeline
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
+      */
+     getOutputNode() { return undefined; }
+  }
+
+  /**
+   * Class representing a Band-Pass Filter effect.
+   * 
+   * A Band-Pass Filter is defined by a lower and upper cutoff frequency between which audio
+   * signals are allowed to pass, while all frequencies outside of this range are reduced or
+   * eliminated completely.
+   * 
+   * @extends EffectBase
+   */
+  class BandPassFilter extends EffectBase {
+
+     // Effect-specific private variables
+     /** @type {BiquadFilterNode} */
+     #filterNode;
+     /** @type {number} */
+     #lowerCutoffFrequency;
+     /** @type {number} */
+     #upperCutoffFrequency;
+
+     /**
+      * Constructs a new {@link BandPassFilter} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+        this.#filterNode = new BiquadFilterNode(audioContext, { type: 'bandpass' });
+        this.#lowerCutoffFrequency = 0.0;
+        this.#upperCutoffFrequency = 22050.0;
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [
+           { name: 'lowerCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 },
+           { name: 'upperCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 22050 }
+        ];
+     }
+
+     async load() {
+        this.#filterNode.frequency.value = 11025.0;
+        this.#filterNode.Q.value = 0.0001;
+     }
+
+     /**
+      * Updates the {@link BandPassFilter} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} lowerCutoffFrequency - Frequency below which audio content will be reduced
+      * @param {number} upperCutoffFrequency - Frequency above which audio content will be reduced
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({lowerCutoffFrequency, upperCutoffFrequency}, updateTime) {
+        const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        if (lowerCutoffFrequency != null)
+           this.#lowerCutoffFrequency = lowerCutoffFrequency;
+        if (upperCutoffFrequency != null)
+           this.#upperCutoffFrequency = upperCutoffFrequency;
+        const centerFrequency = this.#lowerCutoffFrequency + (0.5 * (this.#upperCutoffFrequency - this.#lowerCutoffFrequency));
+        this.#filterNode.frequency.setValueAtTime(centerFrequency, timeToUpdate);
+        this.#filterNode.Q.setValueAtTime(centerFrequency / (this.#upperCutoffFrequency - this.#lowerCutoffFrequency), timeToUpdate);
+        return true;
+     }
+
+     getInputNode() {
+        return this.#filterNode;
+     }
+
+     getOutputNode() {
+        return this.#filterNode;
+     }
+  }
+
+  /**
+   * Class representing a Band-Reject Filter effect.
+   * 
+   * A Band-Reject Filter is defined by a lower and upper cutoff frequency between which audio
+   * signals are reduced or eliminated completely, while all frequencies outside of this range are
+   * allowed to pass without alteration.
+   * 
+   * @extends EffectBase
+   */
+  class BandRejectFilter extends EffectBase {
+
+     // Effect-specific private variables
+     /** @type {BiquadFilterNode} */
+     #filterNode;
+     /** @type {number} */
+     #lowerCutoffFrequency;
+     /** @type {number} */
+     #upperCutoffFrequency;
+
+     /**
+      * Constructs a new {@link BandRejectFilter} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+        this.#filterNode = new BiquadFilterNode(audioContext, { type: 'notch' });
+        this.#lowerCutoffFrequency = 0.0;
+        this.#upperCutoffFrequency = 0.0;
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [
+           { name: 'lowerCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 },
+           { name: 'upperCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 }
+        ];
+     }
+
+     async load() {
+        this.#filterNode.frequency.value = 11025.0;
+        this.#filterNode.Q.value = 1000.0;
+     }
+
+     /**
+      * Updates the {@link BandRejectFilter} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} lowerCutoffFrequency - Frequency above which audio content will be reduced
+      * @param {number} upperCutoffFrequency - Frequency below which audio content will be reduced
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({lowerCutoffFrequency, upperCutoffFrequency}, updateTime) {
+        const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        if (lowerCutoffFrequency != null)
+           this.#lowerCutoffFrequency = lowerCutoffFrequency;
+        if (upperCutoffFrequency != null)
+           this.#upperCutoffFrequency = upperCutoffFrequency;
+        const centerFrequency = this.#lowerCutoffFrequency + (0.5 * (this.#upperCutoffFrequency - this.#lowerCutoffFrequency));
+        this.#filterNode.frequency.setValueAtTime(centerFrequency, timeToUpdate);
+        this.#filterNode.Q.setValueAtTime((this.#upperCutoffFrequency - this.#lowerCutoffFrequency) / centerFrequency, timeToUpdate);
+        return true;
+     }
+
+     getInputNode() {
+        return this.#filterNode;
+     }
+
+     getOutputNode() {
+        return this.#filterNode;
+     }
+  }
+
+  /**
+   * Class representing a Chorus effect.
+   * 
+   * A Chorus effect is an audio modulation effect that replicates an audio signal and modulates
+   * and delays the result, such that it comes directly after and alters the original signal's
+   * pitch. This effect is used to thicken the tone of an audio signal and create an epic feeling.
+   * 
+   * @extends EffectBase
+   */
+  class Chorus extends EffectBase {
+
+     /**
+      * Constructs a new {@link Chorus} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [];
+     }
+
+     async load() {
+        return;
+     }
+
+     /**
+      * Updates the {@link Chorus} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} rate - Frequency at which an oscillator modulates the delayed chorus signal
+      * @param {string} shape - Waveform shape used to modulate the delayed chorus signal
+      * @param {number} delayOffset - Number of seconds delay between the original signal and the chorus signal
+      * @param {number} variableFeedback - Percentage of processed signal to be fed back into the chorus circuit
+      * @param {number} intensity - Ratio of chorus-to-original sound as a percentage between [0.0, 1.0]
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime) {
+        return false;
+     }
+
+     getInputNode() {
+        return;
+     }
+
+     getOutputNode() {
+        return;
+     }
+  }
+
+  /**
+   * Class representing a Compression effect.
+   * 
+   * A Compression effect, also known as Dynamic Range Compression, alters an audio signal such
+   * that a steady volume is maintained throughout audio playback. This is achieved by amplifying
+   * quieter sounds and attenuating louder sounds to help create signal homogeneity.
+   * 
+   * @extends EffectBase
+   */
+  class Compression extends EffectBase {
+
+     // Effect-specific private variables
+     /** @type {DynamicsCompressorNode} */
+     #compressorNode;
+
+     /**
+      * Constructs a new {@link Compression} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+        this.#compressorNode = new DynamicsCompressorNode(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [
+           { name: 'threshold', type: 'number', validValues: [-100, 0], defaultValue: -24 },
+           { name: 'attack', type: 'number', validValues: [0, 1], defaultValue: 0.003 },
+           { name: 'release', type: 'number', validValues: [0, 1], defaultValue: 0.24 },
+           { name: 'intensityPercent', type: 'number', validValues: [0, 1], defaultValue: 0 }
+        ];
+     }
+
+     async load() {
+        this.#compressorNode.threshold.value = -24;
+        this.#compressorNode.attack.value = 0.003;
+        this.#compressorNode.release.value = 0.25;
+        this.#compressorNode.ratio.value = 1.0;
+     }
+
+     /**
+      * Updates the {@link Compression} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} threshold - Decibel loudness of the input signal above which the compressor kicks in between [-100.0, 0.0]
+      * @param {number} attack - Number of seconds required to reduce signal gain by 10 dB between [0.0, 1.0]
+      * @param {number} release - Number of seconds required to increase signal gain by 10 dB between [0.0, 1.0]
+      * @param {number} intensity - Amount of compression applied as a percentage between [0.0, 1.0]
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({threshold, attack, release, intensity}, updateTime) {
+        const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        if (threshold != null)
+           this.#compressorNode.threshold.setValueAtTime(threshold, timeToUpdate);
+        if (attack != null)
+           this.#compressorNode.attack.setValueAtTime(attack, timeToUpdate);
+        if (release != null)
+           this.#compressorNode.release.setValueAtTime(release, timeToUpdate);
+        if (intensity != null) {
+           const ratioValue = 1.0 + (intensity * 19.0);
+           this.#compressorNode.ratio.setValueAtTime(ratioValue, timeToUpdate);
+        }
+        return true;
+     }
+
+     getInputNode() {
+        return this.#compressorNode;
+     }
+
+     getOutputNode() {
+        return this.#compressorNode;
+     }
+  }
+
+  /**
+   * Class representing a Delay effect.
+   * 
+   * A Delay effect replicates an audio signal and plays back one or more possibly attenuated
+   * copies at a later, user-specified time.
+   * 
+   * @extends EffectBase
+   */
+  class Delay extends EffectBase {
+
+     // Effect-specific private variables
+     /** @type {DelayNode} */
+     #delayNode;
+
+     /**
+      * Constructs a new {@link Delay} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+        this.#delayNode = new DelayNode(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [];
+     }
+
+     async load() {
+        return;
+     }
+
+     /**
+      * Updates the {@link Delay} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} feedback - Number of echoes and the resonance between each echo
+      * @param {number} time - Number of seconds between the original signal and its echo
+      * @param {number} cutoffFrequencyLower - Frequency below which to block acoustic content
+      * @param {number} cutoffFrequencyUpper - Frequency above which to block acoustic content
+      * @param {number} intensity - Ratio of delayed-to-original sound as a percentage between [0.0, 1.0]
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({feedback, time, cutoffFrequencyLower, cutoffFrequencyUpper, intensity}, updateTime) {
+        return false;
+     }
+
+     getInputNode() {
+        return;
+     }
+
+     getOutputNode() {
+        return;
+     }
+  }
+
+  /**
+   * Class representing a Distortion effect.
+   * 
+   * A Distortion effect alters an audio waveform by adding a large amount of gain to the audio
+   * signal, normally to the point of clipping the signal. This creates a distorted, gritty feeling,
+   * most commonly used with electrical instruments.
+   * 
+   * @extends EffectBase
+   */
+  class Distortion extends EffectBase {
+
+     /**
+      * Constructs a new {@link Distortion} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [];
+     }
+
+     async load() {
+        return;
+     }
+
+     /**
+      * Updates the {@link Distortion} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} drive - Gain level for the distorted signal
+      * @param {boolean} tone - Whether to smooth distortion by adding tasty tone to it
+      * @param {number} intensity - Ratio of distorted-to-original sound as a percentage between [0.0, 1.0]
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({drive, tone, intensity}, updateTime) {
+        return false;
+     }
+
+     getInputNode() {
+        return;
+     }
+
+     getOutputNode() {
+        return;
+     }
+  }
+
+  /**
+   * Class representing an Echo effect.
+   * 
+   * An Echo effect represents more or more reflections of an original audio signal. It is similar
+   * to a Delay effect, except that echoes themselves can feed back into the audio processing loop,
+   * resulting in additional, decaying echoes.
+   * 
+   * @extends EffectBase
+   */
+  class Echo extends EffectBase {
+
+     /**
+      * Constructs a new {@link Echo} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [];
+     }
+
+     async load() {
+        return;
+     }
+
+     /**
+      * Updates the {@link Echo} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} feedback - Amount of reflection fed back into the original sound
+      * @param {number} intensity - Ratio of echoed-to-original sound as a percentage between [0.0, 1.0]
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({feedback, intensity}, updateTime) {
+        return false;
+     }
+
+     getInputNode() {
+        return;
+     }
+
+     getOutputNode() {
+        return;
+     }
+  }
+
+  /**
+   * Class representing an Equalization effect.
+   * 
+   * An Equalizer allows for the volume of an audio signal to be adjusted piecewise according to
+   * any number of discrete frequency ranges. Both the size and quantity of frequency ranges are
+   * user-definable.
+   * 
+   * @extends EffectBase
+   */
+  class Equalization extends EffectBase {
+
+     /**
+      * Constructs a new {@link Equalization} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [];
+     }
+
+     async load() {
+        return;
+     }
+
+     /**
+      * Updates the {@link Equalization} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number[]} frequencyBandUpperCutoffs - Upper frequency cutoffs for each band in the equalizer
+      * @param {number[]} frequencyBandVolumes - Volumes for each frequency band in the equalizer
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({frequencyBandUpperCutoffs, frequencyBandVolumes}, updateTime) {
+        return false;
+     }
+
+     getInputNode() {
+        return;
+     }
+
+     getOutputNode() {
+        return;
+     }
+  }
+
+  /**
+   * Class representing a Flanger effect.
+   * 
+   * A Flanger effect generates a delayed, modulated version of an original audio signal which gets
+   * played slightly out-of-phase and slower than the original.
+   * 
+   * @extends EffectBase
+   */
+  class Flanger extends EffectBase {
+
+     /**
+      * Constructs a new {@link Flanger} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [];
+     }
+
+     async load() {
+        return;
+     }
+
+     /**
+      * Updates the {@link Flanger} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} rate - Frequency at which an oscillator modulates the delayed flanger signal
+      * @param {string} shape - Waveform shape used to modulate the delayed flanger signal
+      * @param {number} delayOffset - Number of seconds of delay between the original signal and the flanger signal
+      * @param {number} variableFeedback - Percentage of processed signal to be fed back into the flanger circuit
+      * @param {number} intensity - Ratio of flangered-to-original sound as a percentage between [0.0, 1.0]
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime) {
+        return false;
+     }
+
+     getInputNode() {
+        return;
+     }
+
+     getOutputNode() {
+        return;
+     }
+  }
+
+  /**
+   * Class representing a High-Pass Filter effect.
+   * 
+   * A High-Pass Filter is defined by a cutoff frequency above which audio signals are allowed to
+   * pass and below which audio signals are reduced or eliminated completely.
+   * 
+   * @extends EffectBase
+   */
+  class HighPassFilter extends EffectBase {
+
+     // Effect-specific private variables
+     /** @type {BiquadFilterNode} */
+     #filterNode;
+
+     /**
+      * Constructs a new {@link HighPassFilter} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+        this.#filterNode = new BiquadFilterNode(audioContext, { type: 'highpass' });
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [
+           { name: 'cutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 },
+           { name: 'resonance', type: 'number', validValues: [0, 1000], defaultValue: 0 }
+        ];
+     }
+
+     async load() {
+        this.#filterNode.frequency.value = 0.0;
+        this.#filterNode.Q.value = 0.0001;
+     }
+
+     /**
+      * Updates the {@link HighPassFilter} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} cutoffFrequency - Frequency below which audio content will be reduced
+      * @param {number} resonance - Amount of frequency exaggeration around the cutoff as a value between [0.0, 1000.0]
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({cutoffFrequency, resonance}, updateTime) {
+        const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        if (cutoffFrequency != null)
+           this.#filterNode.frequency.setValueAtTime(cutoffFrequency, timeToUpdate);
+        if (resonance != null)
+           this.#filterNode.Q.setValueAtTime(Math.max(resonance, 0.0001), timeToUpdate);
+        return true;
+     }
+
+     getInputNode() {
+        return this.#filterNode;
+     }
+
+     getOutputNode() {
+        return this.#filterNode;
+     }
+  }
+
+  /**
+   * Class representing a Low-Pass Filter effect.
+   * 
+   * A Low-Pass Filter is defined by a cutoff frequency below which audio signals are allowed to
+   * pass and above which audio signals are reduced or eliminated completely.
+   * 
+   * @extends EffectBase
+   */
+  class LowPassFilter extends EffectBase {
+
+     // Effect-specific private variables
+     /** @type {BiquadFilterNode} */
+     #filterNode;
+
+     /**
+      * Constructs a new {@link LowPassFilter} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+        this.#filterNode = new BiquadFilterNode(audioContext, { type: 'lowpass' });
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [
+           { name: 'cutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 22050 },
+           { name: 'resonance', type: 'number', validValues: [0, 1000], defaultValue: 0 }
+        ];
+     }
+
+     async load() {
+        this.#filterNode.frequency.value = 22050.0;
+        this.#filterNode.Q.value = 0.0001;
+     }
+
+     /**
+      * Updates the {@link LowPassFilter} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} cutoffFrequency - Frequency above which audio content will be reduced
+      * @param {number} resonance - Amount of frequency exaggeration around the cutoff as a value between [0.0, 1000.0]
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({cutoffFrequency, resonance}, updateTime) {
+        const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        if (cutoffFrequency != null)
+           this.#filterNode.frequency.setValueAtTime(cutoffFrequency, timeToUpdate);
+        if (resonance != null)
+           this.#filterNode.Q.setValueAtTime(Math.max(resonance, 0.0001), timeToUpdate);
+        return true;
+     }
+
+     getInputNode() {
+        return this.#filterNode;
+     }
+
+     getOutputNode() {
+        return this.#filterNode;
+     }
+  }
+
+  /**
+   * Class representing a Panning effect.
+   * 
+   * A Panning effect distributes an audio signal across a stereo field by making it appear to
+   * originate from different places in the left-right audio spectrum, thereby creating more space
+   * and width.
+   * 
+   * @extends EffectBase
+   */
+  class Panning extends EffectBase {
+
+     // Effect-specific private variables
+     /** @type {StereoPannerNode} */
+     #panningNode;
+
+     /**
+      * Constructs a new {@link Panning} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+        this.#panningNode = new StereoPannerNode(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [
+           { name: 'leftToRightRatio', type: 'number', validValues: [0, 1], defaultValue: 0.5 }
+        ];
+     }
+
+     async load() {
+        this.#panningNode.pan.value = 0.0;
+     }
+
+     /* eslint no-empty-pattern: "off" */
+     /**
+      * Updates the {@link Panning} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} leftToRightRatio - Ratio of sound output from the left speaker to the right speaker as a percentage between [0.0, 1.0]
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({leftToRightRatio}, updateTime) {
+        const panningValue = 2.0 * (leftToRightRatio - 0.5);
+        this.#panningNode.pan.setValueAtTime(panningValue, updateTime == null ? this.audioContext.currentTime : updateTime);
+        return true;
+     }
+
+     getInputNode() {
+        return this.#panningNode;
+     }
+
+     getOutputNode() {
+        return this.#panningNode;
+     }
+  }
+
+  /**
+   * Class representing a Phaser effect.
+   * 
+   * A Phaser effect manipulates an audio signal by generating high-pass filters in the form of
+   * peaks in the frequency spectrum which are used to create cuts in the high-frequency ranges
+   * of the original audio signal and modulate them up and down throughout the audio. This effect
+   * is frequently used in funk music, and it adds character to individual notes to create a form
+   * of swirling movement in the audio.
+   * 
+   * @extends EffectBase
+   */
+  class Phaser extends EffectBase {
+
+     /**
+      * Constructs a new {@link Phaser} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [];
+     }
+
+     async load() {
+        return;
+     }
+
+     /**
+      * Updates the {@link Phaser} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} speed - Speed at which the cuts in the bandpass filters are modulated
+      * @param {number} feedback - Percentage of phased signal that will be fed back into the phased audio circuit
+      * @param {number} widthLower - Lowest frequency through which the bandpass filters will sweep
+      * @param {number} widthUpper - Highest frequency through which the bandpass filters will sweep
+      * @param {number} intensity - Ratio of phased-to-original sound as a percentage between [0.0, 1.0]
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({speed, feedback, widthLower, widthUpper, intensity}, updateTime) {
+        return false;
+     }
+
+     getInputNode() {
+        return;
+     }
+
+     getOutputNode() {
+        return;
+     }
+  }
+
+  /**
+   * Class representing a Reverb effect.
+   * 
+   * A Reverb effect represents a complex echo resulting from the absorption of sound by various
+   * surfaces in an environment, as well as from multiple echoes reflecting from hard surfaces
+   * many times and with differing amplitudes. This effect is useful for creating a sense of
+   * spaciousness and can help to unify multiple elements within a musical piece.
+   * 
+   * @extends EffectBase
+   */
+  class Reverb extends EffectBase {
+
+     /**
+      * Constructs a new {@link Reverb} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [];
+     }
+
+     async load() {
+        return;
+     }
+
+     /**
+      * Updates the {@link Reverb} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} preDelay - Number of seconds before the first reflection occurs
+      * @param {number} decay - Number of seconds before reflections start to decay
+      * @param {number} highCutoffFrequency - Frequency above which to block acoustic reverb content
+      * @param {number} lowCutoffFrequency - Frequency below which to block acoustic reverb content
+      * @param {number} intensity - Ratio of reverbed-to-original sound as a percentage between [0.0, 1.0]
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity}, updateTime) {
+        return false;
+     }
+
+     getInputNode() {
+        return;
+     }
+
+     getOutputNode() {
+        return;
+     }
+  }
+
+  /**
+   * Class representing a Tremolo effect.
+   * 
+   * A Tremolo effect modulates an audio signal to produce a wavering effect based on rapidly
+   * varying the amplitude of the signal. Acoustically, it is created by rapidly reiterating
+   * the same note over and over. Perceptually, it is similar to vibrato; however, vibrato is
+   * achieved by altering pitch, whereas tremolo is achieved by altering volume.
+   * 
+   * @extends EffectBase
+   */
+  class Tremolo extends EffectBase {
+
+     /**
+      * Constructs a new {@link Tremolo} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [];
+     }
+
+     async load() {
+        return;
+     }
+
+     /**
+      * Updates the {@link Tremolo} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} rate - Frequency at which an oscillator modulates the tremolo signal
+      * @param {number} depth - Amount of amplitude variation as a percentage between [0.0, 1.0]
+      * @param {boolean} sync - Whether to synchronize modulation speed with the tempo of the audio
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({rate, depth, sync}, updateTime) {
+        return false;
+     }
+
+     getInputNode() {
+        return;
+     }
+
+     getOutputNode() {
+        return;
+     }
+  }
+
+  /**
+   * Class representing a Vibrato effect.
+   * 
+   * A Vibrato effect modulates an audio signal to produce a wavering effect based on rapidly
+   * varying the pitch of the signal. Perceptually, it is similar to tremolo; however, tremolo is
+   * achieved by altering volume, whereas vibrato is achieved by altering pitch.
+   * 
+   * @extends EffectBase
+   */
+  class Vibrato extends EffectBase {
+
+     /**
+      * Constructs a new {@link Vibrato} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [];
+     }
+
+     async load() {
+        return;
+     }
+
+     /**
+      * Updates the {@link Vibrato} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} rate - Frequency at which an oscillator modulates the audio signal
+      * @param {number} depth - Amount of pitch variation as a percentage between [0.0, 1.0]
+      * @param {boolean} sync - Whether to synchronize modulation speed with the tempo of the audio
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({rate, depth, sync}, updateTime) {
+        return false;
+     }
+
+     getInputNode() {
+        return;
+     }
+
+     getOutputNode() {
+        return;
+     }
+  }
+
+  /**
+   * Class representing a Volume effect.
+   * 
+   * A Volume effect modulates the overall loudness of an audio signal.
+   * 
+   * @extends EffectBase
+   */
+  class Volume extends EffectBase {
+
+     // Effect-specific private variables
+     /** @type {GainNode} */
+     #volumeNode;
+
+     /**
+      * Constructs a new {@link Volume} effect object.
+      */
+     constructor(audioContext) {
+        super(audioContext);
+        this.#volumeNode = new GainNode(audioContext);
+     }
+
+     /**
+      * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+      * of the {@link EffectBase#update update()} function for this {@link Effect}.
+      * 
+      * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+      * @see {@link EffectParameter}
+      */
+     static getParameters() {
+        return [
+           { name: 'intensity', type: 'number', validValues: [0, 1], defaultValue: 1 }
+        ];
+     }
+
+     async load() {
+        this.#volumeNode.gain.value = 1.0;
+     }
+
+     /* eslint no-empty-pattern: "off" */
+     /**
+      * Updates the {@link Volume} effect according to the specified parameters at the
+      * specified time.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
+      * 
+      * @param {number} intensity - Intensity of the volume as a percentage between [0.0, 1.0]
+      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
+      */
+     async update({intensity}, updateTime) {
+        this.#volumeNode.gain.setValueAtTime(intensity, updateTime == null ? this.audioContext.currentTime : updateTime);
+        return true;
+     }
+
+     getInputNode() {
+        return this.#volumeNode;
+     }
+
+     getOutputNode() {
+        return this.#volumeNode;
+     }
+  }
+
+  /**
+   * Module containing functionality to apply and update {@link WebAudioAPI} effects.
+   * @module Effect
+   */
+
+
+  const EffectClasses = {
+     [EffectType.Reverb]: Reverb, [EffectType.Delay]: Delay, [EffectType.Echo]: Echo, [EffectType.Chorus]: Chorus,
+     [EffectType.Tremolo]: Tremolo, [EffectType.Vibrato]: Vibrato, [EffectType.Flanger]: Flanger, [EffectType.Phaser]: Phaser,
+     [EffectType.Panning]: Panning, [EffectType.Equalization]: Equalization, [EffectType.Volume]: Volume, [EffectType.Compression]: Compression,
+     [EffectType.Distortion]: Distortion, [EffectType.LowPassFilter]: LowPassFilter, [EffectType.HighPassFilter]: HighPassFilter,
+     [EffectType.BandPassFilter]: BandPassFilter, [EffectType.BandRejectFilter]: BandRejectFilter
+  };
+
+
+  /**
+   * Returns a list of effect-specific {@link EffectParameter EffectParameters} for manipulation
+   * in the corresponding {@link module:Constants.EffectType EffectType}.
+   * 
+   * Note that the `effectType` parameter must be the **numeric value** associated with a certain
+   * {@link module:Constants.EffectType EffectType}, not a string-based key.
+   * 
+   * @param {number} effectType - {@link module:Constants.EffectType EffectType} for which to return a parameter list
+   * @returns {EffectParameter[]} List of effect-specific parameters available for updating
+   * @see {@link module:Constants.EffectType EffectType}
+   * @see {@link EffectParameter}
+   */
+  function getEffectParameters(effectType) {
+     return EffectClasses[effectType].getParameters();
+  }
+
+
+  /**
+   * Loads a pre-defined {@link Effect} capable of being applied to an individual {@link Track} or
+   * to the aggregate output of all tracks.
+   * 
+   * @param {AudioContext} audioContext - Reference to the global browser {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
+   * @param {string} effectName - User-defined name to assign to the newly loaded effect
+   * @param {number} effectType - Numeric value corresponding to the desired {@link module:Constants.EffectType EffectType}
+   * @returns {Promise<Effect>} Newly created audio {@link Effect}
+   * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
+   * @see {@link module:Constants.EffectType EffectType}
+   * @see {@link Effect}
+   * @async
+   */
+  async function loadEffect(audioContext, effectName, effectType) {
+
+     // Load the requested concrete effect type
+     const effect = new EffectClasses[effectType](audioContext);
+     await effect.load();
+
+     // Returns an object containing functions and attributes within the public Effect namespace
+     return {
+        /**
+         * User-defined name of the {@link Effect}.
+         * @memberof Effect
+         * @instance
+         */
+        name: effectName,
+     
+        /**
+         * Numeric value corresponding to the {@link module:Constants.EffectType EffectType} of the {@link Effect}.
+         * @memberof Effect
+         * @instance
+         */
+        type: effectType,
+     
+        /**
+         * Reference to an {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
+         * to which all source {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNodes}
+         * should be connected.
+         * @memberof Effect
+         * @instance
+         */
+        input: effect.getInputNode(),
+     
+        /**
+         * Reference to an {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
+         * from which all effect-modified output audio is produced, and which should be connected to all
+         * destination {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNodes}.
+         * @memberof Effect
+         * @instance
+         */
+        output: effect.getOutputNode(),
+
+        /**
+         * List of effect-specific {@link EffectParameter EffectParameters} for manipulation in the
+         * `effectOptions` parameter of the {@link Effect#update update()} function.
+         * @memberof Effect
+         * @instance
+         */
+        parameters: EffectClasses[effectType].getParameters(),
+
+        /**
+         * Updates the parameters of the effect at the specified time.
+         * 
+         * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+         * changes to take effect.
+         * 
+         * @function
+         * @param {Object} effectOptions - Effect-specific options (TODO)
+         * @param {number} [updateTime] - Global API time at which to update the effect
+         * @returns {Promise<boolean>} Whether the effect update was successfully applied
+         * @memberof Effect
+         * @instance
+         * @async
+         */
+        update: effect.update.bind(effect)
+     };
+  }
+
   /**
    * Module containing functionality to create new {@link WebAudioAPI} tracks.
    * @module Track
@@ -158,9 +1465,9 @@
 
      // Track-local variable definitions
      let instrument = null, midiDevice = null;
-     const audioSources = [], asyncAudioSources = [], effects = {};
-     const audioSink = new GainNode(audioContext), volumeNode = new GainNode(audioContext);
-     audioSink.connect(volumeNode).connect(trackAudioSink);
+     const audioSources = [], asyncAudioSources = [], effects = [];
+     const audioSink = new GainNode(audioContext);
+     audioSink.connect(trackAudioSink);
 
      // Private internal Track functions
      function createAsyncNote(noteValue, sourceNode, volumeNode) {
@@ -209,68 +1516,87 @@
      }
 
      /**
-      * Updates the playback volume for the current track at the specified time.
+      * Applies a new track effect at the specified time.
       * 
-      * Note that the `updateTime` parameter can be omitted to immediately cause the level
-      * change to take effect.
+      * Calling this function affects the sequential ordering in which effects will be
+      * processed, with each new call appending the corresponding effect to the *end* of the
+      * processing sequence.
       * 
-      * @param {number} percent - Track volume percentage between [0.0, 1.0]
-      * @param {number} [updateTime] - Global API time at which to update the volume
+      * If an effect with the specified `effectName` has already been applied , then calling
+      * this function will simply re-order the effect to move it to the very end of the effect
+      * processing sequence, without changing its parameter values.
+      * 
+      * @param {string} effectName - User-defined name to associate with the track effect
+      * @param {number} effectType - Track {@link module:Constants.EffectType EffectType} to apply
+      * @see {@link module:Constants.EffectType EffectType}
       * @memberof Track
       * @instance
       */
-     function updateVolume(percent, updateTime) {
-        volumeNode.gain.setValueAtTime(percent, updateTime == null ? audioContext.currentTime : updateTime);
+     async function applyEffect(effectName, effectType) {
+        const existingEffect = await this.removeEffect(effectName);
+        const newEffect = existingEffect ? existingEffect : await loadEffect(audioContext, effectName, effectType);
+        newEffect.output.connect(trackAudioSink);
+        if (effects.length) {
+           const previousEffect = effects.slice(-1)[0];
+           previousEffect.output.disconnect();
+           previousEffect.output.connect(newEffect.input);
+        }
+        else {
+           audioSink.disconnect();
+           audioSink.connect(newEffect.input);
+        }
+        effects.push(newEffect);
      }
-     
+
      /**
-      * Updates the intensity of the effect for the current track at the specified time.
+      * Updates the parameters of a track effect at the specified time.
       * 
-      * Note that the `updateTime` parameter can be omitted to immediately cause the change
-      * to take effect.
+      * Calling this function will **not** affect the sequential processing order of any applied
+      * effects.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
       * 
       * @param {string} effectName - Name of the track effect to be updated
       * @param {Object} effectOptions - Effect-specific options (TODO)
-      * @param {number} percent - Intensity of the effect as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
       * @memberof Track
       * @instance
       */
-     function updateEffect(effectName, effectOptions, percent, updateTime) {
-        // TODO: Implement (add if non-existent, else update, if no trackName, then master, effectType = reverb, effectOptions = impulse url)
-        // effectOptions = null just updates percent
-        // percent = null removes effect
-        console.log(name, effectName, effectOptions, percent, updateTime);
+     async function updateEffect(effectName, effectOptions, updateTime) {
+        for (const effect of effects)
+           if (effect.name == effectName)
+              return await effect.update(effectOptions, updateTime);
+        return false;
      }
 
      /**
-      * Removes the specified effect from being utilized on the current track.
+      * Removes the specified track effect from being applied.
       * 
       * @param {string} effectName - Name of the track effect to be removed
+      * @returns {Effect|null} Existing effect or null
       * @memberof Track
       * @instance
       */
-     function removeEffectByName(effectName) {
-        if (effectName in effects) {
-           // TODO: Disconnect from effects graph
-           delete effects[effectName];
-        }
-     }
-
-     /**
-      * Removes the specified effect type from being utilized on the current track.
-      * 
-      * @param {EffectType} effectType - Type of track effect to be removed
-      * @memberof Track
-      * @instance
-      * @see {@link module:Constants.EffectType EffectType}
-      */
-     function removeEffectByType(effectType) {
-        for (const effectName in effects)
-           if (effects[effectName].type == effectType) {
-              // TODO: Disconnect from effects graph
-              delete effects[effectName];
+     async function removeEffect(effectName) {
+        let existingEffect = null;
+        for (const [index, effect] of effects.entries())
+           if (effect.name == effectName) {
+              existingEffect = effects.splice(index, 1)[0];
+              if (index == 0) {
+                 audioSink.disconnect();
+                 audioSink.connect(effects.length ? effects[0].input : trackAudioSink);
+              }
+              else {
+                 effects[index-1].output.disconnect();
+                 effects[index-1].output.connect((effects.length > index) ? effects[index].input : trackAudioSink);
+              }
+              existingEffect.input.disconnect();
+              existingEffect.output.disconnect();
+              break;
            }
+        return existingEffect;
      }
 
      /**
@@ -442,11 +1768,13 @@
       * @instance
       */
      function deleteTrack() {
+        disconnectFromMidiDevice();
         for (const source of audioSources)
            source.stop();
         for (const source of asyncAudioSources)
            source.sourceNode.stop();
-        volumeNode.disconnect();
+        for (const effect of effects)
+           effect.output.disconnect();
      }
 
      // Returns an object containing functions and attributes within the public Track namespace
@@ -457,8 +1785,8 @@
          * @instance
          */
         name,
-        updateInstrument, removeInstrument, updateVolume, updateEffect, removeEffectByName, removeEffectByType,
-        stopNoteAsync, playNoteAsync, playNote, playClip, playFile, connectToMidiDevice, disconnectFromMidiDevice, deleteTrack
+        updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync,
+        playNoteAsync, playNote, playClip, playFile, connectToMidiDevice, disconnectFromMidiDevice, deleteTrack
      };
   }
 
@@ -934,7 +2262,7 @@
    * @param {AudioContext} audioContext - Reference to the global browser {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
    * @param {string} name - Name of the instrument to load
    * @param {string|null} url - URL pointing to the instrument data to load or `null`
-   * @returns {Instrument} Newly loaded {@link Instrument}
+   * @returns {Promise<Instrument>} Newly loaded {@link Instrument}
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
    * @see {@link Instrument}
    * @async
@@ -1048,14 +2376,14 @@
    * @module Errors
    */
 
-  class MidiError extends Error {
+  class WebAudioMidiError extends Error {
      constructor(message) {
         super(message);
-        this.name = 'MidiError';
+        this.name = 'WebAudioMidiError';
      }
   }
 
-  var version = "0.1.0";
+  var version = "0.2.0";
 
   /**
    * Required function prototype to use when registering a MIDI device callback.
@@ -1076,6 +2404,16 @@
    * @property {number} measureLengthSeconds - Length (in seconds) of a measure
    */
 
+  /**
+   * Composite object type for holding a set of concrete {@link Effect} parameter details.
+   * 
+   * @typedef {Object} EffectParameter
+   * @property {string} name - Name of the effect parameter
+   * @property {string} type - Type of effect parameter value (either "string" or "number")
+   * @property {Array<string|number>} validValues - For "string" types, a listing of all valid values; for "number" types, the min/max values
+   * @property {string|number} defaultValue - Default effect value before any updates
+   */
+
   /** Contains all WebAudioAPI top-level functionality. */
   class WebAudioAPI {
 
@@ -1083,19 +2421,17 @@
      static #instance = null;
 
      // WebAudioAPI private variable definitions
-     #audioContext = new AudioContext(); #started = false; #masterVolume = 1.0;
-     #tracks = {}; #effects = {}; #effectListing = {}; #instrumentListing = {}; #loadedInstruments = {}; #midiCallbacks = {};
+     #audioContext = new AudioContext({ latencyHint: 'interactive', sampleRate: 44100 });
+     #started = false; #midiCallbacks = {}; #tracks = {}; #effects = []; #instrumentListing = {}; #loadedInstruments = {};
      #tempo = { measureLengthSeconds: (4 * 60.0 / 100.0), beatBase: 4, beatsPerMinute: 100, timeSignatureNumerator: 4, timeSignatureDenominator: 4 };
 
      // Required audio nodes
      /** @type {(null|MIDIAccess)} */
-     #midiDeviceAccess = null; 
+     #midiDeviceAccess = null;
      /** @type {DynamicsCompressorNode} */
      #compressorNode;
      /** @type {GainNode} */
      #sourceSinkNode;
-     /** @type {GainNode} */
-     #masterVolumeNode;
 
      /**
       * Returns a singleton instance of the WebAudioAPI interface.
@@ -1107,9 +2443,9 @@
         WebAudioAPI.#instance = this;
         
         // Generate and connect all required audio nodes
+        this.#sourceSinkNode = new GainNode(this.#audioContext);
         this.#compressorNode = new DynamicsCompressorNode(this.#audioContext);
-        this.#sourceSinkNode = new GainNode(this.#audioContext), this.#masterVolumeNode = new GainNode(this.#audioContext);
-        this.#sourceSinkNode.connect(this.#masterVolumeNode).connect(this.#compressorNode).connect(this.#audioContext.destination);
+        this.#sourceSinkNode.connect(this.#compressorNode).connect(this.#audioContext.destination);
      }
 
      /**
@@ -1162,6 +2498,42 @@
      }
 
      /**
+      * Returns a listing of all available effects in the {@link WebAudioAPI} library.
+      * 
+      * This function can be used to enumerate available effect options for displaying on a
+      * web page. Note, however, that the `effectType` parameter passed to either the
+      * {@link WebAudioAPI#applyMasterEffect applyMasterEffect()} or the
+      * {@link WebAudioAPI#applyTrackEffect applyTrackEffect()} function must be the
+      * **numeric value** associated with a certain {@link module:Constants.EffectType EffectType},
+      * not a string-based key.
+      * 
+      * @returns {Object.<string, number>} Listing of all available effect types in the {@link WebAudioAPI} library
+      * @see {@link module:Constants.EffectType EffectType}
+      */
+     getAvailableEffects() {
+        return EffectType;
+     }
+
+     /**
+      * Returns a list of effect-specific {@link EffectParameter EffectParameters} for manipulation
+      * in the `effectOptions` parameter of the {@link WebAudioAPI#updateMasterEffect updateMasterEffect()}
+      * or the {@link WebAudioAPI#updateTrackEffect updateTrackEffect()} function.
+      * 
+      * This function can be used to enumerate available effect parameters for displaying on a
+      * web page. Note, however, that the `effectType` parameter must be the **numeric value**
+      * associated with a certain {@link module:Constants.EffectType EffectType}, not a
+      * string-based key.
+      * 
+      * @param {number} effectType - {@link module:Constants.EffectType EffectType} for which to return a parameter list
+      * @returns {EffectParameter[]} List of effect-specific parameters available for updating
+      * @see {@link module:Constants.EffectType EffectType}
+      * @see {@link EffectParameter}
+      */
+     getAvailableEffectParameters(effectType) {
+        return getEffectParameters(effectType);
+     }
+
+     /**
       * Returns a listing of the available instruments located in the specified asset library.
       * 
       * Individual results from this function call can be passed directly to the
@@ -1187,26 +2559,6 @@
      }
 
      /**
-      * Returns a listing of the available effects located in the specified asset library.
-      * 
-      * @param {string} effectLibraryLocation - Absolute or relative URL pointing to a {@link WebAudioAPI} effects library
-      * @returns {Promise<string[]>} Listing of all available effect names
-      */
-     async getAvailableEffects(effectLibraryLocation) {
-        if (Object.keys(this.#effectListing).length === 0) {
-           const cleanLocation = effectLibraryLocation.replace(/\/$/, '');
-           const response = await fetch(cleanLocation + '/effectLibrary.json', {
-              headers: { 'Accept': 'application/json' }
-           });
-           const effectData = await response.json();
-           Object.keys(effectData).forEach(effectName => {
-              this.#effectListing[effectName] = cleanLocation + effectData[effectName];
-           });
-        }
-        return Object.keys(this.#effectListing);
-     }
-
-     /**
       * Returns a listing of the available MIDI devices connected to the client device.
       * 
       * Individual results from this function call can be passed directly to the
@@ -1223,7 +2575,7 @@
                  midiDevices.push(midiDevice.name);
            } catch (err) {
               this.#midiDeviceAccess = null;
-              throw MidiError('MIDI permissions are required in order to enumerate available MIDI devices!');
+              throw WebAudioMidiError('MIDI permissions are required in order to enumerate available MIDI devices!');
            }
         }
         return midiDevices;
@@ -1310,116 +2662,143 @@
      }
 
      /**
-      * Updates the master volume for all tracks at the specified time.
+      * Applies a new master effect to the aggregate output from all tracks at the specified time.
       * 
-      * Note that the `updateTime` parameter can be omitted to immediately cause the level
-      * change to take effect.
+      * Calling this function affects the sequential ordering in which master effects will be
+      * processed, with each new call appending the corresponding effect to the *end* of the
+      * processing sequence.
       * 
-      * @param {number} percent - Master volume percentage between [0.0, 1.0]
-      * @param {number} [updateTime] - Global API time at which to update the volume
+      * The parameters of the added effect will be set to their default values such that the result
+      * of adding the effect will not be audible. In order to manipulate and utilize this effect,
+      * use the {@link WebAudioAPI#updateMasterEffect updateMasterEffect()} function.
+      * 
+      * If a master effect with the specified `effectName` has already been applied, then calling
+      * this function will simply re-order the effect to move it to the very end of the effect
+      * processing sequence, without changing its parameter values.
+      * 
+      * @param {string} effectName - User-defined name to associate with the master effect
+      * @param {number} effectType - Master {@link module:Constants.EffectType EffectType} to apply
+      * @see {@link module:Constants.EffectType EffectType}
       */
-     updateMasterVolume(percent, updateTime) {
-        this.#masterVolume = percent;
-        this.#masterVolumeNode.gain.setValueAtTime(percent, updateTime == null ? this.#audioContext.currentTime : updateTime);
+     async applyMasterEffect(effectName, effectType) {
+        const existingEffect = await this.removeMasterEffect(effectName);
+        const newEffect = existingEffect ? existingEffect : await loadEffect(this.#audioContext, effectName, effectType);
+        newEffect.output.connect(this.#compressorNode);
+        if (this.#effects.length) {
+           const previousEffect = this.#effects.slice(-1)[0];
+           previousEffect.output.disconnect();
+           previousEffect.output.connect(newEffect.input);
+        }
+        else {
+           this.#sourceSinkNode.disconnect();
+           this.#sourceSinkNode.connect(newEffect.input);
+        }
+        this.#effects.push(newEffect);
      }
 
      /**
-      * Updates the volume for the specified track at the specified time.
+      * Applies a new effect to the specified track at the specified time.
       * 
-      * Note that the `updateTime` parameter can be omitted to immediately cause the level
-      * change to take effect.
+      * Calling this function affects the sequential ordering in which effects will be processed
+      * within the specified track, with each new call appending the corresponding effect to the
+      * *end* of the processing sequence.
       * 
-      * @param {string} trackName - Name of the track for which to update the volume
-      * @param {number} percent - Track volume percentage between [0.0, 1.0]
-      * @param {number} [updateTime] - Global API time at which to update the volume
+      * The parameters of the added effect will be set to their default values such that the result
+      * of adding the effect will not be audible. In order to manipulate and utilize this effect,
+      * use the {@link WebAudioAPI#updateTrackEffect updateTrackEffect()} function.
+      * 
+      * If an effect with the specified `effectName` has already been applied to the specified
+      * track, then calling this function will simply re-order the effect to move it to the very end
+      * of the effect processing sequence, without changing its parameter values.
+      * 
+      * @param {string} trackName - Name of the track on which to apply the effect
+      * @param {string} effectName - User-defined name to associate with the track effect
+      * @param {number} effectType - Track-specific {@link module:Constants.EffectType EffectType} to apply
+      * @see {@link module:Constants.EffectType EffectType}
       */
-     updateTrackVolume(trackName, percent, updateTime) {
+     async applyTrackEffect(trackName, effectName, effectType) {
         if (trackName in this.#tracks)
-           this.#tracks[trackName].updateVolume(percent, updateTime);
+           await this.#tracks[trackName].applyEffect(effectName, effectType);
      }
 
      /**
-      * Updates the intensity of the master effect for all tracks at the specified time.
+      * Updates the parameters of a master effect at the specified time.
       * 
-      * Note that the `updateTime` parameter can be omitted to immediately cause the change
-      * to take effect.
+      * Calling this function will **not** affect the sequential processing order of any applied
+      * effects.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
       * 
       * @param {string} effectName - Name of the master effect to be updated
       * @param {Object} effectOptions - Effect-specific options (TODO)
-      * @param {number} percent - Intensity of the effect as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async updateMasterEffect(effectName, effectOptions, percent, updateTime) {
-        // TODO: Implement (add if non-existent, else update, if no trackName, then master, effectType = reverb, effectOptions = impulse url)
-        // effectOptions = null just updates percent
-        // percent = null removes effect
-        console.log(effectName, effectOptions, percent, updateTime);
+     async updateMasterEffect(effectName, effectOptions, updateTime) {
+        // TODO: Verify percent within valid range, Errors.mjs
+        for (const effect of this.#effects)
+           if (effect.name == effectName)
+              return await effect.update(effectOptions, updateTime);
+        return false;
      }
 
      /**
-      * Updates the intensity of the effect for the specified track at the specified time.
+      * Updates the parameters of a track-specific effect at the specified time.
       * 
-      * Note that the `updateTime` parameter can be omitted to immediately cause the change
-      * to take effect.
+      * Calling this function will **not** affect the sequential processing order of any applied
+      * effects.
+      * 
+      * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+      * changes to take effect.
       * 
       * @param {string} trackName - Name of the track for which to update the effect
       * @param {string} effectName - Name of the track effect to be updated
       * @param {Object} effectOptions - Effect-specific options (TODO)
-      * @param {number} percent - Intensity of the effect as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async updateTrackEffect(trackName, effectName, effectOptions, percent, updateTime) {
-        if (trackName in this.#tracks)
-           this.#tracks[trackName].updateEffect(effectName, effectOptions, percent, updateTime);
+     async updateTrackEffect(trackName, effectName, effectOptions, updateTime) {
+        // TODO: Verify percent within valid range, Errors.mjs
+        return (trackName in this.#tracks) ? await this.#tracks[trackName].updateEffect(effectName, effectOptions, updateTime) : false;
      }
 
      /**
-      * Removes the specified master effect from being utilized.
+      * Removes the specified master effect from being applied.
       * 
       * @param {string} effectName - Name of the master effect to be removed
+      * @returns {Promise<Effect|null>} The effect that was removed, if any
+      * @see {@link Effect}
       */
-     async removeMasterEffectByName(effectName) {
-        if (effectName in this.#effects) {
-           // TODO: Disconnect from effects graph
-           delete this.#effects[effectName];
-        }
-     }
-
-     /**
-      * Removes the specified master effect type from being utilized.
-      * 
-      * @param {EffectType} effectType - Type of master effect to be removed
-      * @see {@link module:Constants.EffectType EffectType}
-      */
-     async removeMasterEffectByType(effectType) {
-        for (const effectName in this.#effects)
-           if (this.#effects[effectName].type == effectType) {
-              // TODO: Disconnect from effects graph
-              delete this.#effects[effectName];
+     async removeMasterEffect(effectName) {
+        let existingEffect = null;
+        for (const [index, effect] of this.#effects.entries())
+           if (effect.name == effectName) {
+              existingEffect = this.#effects.splice(index, 1)[0];
+              if (index == 0) {
+                 this.#sourceSinkNode.disconnect();
+                 this.#sourceSinkNode.connect(this.#effects.length ? this.#effects[0].input : this.#compressorNode);
+              }
+              else {
+                 this.#effects[index-1].output.disconnect();
+                 this.#effects[index-1].output.connect((this.#effects.length > index) ? this.#effects[index].input : this.#compressorNode);
+              }
+              existingEffect.input.disconnect();
+              existingEffect.output.disconnect();
+              break;
            }
+        return existingEffect;
      }
 
      /**
-      * Removes the specified effect from being utilized on the corresponding track.
+      * Removes the specified effect from being applid on the corresponding track.
       * 
       * @param {string} trackName - Name of the track from which to remove the effect
       * @param {string} effectName - Name of the track effect to be removed
       */
-     async removeTrackEffectByName(trackName, effectName) {
+     async removeTrackEffect(trackName, effectName) {
         if (trackName in this.#tracks)
-           this.#tracks[trackName].removeEffectByName(effectName);
-     }
-
-     /**
-      * Removes the specified effect type from being utilized on the corresponding track.
-      * 
-      * @param {string} trackName - Name of the track from which to remove the effect
-      * @param {EffectType} effectType - Type of track effect to be removed
-      * @see {@link module:Constants.EffectType EffectType}
-      */
-     async removeTrackEffectByType(trackName, effectType) {
-        if (trackName in this.#tracks)
-           this.#tracks[trackName].removeEffectByType(effectType);
+           await this.#tracks[trackName].removeEffect(effectName);
      }
 
      /**
@@ -1512,6 +2891,7 @@
       * @see {@link module:Constants.Duration Duration}
       */
      async playNote(trackName, note, startTime, duration, velocity=0.75) {
+        // TODO: Verify velocity within valid range, Errors.mjs
         return (trackName in this.#tracks) ? await this.#tracks[trackName].playNote(note, velocity, startTime, duration) : 0;
      }
 
@@ -1562,6 +2942,7 @@
       * @see {@link module:Constants.Note Note}
       */
      async startNote(trackName, note, velocity=0.75) {
+        // TODO: Verify velocity within valid range, Errors.mjs
         return (trackName in this.#tracks) ? await this.#tracks[trackName].playNoteAsync(note, velocity) : {};
      }
 
@@ -1583,7 +2964,6 @@
       */
      async start() {
         this.#started = true;
-        this.#masterVolumeNode.gain.setValueAtTime(this.#masterVolume, this.#audioContext.currentTime);
         await this.#audioContext.resume();
      }
    
@@ -1592,7 +2972,6 @@
       */
      stop() {
         this.#started = false;
-        this.#masterVolumeNode.gain.setTargetAtTime(0.0, this.#audioContext.currentTime, 0.03);
         setTimeout(async () => { if (!this.#started) await this.#audioContext.suspend(); }, 200);
      }
   }
@@ -1608,7 +2987,7 @@
      audioAPI.start();
 
       function base64toArrayBuffer(base64){
-          var binaryString = atob(base64.replace("data:audio/mpeg;base64,", ""));
+          var binaryString = window.atob(base64.replace("data:audio/mpeg;base64,", ""));
           var bytes = new Uint8Array(binaryString.length);
           for (var i = 0; i < binaryString.length; i++) {
               bytes[i] = binaryString.charCodeAt(i);
@@ -1627,11 +3006,7 @@
       }
 
       async function playAudio(binaryString, trackName){
-          await synchronize();
-          // if(trackName === undefined){
-             
-          // }
-          
+          await synchronize();  
           const buffer = base64toArrayBuffer(binaryString.audio.src);
           audioAPI.start();
           if(trackName === undefined){
@@ -1646,9 +3021,6 @@
 
       async function playAudioForDuration(binaryString, trackName, dur){
           await synchronize();
-          // if(trackName === undefined){
-              
-          // }
           const buffer = base64toArrayBuffer(binaryString.audio.src);
           audioAPI.start();
           if(trackName === undefined){
@@ -1659,6 +3031,13 @@
               return audioAPI.playClip(trackName, buffer,audioAPI.getCurrentTime(),  dur);
           }
           
+      }
+      async function changePanning(trackName, level){
+          console.log(`WE GOT TO THE PANNING: here is the track name ${trackName}`);
+          const effectOptions = { "leftToRightRatio":level};
+          await audioAPI.updateTrackEffect(trackName,"Panning",effectOptions);
+
+
       }
       function createTrack(trackName){
           audioAPI.createTrack(trackName);
@@ -1716,7 +3095,7 @@
                   new Extension.Palette.Block('masterVolume'),
                   new Extension.Palette.Block('trackVolume'),
                   new Extension.Palette.Block('setGlobalBPM'),
-                  new Extension.Palette.Block('visualizeClip'),
+                  new Extension.Palette.Block('setTrackPanning'),
               ];
               return [
                   new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -1741,7 +3120,7 @@
                           const trackName = this.trackName;
                           const duration = await playAudioForDuration(audioBuffer, trackName, dur);
                           // console.log(`THIS IS WHAT I RECIEVED: ${duration}`);
-                          await wait(duration-.02);
+                          await wait(duration-Math.max(.02,0));
                       },{ args: [], timeout: I32_MAX });
                   }),
                   block('stopClips', 'command', 'music', 'stop all clips', [], function (){
@@ -1770,8 +3149,12 @@
                   block('setGlobalBPM', 'command', 'music','set global BPM %n', ['120'], function (bpm){
                       beatsPerMinute(bpm);
                   }),
-                  block('visualizeClip', 'reporter', 'music','visualizeClip %s', ['clip'], function (binaryString){
-                      window.externalVariables['musicAppDialog'].show();
+                  block('setTrackPanning', 'command', 'music','set track panning %n', ['0.5'], function (level){
+                      this.runAsyncFn(async () =>{
+                          const trackName = this.trackName;
+                          await changePanning(trackName, level);
+                    
+                      },{ args: [], timeout: I32_MAX });
                   })
               ];
           }
