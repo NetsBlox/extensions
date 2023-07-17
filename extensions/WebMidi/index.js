@@ -208,7 +208,6 @@
                 new Extension.Palette.Block("clearTrack"),
                 new Extension.Palette.Block("renderTrack"),
                 new Extension.Palette.Block("exportAudio"),
-                new Extension.Palette.Block("consoleLog"),
             ];
             return [
                 new Extension.PaletteCategory("music", blocks, SpriteMorph),
@@ -230,7 +229,7 @@
                 block("showStaff", "command", "music", "Show Staff", [null], function() {
                     showDialog(window.externalVariables['webmidilog']);
                 }),
-                block("midiTrack", "command", "music", "Create Track %s", [""], function(name) {
+                block("midiTrack", "command", "music", "Create Midi Track %s", [""], function(name) {
                     createTrack(name);
                 }),
                 block("playTrack", "command", "music", "Play Track %s",  [""], function(renderedTrack) {
@@ -252,9 +251,6 @@
                 }), 
                 block("exportAudio", "command", "music", "Export Track %s", [""], function (renderedTrack) {
                     exportTrack(renderedTrack);
-                }),
-                block("consoleLog", "command", "music", "Console Log %s", [""], function (x) {
-                    console.log(x);
                 }),
             ];
         }
