@@ -160,12 +160,11 @@
     async function renderTrack(name) {
         if (midiTracks.has(name)) {
             await midiTracks.get(name).renderTrack();
-            const wav = new WaveFile("test", midiTracks.get(name).getRenderedTrack());
-            const blob = wav.writeFile();
+            const process = new Process();
+            const buffer = process.audioBufferToWav(midiTracks.get(name).getRenderedTrack());
+            const blob = new Blob([buffer], { type: "audio/wav" });
             const audio = new Audio(URL.createObjectURL(blob, { type: "audio/wav" }));
-            const sound = new Sound(audio, name);
-            console.log(sound);
-            return sound;
+            return new Sound(audio, name);
         } else {
             throw Error('track not found');
         }
@@ -176,7 +175,7 @@
      * @param {Sound} sound - the sound being exported.
      */
     function exportTrack(sound) {
-        // TODO 
+       // TODO
     }
 
     class WebMidi extends Extension {
@@ -208,6 +207,7 @@
                 new Extension.Palette.Block("clearTrack"),
                 new Extension.Palette.Block("renderTrack"),
                 new Extension.Palette.Block("exportAudio"),
+                new Extension.Palette.Block("consoleLog"),
             ];
             return [
                 new Extension.PaletteCategory("music", blocks, SpriteMorph),
@@ -244,13 +244,16 @@
                 block("clearTrack", "command", "music", "Clear Track %s", [""], function (name) {
                     clearTrack(name);
                 }),
-                block("renderTrack", "reporter", "music", "Render Track %s", [""], function (name) {
+                block("renderTrack", "reporter", "music", "Render Midi Track %s", [""], function (name) {
                     return this.runAsyncFn(async () => {
                         return renderTrack(name);
                     }, { args: [], timeout: I32_MAX });
                 }), 
-                block("exportAudio", "command", "music", "Export Track %s", [""], function (renderedTrack) {
-                    exportTrack(renderedTrack);
+                block("exportAudio", "command", "music", "Export Track %s", [""], function (sound) {
+                    exportTrack(sound);
+                }),
+                block("consoleLog", "command", "music", "Console Log %s", [""], function (x) {
+                    console.log(x);
                 }),
             ];
         }
@@ -294,7 +297,6 @@
         "http://localhost:8000/extensions/WebMidi/js/MIDIMessage.js",
         "http://localhost:8000/extensions/WebMidi/js/NoteVisualiser.js",
         "http://localhost:8000/extensions/WebMidi/js/MidiTrack.js",
-        "http://localhost:8000/extensions/WebMidi/js/WaveFile.js",
     ];
 
     for (let i = 0; i < files.length; i++) {
