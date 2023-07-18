@@ -54,9 +54,9 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
         
     }
     async function changePanning(trackName, level){
-        console.log(`WE GOT TO THE PANNING: here is the track name ${trackName}`);
-        const effectOptions = { "leftToRightRatio":level};
-        await audioAPI.updateTrackEffect(trackName,"Panning",effectOptions);
+        const effectOptions = { ["leftToRightRatio"]:Number(level)};
+        const execution = await audioAPI.updateTrackEffect(trackName,"Panning",effectOptions, 0);
+        console.log(`WE EXECUTED PANNING ${execution}`);
 
 
     }
