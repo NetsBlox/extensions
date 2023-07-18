@@ -92,19 +92,6 @@
     }
 
     /**
-     * Play an audio track.
-     * @param {ArrayBuffer} renderedTrack - An ArrayBuffer holding an audio file.
-     */
-    function playTrack(renderedTrack) {
-        const audioCtx = new AudioContext();
-        const track = audioCtx.createBufferSource();
-        track.buffer = renderedTrack;
-        track.connect(audioCtx.destination);
-        track.start();
-        console.log("track played");
-    }
-
-    /**
      * Starts recording incoming MIDI messages into a specified track.
      * @param {Strig} name - Name of the track being recorded to.
      * @throws an error if the track does not exist.
@@ -175,7 +162,11 @@
      * @param {Sound} sound - the sound being exported.
      */
     function exportTrack(sound) {
-       // TODO
+        console.log(sound.audio)
+        const wavLink = document.getElementById("wav-link");
+        const blob = new Blob(sound.audio, { type: "audio/wav" });;
+        wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
+        wavLink.click();
     }
 
     class WebMidi extends Extension {
@@ -201,7 +192,6 @@
                 new Extension.Palette.Block("setInstrument"),
                 new Extension.Palette.Block("showStaff"),
                 new Extension.Palette.Block("midiTrack"),
-                new Extension.Palette.Block("playTrack"),
                 new Extension.Palette.Block("startRecording"),
                 new Extension.Palette.Block("stopRecording"),
                 new Extension.Palette.Block("clearTrack"),
@@ -231,9 +221,6 @@
                 }),
                 block("midiTrack", "command", "music", "Create Midi Track %s", [""], function(name) {
                     createTrack(name);
-                }),
-                block("playTrack", "command", "music", "Play Track %s",  [""], function(renderedTrack) {
-                    playTrack(renderedTrack);
                 }),
                 block("startRecording", "command", "music", "Start Recording %s", [""], function (name) {
                     startRecording(name);
