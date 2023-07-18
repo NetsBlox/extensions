@@ -2,7 +2,7 @@
 
     // Global variables and constants
     let midiDevices = [], midiInstruments = [], midiTracks = new Map(), recordStatus = false,
-        hotTrack = null;
+        hotTrack = null, process = new Process();
     const I32_MAX = 2147483647;
 
     function loadWebAudioAPI() {
@@ -147,9 +147,8 @@
     async function renderTrack(name) {
         if (midiTracks.has(name)) {
             await midiTracks.get(name).renderTrack();
-            const process = new Process();
-            const buffer = process.audioBufferToWav(midiTracks.get(name).getRenderedTrack());
-            const blob = new Blob([buffer], { type: "audio/wav" });
+            const wav = process.audioBufferToWav(midiTracks.get(name).getRenderedTrack());
+            const blob = new Blob([wav], { type: "audio/wav" });
             const audio = new Audio(URL.createObjectURL(blob, { type: "audio/wav" }));
             return new Sound(audio, name);
         } else {
@@ -158,14 +157,53 @@
     }
 
     /**
+     * Writing in the AudioBuffer of a Snap! Sound.
+     * Inspired by Process.prototype.decodeSound in:
+     *     https://github.com/NetsBlox/Snap--Build-Your-Own-Blocks/blob/master/src/threads.js#L3252
+     * @param {Sound} sound 
+     */
+    async function decodeAudioData(sound) {
+        var base64, binaryString, len, bytes, i, arrayBuffer, audioCtx;
+        base64 = sound.audio.src.split(',')[1];
+        binaryString = window.atob(base64);
+        len = binaryString.length;
+        bytes = new Uint8Array(len);
+        for (i = 0; i < len; i += 1) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        arrayBuffer = bytes.buffer;
+        audioCtx = Note.prototype.getAudioContext();
+        sound.isDecoding = true;
+        await audioCtx.decodeAudioData(
+            arrayBuffer,
+            buffer => {
+                sound.audioBuffer = buffer;
+                sound.isDecoding = false;
+            },
+            err => {
+                sound.isDecoding = false;
+                this.handleError(err);
+            }
+        );
+    }
+
+    /**
      * Exports a Snap! Sound as a .wav file.
+     * @async
      * @param {Sound} sound - the sound being exported.
      */
-    function exportTrack(sound) {
-        console.log(sound.audio)
+    async function exportTrack(sound) {
         const wavLink = document.getElementById("wav-link");
-        const blob = new Blob(sound.audio, { type: "audio/wav" });;
-        wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
+        if (sound.audio.src.includes("data")) {
+            if (sound.audioBuffer == null) {
+                await decodeAudioData(sound);
+            }
+            const wav = process.audioBufferToWav(sound.audioBuffer);
+            const blob = new Blob([wav], { type: "audio/wav" });;
+            wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
+        } else {
+            wavLink.href = sound.audio.src;
+        }
         wavLink.click();
     }
 
@@ -182,7 +220,7 @@
 
         getCategories() {
             return [
-                new Extension.Category("music", new Color(195, 0, 204)),
+                new Extension.Category("music", new Color(215, 10, 10)),
             ];
         }
 
@@ -197,7 +235,6 @@
                 new Extension.Palette.Block("clearTrack"),
                 new Extension.Palette.Block("renderTrack"),
                 new Extension.Palette.Block("exportAudio"),
-                new Extension.Palette.Block("consoleLog"),
             ];
             return [
                 new Extension.PaletteCategory("music", blocks, SpriteMorph),
@@ -237,10 +274,9 @@
                     }, { args: [], timeout: I32_MAX });
                 }), 
                 block("exportAudio", "command", "music", "Export Track %s", [""], function (sound) {
-                    exportTrack(sound);
-                }),
-                block("consoleLog", "command", "music", "Console Log %s", [""], function (x) {
-                    console.log(x);
+                    this.runAsyncFn(async () => {
+                        exportTrack(sound);
+                    }, { args: [], timeout: I32_MAX });
                 }),
             ];
         }
