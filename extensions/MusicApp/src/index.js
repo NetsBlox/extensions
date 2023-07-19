@@ -1,3 +1,4 @@
+import e from "express";
 import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
 
 (function () {
@@ -53,13 +54,15 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
         }
         
     }
+
     async function changePanning(trackName, level){
         const effectOptions = { ["leftToRightRatio"]:Number(level)};
-        const execution = await audioAPI.updateTrackEffect(trackName,"Panning",effectOptions, 0);
+        console.log(`HERE THE EFFECT OPTIONS:`,effectOptions);
+        await audioAPI.applyTrackEffect(trackName,"Panning",31);
+        const execution = await audioAPI.updateTrackEffect(trackName,"Panning",effectOptions);
         console.log(`WE EXECUTED PANNING ${execution}`);
-
-
     }
+
     function createTrack(trackName){
         audioAPI.createTrack(trackName);
     }
