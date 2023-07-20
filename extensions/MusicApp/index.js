@@ -2985,6 +2985,7 @@
      let syncStart = 0;
      audioAPI.createTrack("backgroundTrack");
      audioAPI.start();
+     const availableEffects = audioAPI.getAvailableEffects();
 
       function base64toArrayBuffer(base64){
           var binaryString = window.atob(base64.replace("data:audio/mpeg;base64,", ""));
@@ -3033,12 +3034,21 @@
           
       }
 
-      async function changePanning(trackName, level){
+      async function setTrackPanning(trackName, level){
           const effectOptions = { ["leftToRightRatio"]:Number(level)};
-          console.log(`HERE THE EFFECT OPTIONS:`,effectOptions);
-          await audioAPI.applyTrackEffect(trackName,"Panning",31);
-          const execution = await audioAPI.updateTrackEffect(trackName,"Panning",effectOptions);
-          console.log(`WE EXECUTED PANNING ${execution}`);
+          await audioAPI.updateTrackEffect(trackName,"Panning",effectOptions);
+      }
+
+      async function applyTrackEffect(trackName, effectName){
+         await audioAPI.applyTrackEffect(trackName,effectName,availableEffects[effectName]);
+      }
+
+      async function setTrackEffect(trackName, effectName, level){
+          const effectType = availableEffects[effectName];
+          const parameters = audioAPI.getAvailableEffectParameters(effectType);
+          const effectOptions = {[Object.values(parameters).name] : level};
+          console.log(`HERE ARE THE PARAMETERS: `, effectOptions);
+          // await audioAPI.updateTrackEffect(trackName,effectName,effectOptions);
       }
 
       function createTrack(trackName){
@@ -3098,6 +3108,8 @@
                   new Extension.Palette.Block('trackVolume'),
                   new Extension.Palette.Block('setGlobalBPM'),
                   new Extension.Palette.Block('setTrackPanning'),
+                  new Extension.Palette.Block('applyTrackEffect'),
+                  new Extension.Palette.Block('setTrackEffect')
               ];
               return [
                   new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -3154,8 +3166,20 @@
                   block('setTrackPanning', 'command', 'music','set track panning %n', ['0.5'], function (level){
                       this.runAsyncFn(async () =>{
                           const trackName = this.trackName;
-                          await changePanning(trackName, level);
+                          await setTrackPanning(trackName, level);
                     
+                      },{ args: [], timeout: I32_MAX });
+                  }),
+                  block('applyTrackEffect', 'command', 'music','apply track %effects effect', [], function (effectName){
+                      this.runAsyncFn(async () =>{
+                          const trackName = this.trackName;
+                          await applyTrackEffect(trackName, effectName);
+                      },{ args: [], timeout: I32_MAX });
+                  }),
+                  block('setTrackEffect', 'command', 'music','set track %effects effect to %n', ['','0'], function (effectName, level){
+                      this.runAsyncFn(async () =>{
+                          const trackName = this.trackName;
+                          await setTrackEffect(trackName, effectName, level);
                       },{ args: [], timeout: I32_MAX });
                   })
               ];
@@ -3190,7 +3214,13 @@
                   ]),
                   false,
               )),
-          ]; 
+              new Extension.LabelPart('effects', () => new InputSlotMorph(
+                  null, //text
+                  false, //numeric
+                  identityMap(Object.keys(availableEffects)),
+                  false,
+              ))
+          ];           
       }
 
       }
