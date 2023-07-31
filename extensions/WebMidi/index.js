@@ -1,10 +1,14 @@
 (function () {
 
-    let midiDevices = [];
-    let midiInstruments = [];
-    let midiTracks = new Map();
-    let recordStatus = false;
-    let hotTrack;
+    /**
+     * Object representing a mapping between an encoding file type and its unique internal code.
+     * @constant {Object.<string, number>}
+     */
+    const EncodingType = {
+        WAV: 1
+    };
+
+    let midiDevices = [], midiInstruments = [];
     const I32_MAX = 2147483647;
 
     function loadWebAudioAPI() {
@@ -22,7 +26,7 @@
     }
 
     function fail() {
-        console.log("something went wrong");
+        console.log('something went wrong');
     }
 
     function getMidiInstruments() {
@@ -33,32 +37,23 @@
         );
     }
 
-    function midiCallback(event) {
-        const cmd = event.data[0];
-        const note = event.data[1];
-        const vel = event.data[2];
-        const message = new MIDIMessage(cmd, note, vel);
-
-        if (recordStatus) {
-            hotTrack.addNote(message, window.audioAPI.getCurrentTime());
-        }
-
-        if (cmd == 144) {
-            NoteVisualiser.createNote(message);
-        } else {
-            NoteVisualiser.removeNote(note);
-        }
-    }
-
+    /**
+     * Connects a MIDI device to the WebAudioAPI
+     * @param {String} device - Name of the MIDI device being connected.
+     */
     function midiConnect(device) {
         if (device != "") {
             window.audioAPI.connectMidiDeviceToTrack('defaultTrack', device).then(() => {
                 console.log('Connected to MIDI device!');
             });
-            window.audioAPI.registerMidiDeviceCallback(device, midiCallback);
+            // window.audioAPI.registerMidiDeviceCallback(device, midiCallback);
         }
     }
 
+    /**
+     * Connects an instrument sample to the WebAudioAPI
+     * @param {String} instrument - Name of instrument being loaded.
+     */
     function changeInsturment(instrument) {
         window.audioAPI.start();
         window.audioAPI.updateInstrument('defaultTrack', instrument).then(() => {
@@ -67,10 +62,35 @@
         window.instrumentName = instrument;
     }
 
+    /**
+     * Exports an AudioClip as an audio file.
+     * @async
+     * @param {AudioClip} clip - the clip being exported.
+     * @param {String} format - the format of the file being created.
+     */
+    async function exportClip(clip, format) {
+        const wavLink = document.getElementById("wav-link");
+        const blob = await clip.getEncodedData(EncodingType[format]);
+        wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
+        wavLink.click();
+    }
+
+    /**
+     * Converts an AudioClip k to a Snap! Sound.
+     * @asyn
+     * @param {AudioClip} clip - The clip being rendered.
+     * @returns A Snap! Sound.
+     */
+    async function clipToSnap(clip) {
+        const blob = clip.getEncodedData(EncodingType['WAV']);
+        const audio = new Audio(URL.createObjectURL(blob, { type: "audio/wav" }));
+        return new Sound(audio, 'netsblox-sound');
+    }
+
     class WebMidi extends Extension {
         
         constructor (ide) {
-            super("WebMidi");
+            super('WebMidi');
             this.ide = ide;
         }
 
@@ -80,26 +100,25 @@
 
         getCategories() {
             return [
-                new Extension.Category("music", new Color(195, 0, 204)),
+                new Extension.Category('music', new Color(215, 10, 10)),
             ];
         }
 
         getPalette() {
             const blocks = [
-                new Extension.Palette.Block("webMidiSetMidiDevice"),
-                new Extension.Palette.Block("webMidiSetInstrument"),
-                new Extension.Palette.Block("webMidiShowStaff"),
-                new Extension.Palette.Block("webMidiMidiTrack"),
-                new Extension.Palette.Block("webMidiPlayTrack"),
-                new Extension.Palette.Block("webMidiStartRecording"),
-                new Extension.Palette.Block("webMidiStopRecording"),
-                new Extension.Palette.Block("webMidiClearTrack"),
-                new Extension.Palette.Block("webMidiRenderTrack"),
-                new Extension.Palette.Block("webMidiExportAudio"),
+                new Extension.Palette.Block('setMidiDevice'),
+                new Extension.Palette.Block('setInstrument'),
+                new Extension.Palette.Block('startRecording'),
+                new Extension.Palette.Block('recordForDuration'),
+                new Extension.Palette.Block('stopRecording'),
+                new Extension.Palette.Block('playClip'),
+                new Extension.Palette.Block('playClipForDuration'),
+                new Extension.Palette.Block('exportAudio'),
+                new Extension.Palette.Block('convertToSnap'),
             ];
             return [
-                new Extension.PaletteCategory("music", blocks, SpriteMorph),
-                new Extension.PaletteCategory("music", blocks, StageMorph),
+                new Extension.PaletteCategory('music', blocks, SpriteMorph),
+                new Extension.PaletteCategory('music', blocks, StageMorph),
             ];
         }
 
@@ -108,94 +127,51 @@
                 return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph);
             }
             return [
-                block('webMidiSetInstrument', 'command', 'music', 'Instrument %webMidiInstrument', 
-                [""], function (instrument) {
-                    changeInsturment(instrument);
-                }),
-                block('webMidiSetMidiDevice', 'command', 'music', 'Midi Device: %webMidiDevice', 
-                [""], function (device) {
+                block('setMidiDevice', 'command', 'music', 'midi device: %webMidiDevice', [''], function(device) {
                     midiConnect(device);
                 }),
-                block("webMidiShowStaff", "command", "music", "Show Staff", [null], function() {
-                    showDialog(window.externalVariables['webmidilog']);
+                block('setInstrument', 'command', 'music', 'instrument %webMidiInstrument', [''], function(instrument) {
+                    changeInsturment(instrument);
                 }),
-                block("webMidiMidiTrack", "command", "music", "Create Track %s", [""], 
-                function(name) {
-                    if (!midiTracks.has(name)) {
-                        console.log("Track created: " + name);
-                        midiTracks.set(name, new MidiTrack());
-                    } else {
-                        throw Error('track already exists');
-                    }
-                }),
-                block("webMidiPlayTrack", "command", "music", "Play Track %s", 
-                [""], function(renderedTrack) {
-                    const audioCtx = new AudioContext();
-                    const track = audioCtx.createBufferSource();
-                    track.buffer = renderedTrack;
-                    track.connect(audioCtx.destination);
-                    track.start();
-                    console.log("track played");
-                }),
-                block("webMidiStartRecording", "command", "music", "Start Recording %s", [""],
-                function (name) {
-                    if (midiTracks.has(name)) {
-                        console.log("Track armed: " + name);
-                        hotTrack = midiTracks.get(name);
-                        hotTrack.startRecord(window.audioAPI.getCurrentTime());
-                        recordStatus = true;
-                    } else {
-                        throw Error('track not found');
-                    }
-                }),
-                block("webMidiStopRecording", "command", "music", "Stop Recording %s", [""],
-                function (name) {
-                    if (midiTracks.has(name)) {
-                        console.log("Track disarmed: " + name);
-                        recordStatus = false;
-                        midiTracks.get(name).stopRecord(window.audioAPI.getCurrentTime());
-                    } else {
-                        throw Error('track not found');
-                    }
-                }),
-                block("webMidiClearTrack", "command", "music", "Clear Track %s", [""], 
-                function (name) {
-                    if (midiTracks.has(name)) {
-                        midiTracks.get(name).clearTrack();
-                    } else {
-                        throw Error('track not found');
-                    }
-                }),
-                block("webMidiRenderTrack", "reporter", "music", "Render Track %s", [""], 
-                function (name) {
-                    return this.runAsyncFn(
-                        async () => {
-                            if (midiTracks.has(name)) {
-                                console.log(midiTracks.get(name));
-                                await midiTracks.get(name).renderTrack();
-                                const buffer =
-                                    new WaveFile("Test", midiTracks.get(name).getRenderedTrack());
-                                return buffer.writeFile();
-                            } else {
-                                throw Error('track not found');
-                            }
-                        },
-                        { args: [], timeout: I32_MAX }
+                block('startRecording', 'reporter', 'music', 'start recording', [], function() {
+                    return window.audioAPI.recordMidiClip(
+                        'defaultTrack', window.audioAPI.getCurrentTime()
                     );
-                }),  
-                block("webMidiExportAudio", "command", "music", "Export Track %s", [""], 
-                function (renderedTrack) {
-                    this.runAsyncFn(
-                        async () => {
-                            const wav = new WaveFile('NetsBlox', renderedTrack);
-                            const wavLink = document.getElementById("wav-link");
-                            const blob = wav.writeFile();
-                            wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
-                            wavLink.click();
-                        },
-                        { args: [], timeout: I32_MAX }
+                }),
+                block('recordForDuration', 'reporter', 'music', 'record for %n seconds', [0], function(time) {
+                    return window.audioAPI.recordMidiClip(
+                        'defaultTrack', window.audioAPI.getCurrentTime(), time
                     );
-                })
+                }),
+                block('stopRecording', 'command', 'music', 'stop recording %s', ['clip'], function(clip) {
+                    this.runAsyncFn(async () => {
+                        clip.finalize();
+                    }, { args: [], timeout: I32_MAX });
+                }),
+                block('playClip', 'command', 'music', 'play clip %s', ['clip'], function (clip) {
+                    this.runAsyncFn(async () => {
+                        window.audioAPI.playClip(
+                            'defaultTrack', clip, window.audioAPI.getCurrentTime()
+                        );
+                    }, { args: [], timeout: I32_MAX });
+                }),
+                block('playClipForDuration', 'command', 'music', 'play clip %s for %n seconds', ['clip', 0], function (clip, length) {
+                    this.runAsyncFn(async () => {
+                        window.audioAPI.playClip(
+                            'defaultTrack', clip, window.audioAPI.getCurrentTime(), length
+                        );
+                    }, { args: [], timeout: I32_MAX });
+                }),
+                block('exportAudio', 'command', 'music', 'export clip %s as %fileFormats', [''], function (clip, format) {
+                    this.runAsyncFn(async () => {
+                        exportClip(clip, format);
+                    }, { args: [], timeout: I32_MAX });
+                }),
+                block('convertToSnap', 'reporter', 'music', 'convert %s to Snap! Sound', [''], function (clip) {
+                    return this.runAsyncFn(async () => {
+                        return clipToSnap(clip);
+                    }, { args: [], timeout: I32_MAX });
+                }),
             ];
         }
 
@@ -221,62 +197,31 @@
                     identityMap(midiDevices),
                     true, // readonly (no arbitrary text)
                 )),
-                new Extension.LabelPart('webMidiTrackName', () => new InputSlotMorph(
+                new Extension.LabelPart('fileFormats', () => new InputSlotMorph(
                     null, // text
                     false, //numeric
-                    identityMap(Object.keys(midiTracks)),
+                    identityMap(['WAV']),
                     true, // readonly (no arbitrary text)
                 )),
             ];
         }
     }
 
+    // Web Audio API
     const script = document.createElement("script");
     script.type = "module";
     script.src = 'http://localhost:8000/extensions/WebMidi/js/webAudioAPI.js';
     document.body.appendChild(script);
     console.log("Added file: " + script.src);
-
-    const files = [
-        "https://cdn.jsdelivr.net/npm/vexflow@4.0.3/build/cjs/vexflow.js",
-        "http://localhost:8000/extensions/WebMidi/js/vex.js",
-        "http://localhost:8000/extensions/WebMidi/js/AudioStream.js",
-        "http://localhost:8000/extensions/WebMidi/js/MIDIMessage.js",
-        "http://localhost:8000/extensions/WebMidi/js/NoteVisualiser.js",
-        "http://localhost:8000/extensions/WebMidi/js/MidiTrack.js",
-        "http://localhost:8000/extensions/WebMidi/js/WaveFile.js",
-    ];
-
-    for (let i = 0; i < files.length; i++) {
-        const script = document.createElement("script");
-        script.type = "text/javascript";
-        script.src = files[i];
-        script.async = false;
-        document.body.appendChild(script);
-
-        console.log("Added file: " + files[i]);
-    }
-
-    var element = document.createElement('link');
-    element.setAttribute('rel', 'stylesheet');
-    element.setAttribute('type', 'text/css');
-    element.setAttribute('href', 'https://gsteinltu.github.io/PseudoMorphic/style.css');
-    document.head.appendChild(element);
-
-    var element = document.createElement('link');
-    element.setAttribute('rel', 'stylesheet');
-    element.setAttribute('type', 'text/css');
-    element.setAttribute('href', 'https://gb0808.github.io/MidiVisualiser/style.css');
-    document.head.appendChild(element);
-
+    
+    // Music Staff and file export
     var scriptElement = document.createElement('script');
-
     scriptElement.onload = () => {
         var element = createDialog('WebMidi');
-        element.querySelector('content').innerHTML = 
-        '<div id="output"></div>' +
-        '</div > ' + 
-        '<a id="wav-link" download="netsblox.wav" style="display: none;"></a>'; 
+        element.querySelector('content').innerHTML =
+            '<div id="output"></div>' +
+            '</div > ' +
+            '<a id="wav-link" download="netsblox.wav" style="display: none;"></a>';
         setupDialog(element);
         window.externalVariables['webmidilog'] = element;
     };
