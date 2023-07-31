@@ -111,11 +111,12 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
         constructor(ide) {
             super('MusicApp');
             this.ide = ide;
-            const oldStopAllActiveSounds = StageMorph.prototype.doStopAll;
-            StageMorph.prototype.doStopAll = function(){
-                oldStopAllActiveSounds();
+            const oldStopAllActiveSounds = StageMorph.prototype.runStopScripts;
+            StageMorph.prototype.runStopScripts = function(){
+                oldStopAllActiveSounds.call(this);
                 stopAudio();
             }
+
         }
 
         onOpenRole() {}
