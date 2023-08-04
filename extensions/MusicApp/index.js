@@ -2983,8 +2983,7 @@
      const audioAPI = new WebAudioAPI();
      const I32_MAX = 2147483647;
      let syncStart = 0;
-     let outsideIDE;
-     audioAPI.createTrack("backgroundTrack");
+     audioAPI.createTrack('default');
      audioAPI.start();
      const availableEffects = audioAPI.getAvailableEffects();
 
@@ -3011,37 +3010,25 @@
           await synchronize();  
           const buffer = base64toArrayBuffer(binaryString.audio.src);
           audioAPI.start();
-          if(trackName === undefined){
-              return audioAPI.playClip("backgroundTrack",buffer,audioAPI.getCurrentTime(),0);
-
-          }
-          else {
-              return audioAPI.playClip(trackName, buffer, audioAPI.getCurrentTime(),0);
-          }
-          
+          return audioAPI.playClip(trackName, buffer, audioAPI.getCurrentTime(),0);
       }
 
       async function playAudioForDuration(binaryString, trackName, dur){
           await synchronize();
           const buffer = base64toArrayBuffer(binaryString.audio.src);
           audioAPI.start();
-          if(trackName === undefined){
-              return audioAPI.playClip("backgroundTrack",buffer,audioAPI.getCurrentTime(), dur);
-
-          }
-          else {
-              return audioAPI.playClip(trackName, buffer,audioAPI.getCurrentTime(),  dur);
-          }
-          
+          return audioAPI.playClip(trackName, buffer,audioAPI.getCurrentTime(),  dur);
       }
 
       async function setTrackPanning(trackName, level){
           const effectOptions = { ["leftToRightRatio"]:Number(level)};
+          await audioAPI.applyTrackEffect(trackName,"Panning",availableEffects["Panning"]);
           await audioAPI.updateTrackEffect(trackName,"Panning",effectOptions);
       }
 
       async function applyTrackEffect(trackName, effectName){
-         await audioAPI.applyTrackEffect(trackName,effectName,availableEffects[effectName]);
+        await audioAPI.applyTrackEffect(trackName,effectName,availableEffects[effectName]);
+      
       }
 
       async function setTrackEffect(trackName, effectName, level){
@@ -3081,7 +3068,6 @@
           constructor(ide) {
               super('MusicApp');
               this.ide = ide;
-              outsideIDE = ide;
               const oldStopAllActiveSounds = StageMorph.prototype.runStopScripts;
               StageMorph.prototype.runStopScripts = function(){
                   oldStopAllActiveSounds.call(this);
@@ -3092,11 +3078,13 @@
 
 
           onOpenRole() {
-              console.log(this.ide.sprites);
+              for (var i =0; i <this.ide.sprites.contents.length; i++){
+                 createTrack(this.ide.sprites.contents[i].id);
+              }
           }
 
           onNewSprite(sprite){
-              console.log(sprite);
+              createTrack(sprite.id);
           }
 
           getMenu() { return {}; }
@@ -3112,8 +3100,6 @@
                   new Extension.Palette.Block('playAudioClip'),
                   new Extension.Palette.Block('playAudioClipforDuration'),
                   new Extension.Palette.Block('stopClips'),
-                  new Extension.Palette.Block('playbackControls'),
-                  new Extension.Palette.Block('track'),
                   new Extension.Palette.Block('masterVolume'),
                   new Extension.Palette.Block('trackVolume'),
                   new Extension.Palette.Block('setGlobalBPM'),
@@ -3134,8 +3120,7 @@
               return [
                   block('playAudioClip', 'command', 'music', 'play audio clip %s', ['clip'], function (audioBuffer){
                       this.runAsyncFn(async () =>{
-                          console.dir(this.receiver.id);
-                          const trackName = outsideIDE.currentSprite.nameth;
+                          const trackName = this.receiver.id;
                           createTrack(trackName);
                           const duration = await playAudio(audioBuffer, trackName);
                           await wait(duration-.02);
@@ -3143,7 +3128,7 @@
                   }),
                   block('playAudioClipforDuration', 'command', 'music', 'play audio clip for duration %n %s', ['1', 'clip'], function (dur,audioBuffer){
                       this.runAsyncFn(async () =>{
-                          const trackName = outsideIDE.currentSprite.name;
+                          const trackName = this.receiver.id;
                           createTrack(trackName);
                           const duration = await playAudioForDuration(audioBuffer, trackName, dur);
                           await wait(duration-Math.max(.02,0));
@@ -3153,20 +3138,11 @@
                       stopAudio();
                       this.doStopAll();
                   }),
-                  block('playbackControls', 'command', 'music', 'playback %s time sig. %bpmNotes BPM = %n', ['4/4', 'Quarter', '120'], function (audio){
-                      this.runAsyncFn(async () =>{
-                          playAudio(audio);
-                      },{ args: [], timeout: I32_MAX });
-                  }),
-                  block('track', 'command', 'music', 'track %s', ['Name'], function (trackName){
-                          createTrack(trackName);
-                          this.trackName = trackName;
-                  }),
                   block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (percent){
                       masterVolume(percent * 0.01);
                   }),
                   block('trackVolume', 'command', 'music', 'track volume %n %', ['50'], function (percent){
-                      const trackName = outsideIDE.currentSprite.name;
+                      const trackName = this.receiver.id;
                       trackVolume(trackName,percent* 0.01);
                   }),
                   block('setGlobalBPM', 'command', 'music','set global BPM %n', ['120'], function (bpm){
@@ -3174,20 +3150,20 @@
                   }),
                   block('setTrackPanning', 'command', 'music','set track panning %n', ['0.5'], function (level){
                       this.runAsyncFn(async () =>{
-                          const trackName = outsideIDE.currentSprite.name;
+                          const trackName = this.receiver.id;
                           await setTrackPanning(trackName, level);
                     
                       },{ args: [], timeout: I32_MAX });
                   }),
                   block('applyTrackEffect', 'command', 'music','apply track %effects effect', [], function (effectName){
                       this.runAsyncFn(async () =>{
-                          const trackName = outsideIDE.currentSprite.name;
+                          const trackName = this.receiver.id;
                           await applyTrackEffect(trackName, effectName);
                       },{ args: [], timeout: I32_MAX });
                   }),
                   block('setTrackEffect', 'command', 'music','set track %effects effect to %n', ['','0'], function (effectName, level){
                       this.runAsyncFn(async () =>{
-                          const trackName = outsideIDE.currentSprite.name;
+                          const trackName = this.receiver.id;
                           await setTrackEffect(trackName, effectName, level);
                       },{ args: [], timeout: I32_MAX });
                   })
