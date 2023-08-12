@@ -8,6 +8,37 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
    audioAPI.start();
    const availableEffects = audioAPI.getAvailableEffects();
 
+
+    /**
+     * Object representing a mapping between an effect type and its unique internal code.
+     * @constant {Object.<string, number>}
+     */
+    const EffectType = {
+        Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
+        Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
+        Panning: 31, Equalization: 32,                                                   // Spectral Effects
+        Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
+        LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
+    };
+
+    const EffectsPreset = {
+        'Under Water': ['LowPassFilter', {
+            ['cutoffFrequency']: 500,
+            ['resonance']: 12,
+        }],
+        'Telephone': ['HighPassFilter', {
+            ['cutoffFrequency'] : 1800,
+            ['resonance']: 10,
+        }],
+        'Cave': ['Echo', {
+            ['feedback'] : 0.5,
+            ['intensity'] : 0.4,
+        }],
+        'Fan Blade': ['Tremolo', {
+            ['tremeloFrequency'] : 18,
+        }],
+    }
+
     function base64toArrayBuffer(base64){
         var binaryString = window.atob(base64.replace("data:audio/mpeg;base64,", ""));
         var bytes = new Uint8Array(binaryString.length);
@@ -56,7 +87,7 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
         const effectType = availableEffects[effectName];
         const parameters = audioAPI.getAvailableEffectParameters(effectType);
         const effectOptions = {[Object.values(parameters).name] : level}
-        console.log(`HERE ARE THE PARAMETERS: `, effectOptions);
+        console.log(`HERE ARE THE PARAMETERS ${trackName}:`, effectOptions);
         // await audioAPI.updateTrackEffect(trackName,effectName,effectOptions);
     }
 
@@ -66,7 +97,7 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
 
     function stopAudio(){
         audioAPI.stop();
-        audioAPI.removeAllTracks();
+        audioAPI.clearAllTracks();
     }
 
     function masterVolume(percent){
@@ -77,6 +108,12 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
     }
     function  beatsPerMinute(bpm){
         return audioAPI.updateBeatsPerMinute(bpm);
+    }
+    async function addFxPreset(track, effect) {
+        const effectName = EffectsPreset[effect][0];
+        await audioAPI.applyTrackEffect(track, effectName, EffectType[effectName]);
+        const effectOptions = EffectsPreset[effect][1];
+        await audioAPI.updateTrackEffect(track, effectName, effectOptions);
     }
 
     function vizualize(binaryString){
@@ -122,7 +159,7 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
 
         getCategories() {
             return [
-                new Extension.Category('music', new Color(215, 10, 10)),
+                new Extension.Category('music', new Color(250, 51, 51)),
             ];
         }
 
@@ -136,7 +173,8 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
                 new Extension.Palette.Block('setGlobalBPM'),
                 new Extension.Palette.Block('setTrackPanning'),
                 new Extension.Palette.Block('applyTrackEffect'),
-                new Extension.Palette.Block('setTrackEffect')
+                new Extension.Palette.Block('setTrackEffect'),
+                new Extension.Palette.Block('presetEffect')
             ];
             return [
                 new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -152,7 +190,6 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
                 block('playAudioClip', 'command', 'music', 'play audio clip %s', ['clip'], function (audioBuffer){
                     this.runAsyncFn(async () =>{
                         const trackName = this.receiver.id;
-                        createTrack(trackName);
                         const duration = await playAudio(audioBuffer, trackName);
                         await wait(duration-.02);
                     },{ args: [], timeout: I32_MAX });
@@ -160,7 +197,6 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
                 block('playAudioClipforDuration', 'command', 'music', 'play audio clip for duration %n %s', ['1', 'clip'], function (dur,audioBuffer){
                     this.runAsyncFn(async () =>{
                         const trackName = this.receiver.id;
-                        createTrack(trackName);
                         const duration = await playAudioForDuration(audioBuffer, trackName, dur);
                         await wait(duration-Math.max(.02,0));
                     },{ args: [], timeout: I32_MAX });
@@ -197,7 +233,24 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
                         const trackName = this.receiver.id;
                         await setTrackEffect(trackName, effectName, level);
                     },{ args: [], timeout: I32_MAX });
-                })
+                }),
+                block('presetEffect', 'command', 'music', 'preset effects %fxPreset %onOff', ['', 'on'], function (effect, status) {
+                    const trackName = this.receiver.id;
+                    if (effect != '') {
+                        if (status == 'on') {
+                            this.runAsyncFn(async () => {
+                                await addFxPreset(trackName, effect);
+                            });
+                        } else {
+                            const effectName = EffectsPreset[effect][0];
+                            this.runAsyncFn(async () => {
+                                await window.audioAPI.removeTrackEffect(trackName, effectName)
+                            });
+                        }
+                    } else {
+                        throw Error('must select an effect');
+                    }         
+                }),
             ];
         }
         getLabelParts() { 
@@ -220,7 +273,7 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
                 unionMaps([
                     identityMap([ 'Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'Thirtysecondth']),
                 ]),
-                false,
+                true,
             )),
             new Extension.LabelPart('enabled', () => new InputSlotMorph(
                 null, //text
@@ -228,14 +281,26 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
                 unionMaps([
                     identityMap(['Enabled', 'Disabled']),
                 ]),
-                false,
+                true,
             )),
             new Extension.LabelPart('effects', () => new InputSlotMorph(
                 null, //text
                 false, //numeric
                 identityMap(Object.keys(availableEffects)),
-                false,
-            ))
+                true, //readonly (no arbitrary text)
+            )),
+            new Extension.LabelPart('fxPreset', () => new InputSlotMorph(
+                null, // text
+                false, //numeric
+                identityMap(['Under Water', 'Telephone', 'Cave', 'Fan Blade']),
+                true, // readonly (no arbitrary text)
+            )),
+            new Extension.LabelPart('onOff', () => new InputSlotMorph(
+                null, // text
+                false, //numeric
+                identityMap(['on', 'off']),
+                true, // readonly (no arbitrary text)
+            )),
         ];           
     }
 

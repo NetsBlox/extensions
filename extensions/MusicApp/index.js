@@ -92,15 +92,28 @@
    * @constant {Object.<string, number>}
    */
   const EffectType = {
-     Panning: 31, Volume: 41, Compression: 42, LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54
-  };
-  /*export const EffectType = {
      Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
      Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
      Panning: 31, Equalization: 32,                                                   // Spectral Effects
      Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
      LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
-  };*/
+  };
+
+  /**
+   * Object representing a mapping between an acoustic analysis type and its unique internal code.
+   * @constant {Object.<string, number>}
+   */
+  const AnalysisType = {
+     PowerSpectrum: 1, TotalPower: 2
+  };
+
+  /**
+   * Object representing a mapping between an encoding file type and its unique internal code.
+   * @constant {Object.<string, number>}
+   */
+  const EncodingType = {
+     WAV: 1
+  };
 
   /**
    * Module containing all MIDI constants and functionality available in the {@link WebAudioAPI} library.
@@ -150,7 +163,165 @@
      return (midiData[2] & 0x7F) / 127.0;
   }
 
-  /** Class representing all base-level WebAudioAPI effects */
+  /**
+   * Module containing all {@link WebAudioAPI} error functionality.
+   * 
+   * @module Errors
+   */
+
+  class WebAudioMidiError extends Error {
+     constructor(message) {
+        super(message);
+        this.name = 'WebAudioMidiError';
+     }
+  }
+
+  class WebAudioDeviceError extends Error {
+     constructor(message) {
+        super(message);
+        this.name = 'WebAudioDeviceError';
+     }
+  }
+
+  class WebAudioTargetError extends Error {
+     constructor(message) {
+        super(message);
+        this.name = 'WebAudioTargetError';
+     }
+  }
+
+  class WebAudioValueError extends Error {
+     constructor(message) {
+        super(message);
+        this.name = 'WebAudioValueError';
+     }
+  }
+
+  class WebAudioTrackError extends Error {
+     constructor(message) {
+        super(message);
+        this.name = 'WebAudioTrackError';
+     }
+  }
+
+  class WebAudioRecordingError extends Error {
+     constructor(message) {
+        super(message);
+        this.name = 'WebAudioRecordingError';
+     }
+  }
+
+  /** Class representing all built-in {@link WebAudioAPI} audio encoders */
+  class EncoderBase {
+
+     /**
+      * Called by a concrete encoder instance to initialize the inherited {@link EncoderBase} data
+      * structure.
+      */
+     constructor() { /* Empty constructor */ }
+
+     /**
+      * Encodes the corresponding audio buffer, and returns a
+      * {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly
+      * encoded data.
+      * 
+      * @param {AudioBuffer} audioData - {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer AudioBuffer} containing the data to encode
+      * @returns {Blob} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer AudioBuffer}
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+      */
+     encode(audioData) { return undefined; }
+  }
+
+  /**
+   * Class containing all WAV file encoding functionality.
+   * @extends EncoderBase
+   */
+  class WavFileEncoder extends EncoderBase {
+
+     /**
+      * Constructs a new {@link WavFileEncoder} object.
+      */
+     constructor() {
+        super();
+     }
+
+     encode(audioData) {
+        // Code taken from https://russellgood.com/how-to-convert-audiobuffer-to-audio-file/
+        const numChannels = audioData.numberOfChannels, length = audioData.length * numChannels * 2 + 44;
+        const buffer = new ArrayBuffer(length), channels = [];
+        const view = new DataView(buffer);
+        let offset = 0, pos = 0;
+
+        // Nested helper functions
+        function setUint16(data) {
+           view.setUint16(pos, data, true);
+           pos += 2;
+        }
+
+        function setUint32(data) {
+           view.setUint32(pos, data, true);
+           pos += 4;
+        }
+
+        // Write WAVE header
+        setUint32(0x46464952);                              // "RIFF"
+        setUint32(length - 8);                              // file length - 8
+        setUint32(0x45564157);                              // "WAVE"
+
+        setUint32(0x20746d66);                              // "fmt " chunk
+        setUint32(16);                                      // length = 16
+        setUint16(1);                                       // PCM (uncompressed)
+        setUint16(numChannels);
+        setUint32(audioData.sampleRate);
+        setUint32(audioData.sampleRate * 2 * numChannels);  // avg. bytes/sec
+        setUint16(numChannels * 2);                         // block-align
+        setUint16(16);                                      // 16-bit (hardcoded in this demo)
+
+        setUint32(0x61746164);                              // "data" - chunk
+        setUint32(length - pos - 4);                        // chunk length
+
+        // Write interleaved data
+        for (let i = 0; i < audioData.numberOfChannels; ++i)
+           channels.push(audioData.getChannelData(i));
+        while (pos < length) {
+           for (let i = 0; i < numChannels; ++i) {
+              let sample = Math.max(-1, Math.min(1, channels[i][offset]));          // clamp
+              sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;    // scale to 16-bit signed int
+              view.setInt16(pos, sample, true);                                     // write 16-bit sample
+              pos += 2;
+           }
+           ++offset;                                                                // next source sample
+        }
+        return new Blob([view.buffer], { type: 'audio/wav' });
+     }
+  }
+
+  /**
+   * Module containing functionality to create and utilize {@link WebAudioAPI} data encoders.
+   * @module Encoder
+   */
+
+
+  const EncoderClasses = {
+     [EncodingType.WAV]: WavFileEncoder,
+  };
+
+  /**
+   * Returns a concrete encoder implementation for the specified file type. The value passed
+   * to the `fileType` parameter must be the **numeric value** associated with a certain
+   * {@link module:Constants.EncodingType EncodingType}, not a string-based key.
+   * 
+   * @param {number} encodingType - Numeric value corresponding to the desired file {@link module:Constants.EncodingType EncodingType}
+   * @returns {EncoderBase} Concrete encoder implementation for the specified {@link module:Constants.EncodingType EncodingType}
+   * @see {@link module:Constants.EncodingType EncodingType}
+   * @see {@link EncoderBase}
+   */
+  function getEncoderFor(encodingType) {
+     return new EncoderClasses[encodingType]();
+  }
+
+  /** Class representing all base-level {@link WebAudioAPI} effects */
   class EffectBase {
 
      // Reference to the stored global AudioContext
@@ -180,12 +351,11 @@
       * Note that the `updateTime` parameter can be omitted to immediately cause the requested
       * changes to take effect.
       * 
-      * @param {Object} effectOptions - Effect-specific options (TODO)
+      * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
       * @param {number} [updateTime] - Global API time at which to update the effect
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
      async update(effectOptions, updateTime) { return false; }
-     // TODO: Verify correct options within each concrete update() function, Errors.mjs
 
      /**
       * Returns a reference to the {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
@@ -232,7 +402,7 @@
      constructor(audioContext) {
         super(audioContext);
         this.#filterNode = new BiquadFilterNode(audioContext, { type: 'bandpass' });
-        this.#lowerCutoffFrequency = 0.0;
+        this.#lowerCutoffFrequency = 1.0;
         this.#upperCutoffFrequency = 22050.0;
      }
 
@@ -245,8 +415,8 @@
       */
      static getParameters() {
         return [
-           { name: 'lowerCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 },
-           { name: 'upperCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 22050 }
+           { name: 'lowerCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 1 },
+           { name: 'upperCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 22050 }
         ];
      }
 
@@ -273,10 +443,16 @@
            this.#lowerCutoffFrequency = lowerCutoffFrequency;
         if (upperCutoffFrequency != null)
            this.#upperCutoffFrequency = upperCutoffFrequency;
-        const centerFrequency = this.#lowerCutoffFrequency + (0.5 * (this.#upperCutoffFrequency - this.#lowerCutoffFrequency));
+        const centerFrequency = this.#calcCenterFrequency();
         this.#filterNode.frequency.setValueAtTime(centerFrequency, timeToUpdate);
         this.#filterNode.Q.setValueAtTime(centerFrequency / (this.#upperCutoffFrequency - this.#lowerCutoffFrequency), timeToUpdate);
         return true;
+     }
+
+     #calcCenterFrequency() {
+        if (this.#upperCutoffFrequency / this.#lowerCutoffFrequency >= 1.1)
+           return Math.sqrt(this.#upperCutoffFrequency * this.#lowerCutoffFrequency);
+        return ((this.#upperCutoffFrequency + this.#lowerCutoffFrequency) / 2);
      }
 
      getInputNode() {
@@ -313,8 +489,8 @@
      constructor(audioContext) {
         super(audioContext);
         this.#filterNode = new BiquadFilterNode(audioContext, { type: 'notch' });
-        this.#lowerCutoffFrequency = 0.0;
-        this.#upperCutoffFrequency = 0.0;
+        this.#lowerCutoffFrequency = 1.0;
+        this.#upperCutoffFrequency = 1.0;
      }
 
      /**
@@ -326,8 +502,8 @@
       */
      static getParameters() {
         return [
-           { name: 'lowerCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 },
-           { name: 'upperCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 }
+           { name: 'lowerCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 1 },
+           { name: 'upperCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 1 }
         ];
      }
 
@@ -354,10 +530,16 @@
            this.#lowerCutoffFrequency = lowerCutoffFrequency;
         if (upperCutoffFrequency != null)
            this.#upperCutoffFrequency = upperCutoffFrequency;
-        const centerFrequency = this.#lowerCutoffFrequency + (0.5 * (this.#upperCutoffFrequency - this.#lowerCutoffFrequency));
+        const centerFrequency = this.#calcCenterFrequency();
         this.#filterNode.frequency.setValueAtTime(centerFrequency, timeToUpdate);
         this.#filterNode.Q.setValueAtTime((this.#upperCutoffFrequency - this.#lowerCutoffFrequency) / centerFrequency, timeToUpdate);
         return true;
+     }
+
+     #calcCenterFrequency() {
+        if (this.#upperCutoffFrequency / this.#lowerCutoffFrequency >= 1.1)
+           return Math.sqrt(this.#upperCutoffFrequency * this.#lowerCutoffFrequency);
+        return ((this.#upperCutoffFrequency + this.#lowerCutoffFrequency) / 2);
      }
 
      getInputNode() {
@@ -395,7 +577,13 @@
       * @see {@link EffectParameter}
       */
      static getParameters() {
-        return [];
+        return [
+           { name: 'rate', type: 'number', validValues: [0, 2], defaultValue: 0 },
+           { name: 'shape', type: 'string', validValues: ["sine", "triangle"], defaultValue: "sine" },
+           { name: 'delayOffset', type: 'number', validValues: [0, 0.05], defaultValue: 0 },
+           { name: 'variableFeedback', type: 'number', validValues: [0, 1], defaultValue: 0 },
+           { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
+        ];
      }
 
      async load() {
@@ -649,11 +837,36 @@
    */
   class Echo extends EffectBase {
 
+     /** @type {DelayNode} */
+     #delay;
+     /** @type {GainNode} */
+     #gain;
+     /** @type {GainNode} */
+     #destination
+
+     #echo = {
+        feedback: 0.2,
+        intensity: 0.2,
+        maxDuration: 1,
+     }
+
      /**
       * Constructs a new {@link Echo} effect object.
       */
      constructor(audioContext) {
         super(audioContext);
+
+        this.#delay = new DelayNode(audioContext);
+        this.#delay.delayTime.value = this.#echo.feedback * this.#echo.maxDuration;
+
+        this.#gain = new GainNode(audioContext);
+        this.#gain.gain.value = this.#echo.intensity;
+
+        this.#destination = new GainNode(audioContext);
+        this.#destination.gain.value = 1;
+
+        this.#gain.connect(this.#delay);
+        this.#delay.connect(this.#gain).connect(this.#destination);
      }
 
      /**
@@ -664,7 +877,10 @@
       * @see {@link EffectParameter}
       */
      static getParameters() {
-        return [];
+        return [
+           { name: 'feedback', type: 'number', validValues: [0, 1], defaultValue: 0.2 },
+           { name: 'intensity', type: 'number', validValues: [0, 1], defaultValue: 0.2 },
+        ];
      }
 
      async load() {
@@ -684,15 +900,23 @@
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
      async update({feedback, intensity}, updateTime) {
-        return false;
+        if (feedback != null) {
+           this.#echo.feedback = feedback;
+           this.#delay.delayTime.value = this.#echo.feedback * this.#echo.maxDuration;
+        }
+        if (intensity != null) {
+           this.#echo.intensity = intensity;
+           this.#gain.gain.value = this.#echo.intensity;
+        }
+        return true;
      }
 
      getInputNode() {
-        return;
+        return this.#delay;
      }
 
      getOutputNode() {
-        return;
+        return this.#destination;
      }
   }
 
@@ -764,11 +988,44 @@
    */
   class Flanger extends EffectBase {
 
+     /** @type {GainNode} */
+     #destination
+     /** @type {GainNode} */
+     #dry
+     /** @type {GainNode} */
+     #wet
+     /** @type {DelayNode} */
+     #delayNode;
+     /** @type {OscillatorNode} */
+     #lfo;
+     /** @type {GainNode} */
+     #feedback
+
      /**
       * Constructs a new {@link Flanger} effect object.
       */
      constructor(audioContext) {
         super(audioContext);
+        this.#destination = new GainNode(audioContext);
+        this.#dry = new GainNode(audioContext);
+        this.#wet = new GainNode(audioContext);
+        this.#delayNode = new DelayNode(audioContext);
+        this.#lfo = new OscillatorNode(audioContext, { frequency: 0 });
+        this.#feedback = new GainNode(audioContext);
+
+        this.#dry.gain.value = 1;
+        this.#wet.gain.value = 0.2;
+        this.#feedback.gain.value = 0;
+        this.#delayNode.delayTime.value = 0;
+        this.#lfo.type = "sine";
+        this.#lfo.start();
+
+        this.#dry.connect(this.#wet);
+        this.#dry.connect(this.#destination);
+        this.#wet.connect(this.#delayNode).connect(this.#destination);
+        this.#delayNode.connect(this.#feedback);
+        this.#lfo.connect(this.#delayNode);
+        this.#feedback.connect(this.#wet);
      }
 
      /**
@@ -779,7 +1036,13 @@
       * @see {@link EffectParameter}
       */
      static getParameters() {
-        return [];
+        return [
+           { name: 'rate', type: 'number', validValues: [0, 2], defaultValue: 0 },
+           { name: 'shape', type: 'string', validValues: ["sine", "triangle"], defaultValue: "sine" },
+           { name: 'delayOffset', type: 'number', validValues: [0, 0.015], defaultValue: 0 },
+           { name: 'variableFeedback', type: 'number', validValues: [0, 1], defaultValue: 0 },
+           { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
+        ];
      }
 
      async load() {
@@ -802,15 +1065,25 @@
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
      async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime) {
+        if (rate != null)
+           this.#lfo.frequency.value = rate; 
+        if (shape != null) 
+           this.#lfo.type = shape == 0 ? "sine" : "triangle";
+        if (delayOffset != null)
+           this.#delayNode.delayTime.value = delayOffset * 1;
+        if (variableFeedback != null)
+           this.#feedback.gain.value = variableFeedback;
+        if (intensity != null)
+           this.#wet.gain.value = intensity;
         return false;
      }
 
      getInputNode() {
-        return;
+        return this.#dry;
      }
 
      getOutputNode() {
-        return;
+        return this.#destination;
      }
   }
 
@@ -1009,6 +1282,8 @@
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
      async update({leftToRightRatio}, updateTime) {
+        if (leftToRightRatio == null)
+           throw new WebAudioValueError('Cannot update the Panning effect without at least one of the following parameters: "leftToRightRatio"');
         const panningValue = 2.0 * (leftToRightRatio - 0.5);
         this.#panningNode.pan.setValueAtTime(panningValue, updateTime == null ? this.audioContext.currentTime : updateTime);
         return true;
@@ -1160,11 +1435,21 @@
    */
   class Tremolo extends EffectBase {
 
+     /** @type {OscillatorNode} */
+     #lfo;
+     /** @type {GainNode} */
+     #gain;
+
      /**
       * Constructs a new {@link Tremolo} effect object.
       */
      constructor(audioContext) {
         super(audioContext);
+        this.#lfo = audioContext.createOscillator();
+        this.#gain = audioContext.createGain();
+        this.#lfo.frequency.value = 0;
+        this.#lfo.connect(this.#gain.gain);
+        this.#lfo.start();
      }
 
      /**
@@ -1175,7 +1460,9 @@
       * @see {@link EffectParameter}
       */
      static getParameters() {
-        return [];
+        return [
+           { name: 'tremeloFrequency', type: 'number', validValues: [0, 20], defaultValue: 0 },
+        ];
      }
 
      async load() {
@@ -1189,22 +1476,23 @@
       * Note that the `updateTime` parameter can be omitted to immediately cause the requested
       * changes to take effect.
       * 
-      * @param {number} rate - Frequency at which an oscillator modulates the tremolo signal
-      * @param {number} depth - Amount of amplitude variation as a percentage between [0.0, 1.0]
-      * @param {boolean} sync - Whether to synchronize modulation speed with the tempo of the audio
+      * @param {number} tremeloFrequency - Frequency at which an oscillator modulates the tremolo signal
       * @param {number} [updateTime] - Global API time at which to update the effect
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({rate, depth, sync}, updateTime) {
-        return false;
+     async update({ tremeloFrequency }, updateTime) {
+        (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        if (tremeloFrequency != null) 
+           this.#lfo.frequency.value = tremeloFrequency;
+        return true;
      }
 
      getInputNode() {
-        return;
+        return this.#gain;
      }
 
      getOutputNode() {
-        return;
+        return this.#gain;
      }
   }
 
@@ -1219,11 +1507,23 @@
    */
   class Vibrato extends EffectBase {
 
+     /** @type {DelayNode} */
+     #delay;
+     /** @type {OscillatorNode} */
+     #lfo;
+     /** @type {GainNode} */
+     #gain;
+
      /**
       * Constructs a new {@link Vibrato} effect object.
       */
      constructor(audioContext) {
         super(audioContext);
+        this.#delay = new DelayNode(audioContext, {delayTime: 1, maxDelayTime: 10});
+        this.#lfo = new OscillatorNode(audioContext, {frequency: 5});
+        this.#gain = new GainNode(audioContext, {gain: 0});
+        this.#lfo.connect(this.#gain).connect(this.#delay.delayTime);
+        this.#lfo.start();
      }
 
      /**
@@ -1234,7 +1534,10 @@
       * @see {@link EffectParameter}
       */
      static getParameters() {
-        return [];
+        return [
+           { name: 'rate', type: 'number', validValues: [0, 8], defaultValue: 5 }, 
+           { name: 'depth', type: 'number', validValues: [0, 0.1], defaultValue: 0 }, 
+        ];
      }
 
      async load() {
@@ -1250,20 +1553,23 @@
       * 
       * @param {number} rate - Frequency at which an oscillator modulates the audio signal
       * @param {number} depth - Amount of pitch variation as a percentage between [0.0, 1.0]
-      * @param {boolean} sync - Whether to synchronize modulation speed with the tempo of the audio
       * @param {number} [updateTime] - Global API time at which to update the effect
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({rate, depth, sync}, updateTime) {
-        return false;
+     async update({rate, depth}, updateTime) {
+        if (rate != null)
+           this.#lfo.frequency.value = rate;
+        if (depth != null) 
+           this.#gain.gain.value = (depth / (2 * Math.PI * this.#lfo.frequency.value));
+        return true;
      }
 
      getInputNode() {
-        return;
+        return this.#delay;
      }
 
      getOutputNode() {
-        return;
+        return this.#delay;
      }
   }
 
@@ -1318,6 +1624,8 @@
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
      async update({intensity}, updateTime) {
+        if (intensity == null)
+           throw new WebAudioValueError('Cannot update the Volume effect without at least one of the following parameters: "intensity"');
         this.#volumeNode.gain.setValueAtTime(intensity, updateTime == null ? this.audioContext.currentTime : updateTime);
         return true;
      }
@@ -1431,7 +1739,7 @@
          * changes to take effect.
          * 
          * @function
-         * @param {Object} effectOptions - Effect-specific options (TODO)
+         * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
          * @param {number} [updateTime] - Global API time at which to update the effect
          * @returns {Promise<boolean>} Whether the effect update was successfully applied
          * @memberof Effect
@@ -1464,9 +1772,10 @@
   function createTrack(name, audioContext, tempo, trackAudioSink) {
 
      // Track-local variable definitions
-     let instrument = null, midiDevice = null;
+     let instrument = null, midiDevice = null, audioDeviceInput = null;
      const audioSources = [], asyncAudioSources = [], effects = [];
-     const audioSink = new GainNode(audioContext);
+     const audioSink = new AnalyserNode(audioContext, { fftSize: 256 });
+     const analysisBuffer = new Uint8Array(audioSink.frequencyBinCount);
      audioSink.connect(trackAudioSink);
 
      // Private internal Track functions
@@ -1516,6 +1825,19 @@
      }
 
      /**
+      * Returns a buffer containing the realtime frequency content of the audio being produced by
+      * the current track.
+      * 
+      * @returns {Uint8Array} Array containing frequency content of the track's current audio output
+      * @memberof Track
+      * @instance
+      */
+     function getAnalysisBuffer() {
+        audioSink.getByteFrequencyData(analysisBuffer);
+        return analysisBuffer;
+     }
+
+     /**
       * Applies a new track effect at the specified time.
       * 
       * Calling this function affects the sequential ordering in which effects will be
@@ -1558,17 +1880,18 @@
       * changes to take effect.
       * 
       * @param {string} effectName - Name of the track effect to be updated
-      * @param {Object} effectOptions - Effect-specific options (TODO)
+      * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
       * @param {number} [updateTime] - Global API time at which to update the effect
-      * @returns {Promise<boolean>} Whether the effect update was successfully applied
       * @memberof Track
       * @instance
       */
      async function updateEffect(effectName, effectOptions, updateTime) {
         for (const effect of effects)
-           if (effect.name == effectName)
-              return await effect.update(effectOptions, updateTime);
-        return false;
+           if (effect.name == effectName) {
+              await effect.update(effectOptions, updateTime);
+              return;
+           }
+        throw new WebAudioTargetError(`The target track effect (${effectName}) does not exist`);
      }
 
      /**
@@ -1631,18 +1954,16 @@
       * @instance
       */
      function playNoteAsync(note, velocity) {
-        if (instrument) {
-           const noteSource = instrument.getNote(note); // TODO: Method to getNoteContinuous so it loops
-           const noteVolume = new GainNode(audioContext);
-           noteSource.connect(noteVolume).connect(audioSink);
-           noteVolume.gain.setValueAtTime(velocity, 0.0);
-           const noteStorage = createAsyncNote(note, noteSource, noteVolume);
-           noteSource.onended = stopNoteAsync.bind(this, noteStorage); // TODO: Don't need this if continuous instrument
-           asyncAudioSources.push(noteStorage);
-           noteSource.start(audioContext.currentTime);
-           return noteStorage;
-        }
-        return null;
+        if (!instrument)
+           throw new WebAudioTrackError(`The current track (${name}) cannot play a note without first setting up an instrument`);
+        const noteSource = instrument.getNote(note); // TODO: Method to getNoteContinuous so it loops
+        const noteVolume = new GainNode(audioContext, { gain: velocity });
+        noteSource.connect(noteVolume).connect(audioSink);
+        const noteStorage = createAsyncNote(note, noteSource, noteVolume);
+        noteSource.onended = stopNoteAsync.bind(this, noteStorage); // TODO: Don't need this if continuous instrument
+        asyncAudioSources.push(noteStorage);
+        noteSource.start(audioContext.currentTime);
+        return noteStorage;
      }
 
      /**
@@ -1662,20 +1983,17 @@
       * @instance
       */
      function playNote(note, velocity, startTime, duration) {
-        if (instrument) {
-           const durationSeconds = 60.0 / ((duration / tempo.beatBase) * tempo.beatsPerMinute);
-           const noteSource = instrument.getNote(note);
-           const noteVolume = new GainNode(audioContext);
-           noteSource.connect(noteVolume).connect(audioSink);
-           noteVolume.gain.setValueAtTime(velocity, 0.0);
-           noteVolume.gain.setTargetAtTime(0.0, startTime + durationSeconds - 0.03, 0.03);
-           noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
-           audioSources.push(noteSource);
-           noteSource.start(startTime);
-           noteSource.stop(startTime + durationSeconds);
-           return durationSeconds;
-        }
-        return 0;
+        if (!instrument)
+           throw new WebAudioTrackError(`The current track (${name}) cannot play a note without first setting up an instrument`);
+        const durationSeconds = (duration < 0) ? -duration : (60.0 / ((duration / tempo.beatBase) * tempo.beatsPerMinute));
+        const noteSource = instrument.getNote(note);
+        const noteVolume = new GainNode(audioContext, { gain: velocity });
+        noteSource.connect(noteVolume).connect(audioSink);
+        noteVolume.gain.setTargetAtTime(0.0, startTime + durationSeconds, 0.03);
+        noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
+        audioSources.push(noteSource);
+        noteSource.start(startTime, 0, durationSeconds + 0.200);
+        return durationSeconds;
      }
 
      /**
@@ -1684,31 +2002,395 @@
       * If the `duration` parameter is not specified or is set to `null`, the audio clip will
       * play to completion.
       * 
-      * @param {ArrayBuffer} buffer - Buffer containing raw, audio-encoded data
+      * @param {ArrayBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
       * @param {number} startTime - Global API time at which to start playing the clip
-      * @param {number|null} [duration] -  Number of seconds for which to continue playing the clip
+      * @param {number} [duration] -  Number of seconds for which to continue playing the clip
       * @returns {Promise<number>} Duration (in seconds) of the clip being played
       * @memberof Track
       * @instance
       * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer ArrayBuffer}
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+      * @see {@link MidiClip}
       */
-     async function playClip(buffer, startTime, duration) {
-        const audioBuffer = await audioContext.decodeAudioData(buffer);
-        const clipSource = new AudioBufferSourceNode(audioContext, { buffer: audioBuffer });
-        audioSources.push(clipSource);
-        if (duration) {
-           const clipVolume = new GainNode(audioContext);
-           clipSource.connect(clipVolume).connect(audioSink);
-           clipVolume.gain.setTargetAtTime(0.0, startTime + duration - 0.03, 0.03);
-           clipSource.onended = sourceEnded.bind(this, clipSource, clipVolume);
-           clipSource.start(startTime, 0, duration);
+     async function playClip(audioClip, startTime, duration) {
+        let expectedDuration = null;
+        if (audioClip instanceof ArrayBuffer || audioClip instanceof Blob || audioClip.clipType == 'audio') {
+           const audioBuffer = await audioContext.decodeAudioData(audioClip instanceof ArrayBuffer ? audioClip : (audioClip instanceof Blob ? await audioClip.arrayBuffer() : await audioClip.getRawData().arrayBuffer()));
+           const clipSource = new AudioBufferSourceNode(audioContext, { buffer: audioBuffer });
+           audioSources.push(clipSource);
+           if (duration) {
+              const clipVolume = new GainNode(audioContext);
+              clipSource.connect(clipVolume).connect(audioSink);
+              clipVolume.gain.setTargetAtTime(0.0, startTime + duration, 0.03);
+              clipSource.onended = sourceEnded.bind(this, clipSource, clipVolume);
+              clipSource.start(startTime, 0, duration + 0.200);
+           }
+           else {
+              clipSource.connect(audioSink);
+              clipSource.onended = sourceEnded.bind(this, clipSource, null);
+              clipSource.start(startTime);
+           }
+           expectedDuration = (duration && (duration < audioBuffer.duration)) ? duration : audioBuffer.duration;
         }
         else {
-           clipSource.connect(audioSink);
-           clipSource.onended = sourceEnded.bind(this, clipSource, null);
-           clipSource.start(startTime);
+           if (!instrument)
+              throw new WebAudioTrackError(`The current track (${name}) cannot play a MIDI clip without first setting up an instrument`);
+           const unmatchedNotes = {};
+           for (const [noteTime, midiData] of Object.entries(audioClip.getRawData()))
+              if (!duration || (Number(noteTime) < duration)) {
+                 const command = getMidiCommand(midiData), note = getMidiNote(midiData);
+                 if ((command === MidiCommand.NoteOn) && (getMidiVelocity(midiData) > 0))
+                    unmatchedNotes[note] = [ Number(noteTime), getMidiVelocity(midiData) ];
+                 else if ((command === MidiCommand.NoteOff) && (note in unmatchedNotes)) {
+                    const noteDuration = ((!duration || (Number(noteTime) <= duration)) ? Number(noteTime) : duration) - unmatchedNotes[note][0];
+                    playNote(note, unmatchedNotes[note][1], startTime + unmatchedNotes[note][0], -noteDuration);
+                    delete unmatchedNotes[note];
+                 }
+              }
+           for (const [note, noteData] of Object.entries(unmatchedNotes)) {
+              const noteDuration = audioClip.getDuration() - noteData[0];
+              playNote(note, noteData[1], startTime + noteData[0], -noteDuration);
+           }
+           expectedDuration = (duration && (duration < audioClip.getDuration())) ? duration : audioClip.getDuration();
         }
-        return (duration && (duration < audioBuffer.duration)) ? duration : audioBuffer.duration;
+        return expectedDuration;
+     }
+
+     /**
+      * Schedules a MIDI clip to be recorded on the current track for some duration of time.
+      * 
+      * If the `duration` parameter is not specified or is set to `null`, the MIDI clip will
+      * continue to record until manually stopped by the {@link MidiClip#finalize finalize()}
+      * function on the returned {@link MidiClip} object.
+      * 
+      * Note that the recorded MIDI clip will **not** include any effects that might exist on
+      * the track. This is so that recording and then immediately playing back on the same track
+      * will not cause any underlying effects to be doubled.
+      * 
+      * @param {number} startTime - Global API time at which to start recording the MIDI clip
+      * @param {number} [duration] - Number of seconds for which to continue recording the MIDI clip
+      * @returns {MidiClip} Reference to a {@link MidiClip} object representing the MIDI data to be recorded
+      * @memberof Track
+      * @instance
+      * @see {@link MidiClip}
+      */
+     function recordMidiClip(startTime, duration) {
+
+        /**
+         * Object containing all data needed to record and render a MIDI audio clip.
+         * @namespace MidiClip
+         * @global
+         */
+
+        // MIDI clip-local variable definitions
+        let thisMidiDevice = midiDevice, recordedDuration = null, completionCallback = null;
+        const midiLog = {};
+
+        // Ensure that a MIDI device is currently connected to this track
+        if (!thisMidiDevice)
+           throw new WebAudioRecordingError(`The current track (${name}) has no MIDI device associated with it from which to record`);
+
+        // Private MIDI handling functions
+        function midiEventToRecord(event) {
+           if ((audioContext.currentTime >= startTime) && (!duration || (audioContext.currentTime < startTime + duration)))
+              midiLog[audioContext.currentTime - startTime] = event.data;
+        }
+
+        function playNoteOffline(offlineContext, note, velocity, startTime, duration) {
+           const noteSource = instrument.getNoteOffline(offlineContext, note);
+           const noteVolume = new GainNode(offlineContext, { gain: velocity });
+           noteSource.connect(noteVolume).connect(offlineContext.destination);
+           noteVolume.gain.setTargetAtTime(0.0, startTime + duration, 0.03);
+           noteSource.start(startTime, 0, duration + 0.200);
+        }
+
+        /**
+         * Returns a dictionary of all MIDI event data within the {@link MidiClip}, stored according
+         * to the relative times (in seconds) that they were received.
+         * 
+         * @returns {Object} Dictionary containing MIDI event data stored according to their relative reception times
+         * @memberof MidiClip
+         * @instance
+         */
+        function getRawData() {
+           if (!recordedDuration)
+              throw new WebAudioRecordingError('Cannot retrieve raw data from this MIDI clip because recording has not yet completed');
+           return midiLog;
+        }
+
+        /**
+         * Returns the total duration of the MIDI clip in seconds.
+         * 
+         * @returns {number} Duration of the MIDI clip in seconds
+         * @memberof MidiClip
+         * @instance
+         */
+        function getDuration() {
+           if (!recordedDuration)
+              throw new WebAudioRecordingError('Cannot retrieve duration of this MIDI clip because recording has not yet completed');
+           return recordedDuration;
+        }
+
+        /**
+         * Stops recording any future MIDI data within the {@link MidiClip}, finalizes the internal
+         * storage of all recorded data, and calls the user-completion notification callback, if
+         * registered.
+         * 
+         * Note that this function is called automatically if the original call to
+         * {@link Track#recordMidiClip recordMidiClip()} specified a concrete duration for the clip.
+         * If no duration was specified, then this function **must** be called in order to stop
+         * recording. A {@link MidiClip} is unable to be used or played back until this function
+         * has been called.
+         * 
+         * @memberof MidiClip
+         * @instance
+         */
+        async function finalize() {
+           if (!recordedDuration) {
+              if (duration) {
+                 while ((startTime + duration) > audioContext.currentTime)
+                    await new Promise(r => setTimeout(r, 10));
+                 recordedDuration = duration;
+              }
+              else
+                 recordedDuration = audioContext.currentTime - startTime;
+              thisMidiDevice.removeEventListener('midimessage', midiEventToRecord);
+              thisMidiDevice = null;
+              if (completionCallback)
+                 completionCallback(this);
+              completionCallback = null;
+           }
+        }
+
+        /**
+         * Allows a user to register a callback for notification when all MIDI recording activities
+         * have been completed for this {@link MidiClip}. This corresponds to the time when the
+         * {@link MidiClip#finalize finalize()} function gets called, either manually or
+         * automatically.
+         * 
+         * A user-defined notification callback will be called with a single parameter which is a
+         * reference to this {@link MidiClip}.
+         * 
+         * @param {RecordCompleteCallback} notificationCallback - Callback to fire when recording of this clip has completed
+         * @memberof MidiClip
+         * @instance
+         */
+        function notifyWhenComplete(notificationCallback) {
+           if (!recordedDuration)
+              completionCallback = notificationCallback;
+           else
+              notificationCallback(this);
+        }
+
+        /**
+         * Encodes this {@link MidiClip} into a {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+         * containing raw audio data according to the {@link module:Constants.EncodingType EncodingType}
+         * specified in the `encodingType` parameter.
+         * 
+         * @param {number} encodingType - Numeric value corresponding to the desired {@link module:Constants.EncodingType EncodingType}
+         * @returns {Blob} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio data
+         * @memberof MidiClip
+         * @instance
+         * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+         * @see {@link module:Constants.EncodingType EncodingType}
+         */
+        async function getEncodedData(encodingType) {
+           if (!Object.values(EncodingType).includes(Number(encodingType)))
+              throw new WebAudioTargetError(`An encoder for the target type identifier (${encodingType}) does not exist`);
+           if (!recordedDuration)
+              throw new WebAudioRecordingError('Cannot render this MIDI clip because recording has not yet completed');
+           if (!instrument)
+              throw new WebAudioTrackError(`The current track (${name}) cannot render a MIDI clip without first setting up an instrument`);
+           const unmatchedNotes = {}, offlineContext = new OfflineAudioContext(1, 44100 * recordedDuration, 44100);
+           for (const [startTime, midiData] of Object.entries(midiLog)) {
+              const command = getMidiCommand(midiData), note = getMidiNote(midiData);
+              if ((command === MidiCommand.NoteOn) && (getMidiVelocity(midiData) > 0))
+                 unmatchedNotes[note] = [ Number(startTime), getMidiVelocity(midiData) ];
+              else if ((command === MidiCommand.NoteOff) && (note in unmatchedNotes)) {
+                 playNoteOffline(offlineContext, note, unmatchedNotes[note][1], unmatchedNotes[note][0], Number(startTime) - unmatchedNotes[note][0]);
+                 delete unmatchedNotes[note];
+              }
+           }
+           for (const [note, noteData] of Object.entries(unmatchedNotes)) {
+              const noteDuration = recordedDuration - noteData[0];
+              playNoteOffline(offlineContext, note, noteData[1], noteData[0], noteDuration);
+           }
+           const renderedData = await offlineContext.startRendering();
+           return getEncoderFor(Number(encodingType)).encode(renderedData);
+        }
+
+        // Begin listening for all incoming MIDI events and optionally set a timer to stop listening
+        thisMidiDevice.addEventListener('midimessage', midiEventToRecord);
+        if (duration)
+           setTimeout(finalize, startTime + duration - audioContext.currentTime);
+
+        // Returns an object containing functions and attributes within the MidiClip namespace
+        return { clipType: 'midi', getRawData, getDuration, finalize, getEncodedData, notifyWhenComplete };
+     }
+
+     /**
+      * Schedules an audio clip to be recorded on the current track for some duration of time.
+      * 
+      * If the `duration` parameter is not specified or is set to `null`, the audio clip will
+      * continue to record until manually stopped by the {@link AudioClip#finalize finalize()}
+      * function on the returned {@link AudioClip} object.
+      * 
+      * Note that the recorded audio clip will **not** include any effects that might exist on
+      * the track. This is so that recording and then immediately playing back on the same track
+      * will not cause any underlying effects to be doubled.
+      * 
+      * @param {number} startTime - Global API time at which to start recording the audio clip
+      * @param {number} [duration] - Number of seconds for which to continue recording the audio clip
+      * @returns {AudioClip} Reference to an {@link AudioClip} object representing the audio data to be recorded
+      * @memberof Track
+      * @instance
+      * @see {@link AudioClip}
+      */
+     function recordAudioClip(startTime, duration) {
+
+        /**
+         * Object containing all data needed to record and render an audio clip.
+         * @namespace AudioClip
+         * @global
+         */
+
+        // Audio clip-local variable definitions
+        let recorderDestination = audioContext.createMediaStreamDestination();
+        let recorder = new MediaRecorder(recorderDestination.stream);
+        let thisAudioInputDevice = audioDeviceInput, audioData = null;
+        let recordedDuration = null, completionCallback = null;
+
+        // Ensure that an audio input device is currently connected to this track
+        if (!thisAudioInputDevice)
+           throw new WebAudioRecordingError(`The current track (${name}) has no audio input device associated with it from which to record`);
+
+        // Private audio data handling functions
+        function startRecording() {
+           if (startTime >= (audioContext.currentTime + 0.001))
+              setTimeout(startRecording, 1);
+           else
+              recorder.start(duration ? (1000 * duration) : undefined);
+        }
+
+        recorder.ondataavailable = (event) => {
+           if (!audioData) {
+              audioData = event.data;
+              recordedDuration = duration ? duration : (audioContext.currentTime - startTime);
+              finalize();
+           }
+        };
+
+        recorder.onstop = async () => {
+           thisAudioInputDevice.disconnect();
+           thisAudioInputDevice = null;
+           if (completionCallback)
+              completionCallback(this);
+           completionCallback = null;
+           recorderDestination = null;
+           recorder = null;
+        };
+
+        /**
+         * Returns an {@link ArrayBuffer} containing all of the recorded audio data.
+         * 
+         * @returns {ArrayBuffer} Buffer containing all recorded audio data
+         * @memberof AudioClip
+         * @instance
+         */
+        function getRawData() {
+           if (!recordedDuration)
+              throw new WebAudioRecordingError('Cannot retrieve raw data from this audio clip because recording has not yet completed');
+           return audioData;
+        }
+
+        /**
+         * Returns the total duration of the audio clip in seconds.
+         * 
+         * @returns {number} Duration of the audio clip in seconds
+         * @memberof AudioClip
+         * @instance
+         */
+        function getDuration() {
+           if (!recordedDuration)
+              throw new WebAudioRecordingError('Cannot retrieve duration of this audio clip because recording has not yet completed');
+           return recordedDuration;
+        }
+
+        /**
+         * Stops recording any future audio data within the {@link AudioClip}, finalizes the internal
+         * storage of all recorded data, and calls the user-completion notification callback, if
+         * registered.
+         * 
+         * Note that this function is called automatically if the original call to
+         * {@link Track#recordAudioClip recordAudioClip()} specified a concrete duration for the
+         * clip. If no duration was specified, then this function **must** be called in order to stop
+         * recording. An {@link AudioClip} is unable to be used or played back until this function
+         * has been called.
+         * 
+         * @memberof AudioClip
+         * @instance
+         */
+        async function finalize() {
+           if (duration) {
+              while ((startTime + duration) > audioContext.currentTime)
+                 await new Promise(r => setTimeout(r, 10));
+           }
+           if (recorder.state != 'inactive')
+              recorder.stop();
+        }
+
+        /**
+         * Allows a user to register a callback for notification when all audio recording activities
+         * have been completed for this {@link AudioClip}. This corresponds to the time when the
+         * {@link AudioClip#finalize finalize()} function gets called, either manually or
+         * automatically.
+         * 
+         * A user-defined notification callback will be called with a single parameter which is a
+         * reference to this {@link AudioClip}.
+         * 
+         * @param {RecordCompleteCallback} notificationCallback - Callback to fire when recording of this clip has completed
+         * @memberof AudioClip
+         * @instance
+         */
+        function notifyWhenComplete(notificationCallback) {
+           if (!recordedDuration)
+              completionCallback = notificationCallback;
+           else
+              notificationCallback(this);
+        }
+
+        /**
+         * Encodes this {@link AudioClip} into a {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+         * containing raw audio data according to the {@link module:Constants.EncodingType EncodingType}
+         * specified in the `encodingType` parameter.
+         * 
+         * @param {number} encodingType - Numeric value corresponding to the desired {@link module:Constants.EncodingType EncodingType}
+         * @returns {Blob} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio data
+         * @memberof AudioClip
+         * @instance
+         * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+         * @see {@link module:Constants.EncodingType EncodingType}
+         */
+        async function getEncodedData(encodingType) {
+           if (!Object.values(EncodingType).includes(Number(encodingType)))
+              throw new WebAudioTargetError(`An encoder for the target type identifier (${encodingType}) does not exist`);
+           if (!recordedDuration || !(audioData instanceof Blob))
+              throw new WebAudioRecordingError('Cannot render this audio clip because recording has not yet completed');
+           const offlineContext = new OfflineAudioContext(1, 44100 * recordedDuration, 44100);
+           const audioBuffer = await offlineContext.decodeAudioData(await audioData.arrayBuffer());
+           const clipSource = new AudioBufferSourceNode(offlineContext, { buffer: audioBuffer });
+           clipSource.connect(offlineContext.destination);
+           clipSource.start();
+           const renderedData = await offlineContext.startRendering();
+           return getEncoderFor(Number(encodingType)).encode(renderedData);
+        }
+
+        // Begin listening for incoming audio data
+        thisAudioInputDevice.connect(recorderDestination);
+        startRecording();
+
+        // Returns an object containing functions and attributes within the AudioClip namespace
+        return { clipType: 'audio', getRawData, getDuration, finalize, getEncodedData, notifyWhenComplete };
      }
 
      /**
@@ -1719,7 +2401,7 @@
       * 
       * @param {string} fileURL - URL location pointing to an audio file
       * @param {number} startTime - Global API time at which to start playing the file
-      * @param {number|null} [duration] - Number of seconds for which to continue playing the file
+      * @param {number} [duration] - Number of seconds for which to continue playing the file
       * @returns {Promise<number>} Duration (in seconds) of the file being played
       * @memberof Track
       * @instance
@@ -1744,11 +2426,23 @@
      }
 
      /**
+      * Disconnects the current track from the specified audio input device so that no further audio
+      * events will be received.
+      * 
+      * @memberof Track
+      * @instance
+      */
+     function disconnectFromAudioInputDevice() {
+        if (audioDeviceInput != null)
+           audioDeviceInput.disconnect();
+        audioDeviceInput = null;
+     }
+
+     /**
       * Connects the current track to the specified MIDI device so that any incoming events will be
       * automatically played in real-time.
       * 
       * @param {MIDIInput} midiInput - MIDI device to which to connect the current track
-      * @returns {boolean}  Whether connection to the MIDI device was successful
       * @memberof Track
       * @instance
       * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/MIDIInput MIDIInput}
@@ -1757,7 +2451,39 @@
         disconnectFromMidiDevice();
         midiInput.addEventListener('midimessage', midiEventReceived);
         midiDevice = midiInput;
-        return true;
+     }
+
+     /**
+      * Connects the current track to the specified audio input device so that any incoming audio
+      * will be automatically played in real-time.
+      * 
+      * @param {string} audioDeviceID - ID of the audio input device to which to connect the current track
+      * @memberof Track
+      * @instance
+      */
+     async function connectToAudioInputDevice(audioDeviceID) {
+        disconnectFromAudioInputDevice();
+        try {
+           const audioStream = await navigator.mediaDevices.getUserMedia({ audio: {'deviceId': audioDeviceID}, video: false });
+           audioDeviceInput = audioContext.createMediaStreamSource(audioStream);
+           audioDeviceInput.connect(audioSink);
+        }
+        catch (err) {
+           throw WebAudioDeviceError('Unable to connect to the requested audio input device. Error was: ' + err);
+        }
+     }
+
+     /**
+      * Cancels any current or scheduled audio from playing on the current track.
+      * 
+      * @memberof Track
+      * @instance
+      */
+     function clearTrack() {
+        for (const source of audioSources)
+           source.stop();
+        for (const source of asyncAudioSources)
+           source.sourceNode.stop();
      }
 
      /**
@@ -1769,10 +2495,7 @@
       */
      function deleteTrack() {
         disconnectFromMidiDevice();
-        for (const source of audioSources)
-           source.stop();
-        for (const source of asyncAudioSources)
-           source.sourceNode.stop();
+        clearTrack();
         for (const effect of effects)
            effect.output.disconnect();
      }
@@ -1785,8 +2508,9 @@
          * @instance
          */
         name,
-        updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync,
-        playNoteAsync, playNote, playClip, playFile, connectToMidiDevice, disconnectFromMidiDevice, deleteTrack
+        updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync, playNoteAsync,
+        playNote, playClip, playFile, recordMidiClip, recordAudioClip, connectToMidiDevice, disconnectFromMidiDevice,
+        connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack, clearTrack, getAnalysisBuffer
      };
   }
 
@@ -2351,7 +3075,20 @@
          * @instance
          * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
          */
-        getNote: null
+        getNote: null,
+
+        /**
+         * Returns an {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
+         * that can be used to play back the specified MIDI `note` from an {@link OfflineAudioContext}.
+         * 
+         * @function
+         * @param {OfflineAudioContext} - Offline audio context whicih will be used to play back the note
+         * @param {number} note - MIDI note number for which to generate a playable note
+         * @memberof Instrument
+         * @instance
+         * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
+         */
+        getNoteOffline: null
      };
 
      // Actually load and return the instrment
@@ -2360,30 +3097,129 @@
         instrumentInstance.getNote = function (note) {
            return new OscillatorNode(audioContext, { frequency: Frequency[note] });
         };
+        instrumentInstance.getNoteOffline = function (offlineContext, note) {
+           return new OscillatorNode(offlineContext, { frequency: Frequency[note] });
+        };
      }
      else {
         const noteData = await loadInstrument(url);
         instrumentInstance.getNote = function (note) {
            return new AudioBufferSourceNode(audioContext, noteData[note]);
         };
+        instrumentInstance.getNoteOffline = function (offlineContext, note) {
+           return new AudioBufferSourceNode(offlineContext, noteData[note]);
+        };
      }
      return instrumentInstance;
   }
 
-  /**
-   * Module containing all {@link WebAudioAPI} error functionality.
-   * 
-   * @module Errors
-   */
+  /** Class representing all base-level {@link WebAudioAPI} audio analysis functions */
+  class AnalysisBase {
 
-  class WebAudioMidiError extends Error {
-     constructor(message) {
-        super(message);
-        this.name = 'WebAudioMidiError';
+     /**
+      * Called by a concrete analysis instance to initialize the inherited {@link AnalysisBase} data
+      * structure.
+      */
+     constructor() { /* Empty constructor */ }
+
+     /**
+      * Performs a spectral analysis corresponding to an underlying concrete class on the passed-in
+      * buffer containing audio frequency content.
+      * 
+      * @param {Uint8Array} frequencyContent - {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array} containing audio frequency data
+      * @returns {Object} Object containing the results of the specified acoustic analysis
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array}
+      */
+     static analyze(frequencyContent) { return undefined; }
+  }
+
+  /**
+   * Class representing an acoustic "power spectrum" analysis algorithm.
+   * 
+   * A Power Spectrum is an array in which each bin contains the power attributed to a discrete
+   * range of frequencies within an audio signal.
+   * 
+   * @extends AnalysisBase
+   */
+  class PowerSpectrum extends AnalysisBase {
+
+     /**
+      * Constructs a new {@link PowerSpectrum} analysis object.
+      */
+     constructor() {
+        super();
+     }
+
+     /**
+      * Performs a power spectrum analysis on the passed-in buffer containing audio
+      * frequency content.
+      * 
+      * @param {Uint8Array} frequencyContent - {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array} containing audio frequency data
+      * @returns {Float32Array} Array containing the power spectrum corresponding to the specified frequency data
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Float32Array Float32Array}
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array}
+      */
+     static analyze(frequencyContent) {
+        return undefined;
      }
   }
 
-  var version = "0.2.0";
+  /**
+   * Class representing an acoustic "total power" analysis algorithm.
+   * 
+   * Total power analysis determines the total cumulative spectral power present across all
+   * frequencies within an audio signal.
+   * 
+   * @extends AnalysisBase
+   */
+  class TotalPower extends AnalysisBase {
+
+     /**
+      * Constructs a new {@link TotalPower} analysis object.
+      */
+     constructor() {
+        super();
+     }
+
+     /**
+      * Performs a total power spectral analysis on the passed-in buffer containing audio
+      * frequency content.
+      * 
+      * @param {Uint8Array} frequencyContent - {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array} containing audio frequency data
+      * @returns {number} Total power content across all frequencies in the specified frequency data
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array}
+      */
+     static analyze(frequencyContent) {
+        return undefined;
+     }
+  }
+
+  /**
+   * Module containing functionality to create and utilize {@link WebAudioAPI} audio analyzers.
+   * @module Analysis
+   */
+
+
+  const AnalysisClasses = {
+     [AnalysisType.PowerSpectrum]: PowerSpectrum,
+     [AnalysisType.TotalPower]: TotalPower
+  };
+
+  /**
+   * Returns a concrete analyzer implementation for the specified analysis type. The value passed
+   * to the `analysisType` parameter must be the **numeric value** associated with a certain
+   * {@link module:Constants.AnalysisType AnalysisType}, not a string-based key.
+   * 
+   * @param {number} analysisType - Numeric value corresponding to the desired {@link module:Constants.AnalysisType AnalysisType}
+   * @returns {AnalysisBase} Concrete analyzer implementation for the specified {@link module:Constants.AnalysisType AnalysisType}
+   * @see {@link module:Constants.AnalysisType AnalysisType}
+   * @see {@link AnalysisBase}
+   */
+  function getAnalyzerFor(analysisType) {
+     return new AnalysisClasses[analysisType];
+  }
+
+  var version = "0.3.0";
 
   /**
    * Required function prototype to use when registering a MIDI device callback.
@@ -2391,6 +3227,15 @@
    * @callback MidiEventCallback
    * @param {MIDIMessageEvent} event - Object containing the detected MIDI event
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/MIDIMessageEvent MIDIMessageEvent}
+   */
+
+  /**
+   * Required function prototype to use when registering a recording completion callback.
+   * 
+   * @callback RecordCompleteCallback
+   * @param {MidiClip|AudioClip} clip - Instance of the fully recorded clip
+   * @see {@link AudioClip}
+   * @see {@link MidiClip}
    */
 
   /**
@@ -2421,17 +3266,34 @@
      static #instance = null;
 
      // WebAudioAPI private variable definitions
+     #started = false;
      #audioContext = new AudioContext({ latencyHint: 'interactive', sampleRate: 44100 });
-     #started = false; #midiCallbacks = {}; #tracks = {}; #effects = []; #instrumentListing = {}; #loadedInstruments = {};
+     /** @type {Object.<string, Object>} */
+     #midiCallbacks = {};
+     /** @type {Object.<string, Track>} */
+     #tracks = {};
+     /** @type {Array<Effect>} */
+     #effects = [];
+     /** @type {Object.<string, string>} */
+     #instrumentListing = {};
+     /** @type {Object.<string, Instrument>} */
+     #loadedInstruments = {};
+     /** @type {Tempo} */
      #tempo = { measureLengthSeconds: (4 * 60.0 / 100.0), beatBase: 4, beatsPerMinute: 100, timeSignatureNumerator: 4, timeSignatureDenominator: 4 };
-
-     // Required audio nodes
-     /** @type {(null|MIDIAccess)} */
+     /** @type {MIDIAccess|null} */
      #midiDeviceAccess = null;
+     /** @type {Object.<string, string>} */
+     #audioInputDevices = {};
+     /** @type {Object.<string, string>} */
+     #audioOutputDevices = {};
      /** @type {DynamicsCompressorNode} */
      #compressorNode;
+     /** @type {AnalyserNode} */
+     #analysisNode;
      /** @type {GainNode} */
      #sourceSinkNode;
+     /** @type {Uint8Array} */
+     #analysisBuffer;
 
      /**
       * Returns a singleton instance of the WebAudioAPI interface.
@@ -2445,7 +3307,9 @@
         // Generate and connect all required audio nodes
         this.#sourceSinkNode = new GainNode(this.#audioContext);
         this.#compressorNode = new DynamicsCompressorNode(this.#audioContext);
-        this.#sourceSinkNode.connect(this.#compressorNode).connect(this.#audioContext.destination);
+        this.#analysisNode = new AnalyserNode(this.#audioContext, { fftSize: 256 });
+        this.#analysisBuffer = new Uint8Array(this.#analysisNode.frequencyBinCount);
+        this.#sourceSinkNode.connect(this.#compressorNode).connect(this.#analysisNode).connect(this.#audioContext.destination);
      }
 
      /**
@@ -2530,7 +3394,22 @@
       * @see {@link EffectParameter}
       */
      getAvailableEffectParameters(effectType) {
+        if (!Object.values(EffectType).includes(Number(effectType)))
+           throw new WebAudioTargetError(`The target effect type identifier (${effectType}) does not exist`);
         return getEffectParameters(effectType);
+     }
+
+     /**
+      * Returns a listing of all available encoders in the {@link WebAudioAPI} library.
+      * 
+      * This function can be used to enumerate available encoding options for displaying on a
+      * web page.
+      * 
+      * @returns {Object.<string, number>} Listing of all available encoding types in the {@link WebAudioAPI} library
+      * @see {@link module:Constants.EncodingType EncodingType}
+      */
+     getAvailableEncoders() {
+        return EncodingType;
      }
 
      /**
@@ -2567,7 +3446,7 @@
       * @returns {Promise<string[]>} Listing of all available MIDI devices connected to the client device
       */
      async getAvailableMidiDevices() {
-        let midiDevices = [];
+        const midiDevices = [];
         if (navigator.requestMIDIAccess && this.#midiDeviceAccess === null) {
            try {
               this.#midiDeviceAccess = await navigator.requestMIDIAccess();
@@ -2575,10 +3454,120 @@
                  midiDevices.push(midiDevice.name);
            } catch (err) {
               this.#midiDeviceAccess = null;
-              throw WebAudioMidiError('MIDI permissions are required in order to enumerate available MIDI devices!');
+              throw new WebAudioMidiError('MIDI permissions are required in order to enumerate available MIDI devices!');
            }
         }
         return midiDevices;
+     }
+
+     /**
+      * Returns a listing of the available audio input devices connected to the client device.
+      * 
+      * Individual results from this function call can be passed directly to the
+      * {@link connectAudioInputDeviceToTrack()} function to attach an input device to a specified
+      * audio track.
+      * 
+      * @returns {Promise<string[]>} Listing of all available audio input devices connected to the client
+      */
+     async getAvailableAudioInputDevices() {
+        const inputDevices = [];
+        for (const key in this.#audioInputDevices)
+           delete this.#audioInputDevices[key];
+        if (navigator.mediaDevices?.enumerateDevices) {
+           try {
+              await navigator.mediaDevices.getUserMedia({audio: true, video: false});
+              for (const device of await navigator.mediaDevices.enumerateDevices())
+                 if (device.kind == 'audioinput') {
+                    let alreadyFound = false;
+                    for (const [i, existingDevice] of inputDevices.entries()) {
+                       if (existingDevice.groupId == device.groupId) {
+                          if (device.deviceId.length > existingDevice.id.length) {
+                             inputDevices[i].id = device.deviceId;
+                             inputDevices[i].label = device.label;
+                          }
+                          alreadyFound = true;
+                          break;
+                       }
+                    }
+                    if (!alreadyFound)
+                       inputDevices.push({ id: device.deviceId, groupId: device.groupId, label: device.label });
+                 }
+           } catch (err) {
+              throw new WebAudioDeviceError('Microphone and audio input permissions are required in order to enumerate available devices!');
+           }
+        }
+        inputDevices.forEach(device => this.#audioInputDevices[device.label] = device.id);
+        return Object.keys(this.#audioInputDevices);
+     }
+
+     /**
+      * Returns a listing of the available audio output devices connected to the client device.
+      * 
+      * Individual results from this function call can be passed directly to the
+      * {@link selectAudioOutputDevice()} function to choose where to direct all audio output.
+      * 
+      * @returns {Promise<string[]>} Listing of all available audio output devices connected to the client
+      */
+     async getAvailableAudioOutputDevices() {
+        const outputDevices = [];
+        for (const key in this.#audioOutputDevices)
+           delete this.#audioOutputDevices[key];
+        if (navigator.mediaDevices?.enumerateDevices) {
+           try {
+              await navigator.mediaDevices.getUserMedia({audio: true, video: false});
+              for (const device of await navigator.mediaDevices.enumerateDevices())
+                 if (device.kind == 'audiooutput') {
+                    let alreadyFound = false;
+                    for (const [i, existingDevice] of outputDevices.entries()) {
+                       if (existingDevice.groupId == device.groupId) {
+                          if (device.deviceId.length > existingDevice.id.length) {
+                             outputDevices[i].id = device.deviceId;
+                             outputDevices[i].label = device.label;
+                          }
+                          alreadyFound = true;
+                          break;
+                       }
+                    }
+                    if (!alreadyFound)
+                       outputDevices.push({ id: device.deviceId, groupId: device.groupId, label: device.label });
+                 }
+           } catch (err) {
+              throw new WebAudioDeviceError('Audio permissions are required in order to enumerate available devices!');
+           }
+        }
+        outputDevices.forEach(device => this.#audioOutputDevices[device.label] = device.id);
+        return Object.keys(this.#audioOutputDevices);
+     }
+
+     /**
+      * Analyzes the current realtime audio output according to the specified `analysisType`.
+      * 
+      * The `trackName` parameter is optional, and if left blank, will cause the analysis to be
+      * carried out on the aggregate output over all tracks and all applied effects.
+      * 
+      * The type of return value from this function will depend on the analysis being carried out
+      * and can be determined by examining the corresponding concrete definitions of the
+      * {@link AnalysisBase} interface.
+      * 
+      * @param {number} analysisType - Audio {@link module:Constants.AnalysisType AnalysisType} to execute
+      * @param {string} [trackName] - Name of the track whose audio should be analyzed
+      * @returns {Any} Result of the specified analysis
+      * @see {@link module:Constants.AnalysisType AnalysisType}
+      */
+     analyzeAudio(analysisType, trackName) {
+        let frequencyContent = null;
+        if (!Object.values(AnalysisType).includes(Number(analysisType)))
+           throw new WebAudioTargetError(`The target analysis type identifier (${analysisType}) does not exist`);
+        if (trackName) {
+           if (!(trackName in this.#tracks))
+              throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+           frequencyContent = this.#tracks[trackName].getAnalysisBuffer();
+        }
+        else {
+           frequencyContent = this.#analysisBuffer;
+           this.#analysisNode.getByteFrequencyData(frequencyContent);
+        }
+        return getAnalyzerFor(analysisType).analyze(frequencyContent);
      }
 
      /**
@@ -2614,6 +3603,24 @@
      }
 
      /**
+      * Cancels all current and scheduled audio from playing on the specified track.
+      * 
+      * @param {string} name - Name of the track to clear
+      */
+     clearTrack(name) {
+        if (name in this.#tracks)
+           this.#tracks[name].clearTrack();
+     }
+
+     /**
+      * Cancels all current and scheduled audio from playing on all existing tracks.
+      */
+     clearAllTracks() {
+        for (const name in this.#tracks)
+           this.#tracks[name].clearTrack();
+     }
+
+     /**
       * Updates the instrument used to play back audio on the specified track.
       * 
       * The instrument name must refer to a valid instrument as returned by the
@@ -2623,11 +3630,13 @@
       * @param {string} instrumentName - Name of the instrument to assign to the track
       */
      async updateInstrument(trackName, instrumentName) {
-        if (trackName in this.#tracks && instrumentName in this.#instrumentListing) {
-           if (!(instrumentName in this.#loadedInstruments))
-              this.#loadedInstruments[instrumentName] = await loadInstrument(this.#audioContext, instrumentName, this.#instrumentListing[instrumentName]);
-           this.#tracks[trackName].updateInstrument(this.#loadedInstruments[instrumentName]);
-        }
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        if (!(instrumentName in this.#instrumentListing))
+           throw new WebAudioTargetError(`The target instrument name (${instrumentName}) does not exist`);
+        if (!(instrumentName in this.#loadedInstruments))
+           this.#loadedInstruments[instrumentName] = await loadInstrument(this.#audioContext, instrumentName, this.#instrumentListing[instrumentName]);
+        this.#tracks[trackName].updateInstrument(this.#loadedInstruments[instrumentName]);
      }
 
      /**
@@ -2636,8 +3645,9 @@
       * @param {string} trackName - Name of the track from which to remove the current instrument
       */
      async removeInstrument(trackName) {
-        if (trackName in this.#tracks)
-           this.#tracks[trackName].removeInstrument();
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        this.#tracks[trackName].removeInstrument();
      }
 
      /**
@@ -2648,16 +3658,16 @@
       * 
       * Any parameter may be set to `null` to keep it unchanged between consecutive function calls.
       * 
-      * @param {(number|null)} beatBase - Note {@link module:Constants.Duration Duration} corresponding to a global beat
-      * @param {(number|null)} beatsPerMinute - Number of global beats per minute
-      * @param {(number|null)} timeSignatureNumerator - Number of beats per measure
-      * @param {(number|null)} timeSignatureDenominator - Note {@link module:Constants.Duration Duration} corresponding to a measure beat
+      * @param {number|null} beatBase - Note {@link module:Constants.Duration Duration} corresponding to a global beat
+      * @param {number|null} beatsPerMinute - Number of global beats per minute
+      * @param {number|null} timeSignatureNumerator - Number of beats per measure
+      * @param {number|null} timeSignatureDenominator - Note {@link module:Constants.Duration Duration} corresponding to a measure beat
       */
      updateTempo(beatBase, beatsPerMinute, timeSignatureNumerator, timeSignatureDenominator) {
-        this.#tempo.beatBase = beatBase ? beatBase : this.#tempo.beatBase;
-        this.#tempo.beatsPerMinute = beatsPerMinute ? beatsPerMinute : this.#tempo.beatsPerMinute;
-        this.#tempo.timeSignatureNumerator = timeSignatureNumerator ? timeSignatureNumerator : this.#tempo.timeSignatureNumerator;
-        this.#tempo.timeSignatureDenominator = timeSignatureDenominator ? timeSignatureDenominator : this.#tempo.timeSignatureDenominator;
+        this.#tempo.beatBase = beatBase ? Number(beatBase) : this.#tempo.beatBase;
+        this.#tempo.beatsPerMinute = beatsPerMinute ? Number(beatsPerMinute) : this.#tempo.beatsPerMinute;
+        this.#tempo.timeSignatureNumerator = timeSignatureNumerator ? Number(timeSignatureNumerator) : this.#tempo.timeSignatureNumerator;
+        this.#tempo.timeSignatureDenominator = timeSignatureDenominator ? Number(timeSignatureDenominator) : this.#tempo.timeSignatureDenominator;
         this.#tempo.measureLengthSeconds = (60.0 / this.#tempo.beatsPerMinute) * this.#tempo.beatBase * this.#tempo.timeSignatureNumerator / this.#tempo.timeSignatureDenominator;
      }
 
@@ -2681,8 +3691,10 @@
       * @see {@link module:Constants.EffectType EffectType}
       */
      async applyMasterEffect(effectName, effectType) {
+        if (!Object.values(EffectType).includes(Number(effectType)))
+           throw new WebAudioTargetError(`The target effect type identifier (${effectType}) does not exist`);
         const existingEffect = await this.removeMasterEffect(effectName);
-        const newEffect = existingEffect ? existingEffect : await loadEffect(this.#audioContext, effectName, effectType);
+        const newEffect = existingEffect ? existingEffect : await loadEffect(this.#audioContext, effectName, Number(effectType));
         newEffect.output.connect(this.#compressorNode);
         if (this.#effects.length) {
            const previousEffect = this.#effects.slice(-1)[0];
@@ -2717,8 +3729,11 @@
       * @see {@link module:Constants.EffectType EffectType}
       */
      async applyTrackEffect(trackName, effectName, effectType) {
-        if (trackName in this.#tracks)
-           await this.#tracks[trackName].applyEffect(effectName, effectType);
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        if (!Object.values(EffectType).includes(Number(effectType)))
+           throw new WebAudioTargetError(`The target effect type identifier (${effectType}) does not exist`);
+        await this.#tracks[trackName].applyEffect(effectName, Number(effectType));
      }
 
      /**
@@ -2731,16 +3746,16 @@
       * changes to take effect.
       * 
       * @param {string} effectName - Name of the master effect to be updated
-      * @param {Object} effectOptions - Effect-specific options (TODO)
+      * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
       * @param {number} [updateTime] - Global API time at which to update the effect
-      * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
      async updateMasterEffect(effectName, effectOptions, updateTime) {
-        // TODO: Verify percent within valid range, Errors.mjs
         for (const effect of this.#effects)
-           if (effect.name == effectName)
-              return await effect.update(effectOptions, updateTime);
-        return false;
+           if (effect.name == effectName) {
+              await effect.update(effectOptions, updateTime ? Number(updateTime) : undefined);
+              return;
+           }
+        throw new WebAudioTargetError(`The target master effect (${effectName}) does not exist`);
      }
 
      /**
@@ -2754,13 +3769,13 @@
       * 
       * @param {string} trackName - Name of the track for which to update the effect
       * @param {string} effectName - Name of the track effect to be updated
-      * @param {Object} effectOptions - Effect-specific options (TODO)
+      * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
       * @param {number} [updateTime] - Global API time at which to update the effect
-      * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
      async updateTrackEffect(trackName, effectName, effectOptions, updateTime) {
-        // TODO: Verify percent within valid range, Errors.mjs
-        return (trackName in this.#tracks) ? await this.#tracks[trackName].updateEffect(effectName, effectOptions, updateTime) : false;
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        await this.#tracks[trackName].updateEffect(effectName, effectOptions, updateTime ? Number(updateTime) : undefined);
      }
 
      /**
@@ -2797,8 +3812,9 @@
       * @param {string} effectName - Name of the track effect to be removed
       */
      async removeTrackEffect(trackName, effectName) {
-        if (trackName in this.#tracks)
-           await this.#tracks[trackName].removeEffect(effectName);
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        await this.#tracks[trackName].removeEffect(effectName);
      }
 
      /**
@@ -2813,19 +3829,18 @@
       * 
       * @param {string} midiDeviceName - Name of the MIDI device for which to receive events
       * @param {MidiEventCallback} midiEventCallback - Callback to fire when a MIDI event is received
-      * @returns {boolean} Whether the event callback registration was successful
       */
      registerMidiDeviceCallback(midiDeviceName, midiEventCallback) {
         this.deregisterMidiDeviceCallback(midiDeviceName);
-        if (this.#midiDeviceAccess) {
-           for (const midiDevice of this.#midiDeviceAccess.inputs.values())
-              if (midiDeviceName == midiDevice.name) {
-                 midiDevice.addEventListener('midimessage', midiEventCallback);
-                 this.#midiCallbacks[midiDeviceName] = { device: midiDevice, callback: midiEventCallback };
-                 return true;
-              }
-        }
-        return false;
+        if (!this.#midiDeviceAccess)
+           throw new WebAudioMidiError('MIDI access permissions have not yet been granted...first call getAvailableMidiDevices()');
+        for (const midiDevice of this.#midiDeviceAccess.inputs.values())
+           if (midiDeviceName == midiDevice.name) {
+              midiDevice.addEventListener('midimessage', midiEventCallback);
+              this.#midiCallbacks[midiDeviceName] = { device: midiDevice, callback: midiEventCallback };
+              return;
+           }
+        throw new WebAudioTargetError(`The target MIDI device (${midiDeviceName}) could not be located`);
      }
 
      /**
@@ -2843,6 +3858,17 @@
      }
 
      /**
+      * Redirects all audio output to the specified device.
+      * 
+      * @param {string} audioOutputDeviceName - Name of the output device to which to direct all audio
+      */
+     async selectAudioOutputDevice(audioOutputDeviceName) {
+        if (!(audioOutputDeviceName in this.#audioOutputDevices))
+           throw new WebAudioTargetError(`The target audio output device (${audioOutputDeviceName}) does not exist`);
+        await this.#audioContext.setSinkId(this.#audioOutputDevices[audioOutputDeviceName]);
+     }
+
+     /**
       * Connects a MIDI device to the specified audio track.
       * 
       * **Note:** A single MIDI device can be connected to multiple audio tracks, but an audio track
@@ -2850,25 +3876,57 @@
       * 
       * @param {string} trackName - Name of the track to which to connect the MIDI device
       * @param {string} midiDeviceName - Name of the MIDI device to connect to the track
-      * @returns {Promise<boolean>} Whether connecting the MIDI device to the track was successful
       */
      async connectMidiDeviceToTrack(trackName, midiDeviceName) {
-        if (this.#midiDeviceAccess && trackName in this.#tracks) {
-           for (const midiDevice of this.#midiDeviceAccess.inputs.values())
-              if (midiDeviceName == midiDevice.name)
-                 return this.#tracks[trackName].connectToMidiDevice(midiDevice);
-        }
-        return false;
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        if (!this.#midiDeviceAccess)
+           throw new WebAudioMidiError('MIDI access permissions have not yet been granted...first call getAvailableMidiDevices()');
+        for (const midiDevice of this.#midiDeviceAccess.inputs.values())
+           if (midiDeviceName == midiDevice.name) {
+              this.#tracks[trackName].connectToMidiDevice(midiDevice);
+              return;
+           }
+        throw new WebAudioTargetError(`The target MIDI device (${midiDeviceName}) could not be located`);
+     }
+
+     /**
+      * Connects an audio input device to the specified audio track.
+      * 
+      * **Note:** A single audio input device can be connected to multiple audio tracks, but an
+      * audio track can only be connected to a single audio input device.
+      * 
+      * @param {string} trackName - Name of the track to which to connect the audio input device
+      * @param {string} audioInputDeviceName - Name of the audio input device to connect to the track
+      */
+     async connectAudioInputDeviceToTrack(trackName, audioInputDeviceName) {
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        if (!(audioInputDeviceName in this.#audioInputDevices))
+           throw new WebAudioTargetError(`The target audio input device (${audioInputDeviceName}) does not exist`);
+        await this.#tracks[trackName].connectToAudioInputDevice(this.#audioInputDevices[audioInputDeviceName]);
      }
 
      /**
       * Disconnects all MIDI devices from the specified audio track.
       * 
-      * @param {string} trackName - Name of the track from which to disconnect the MIDI device
+      * @param {string} trackName - Name of the track from which to disconnect the MIDI devices
       */
      async disconnectMidiDeviceFromTrack(trackName) {
-        if (trackName in this.#tracks)
-           this.#tracks[trackName].disconnectFromMidiDevice();
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        this.#tracks[trackName].disconnectFromMidiDevice();
+     }
+
+     /**
+      * Disconnects all audio input devices from the specified audio track.
+      * 
+      * @param {string} trackName - Name of the track from which to disconnect the audio input devices
+      */
+     async disconnectAudioInputDeviceFromTrack(trackName) {
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        this.#tracks[trackName].disconnectFromAudioInputDevice();
      }
 
      /**
@@ -2891,25 +3949,38 @@
       * @see {@link module:Constants.Duration Duration}
       */
      async playNote(trackName, note, startTime, duration, velocity=0.75) {
-        // TODO: Verify velocity within valid range, Errors.mjs
-        return (trackName in this.#tracks) ? await this.#tracks[trackName].playNote(note, velocity, startTime, duration) : 0;
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        if ((Number(velocity) < 0.0) || (Number(velocity) > 1.0))
+           throw new WebAudioValueError(`The target velocity value (${velocity}) is outside of the available range: [0.0, 1.0]`);
+        return await this.#tracks[trackName].playNote(Number(note), Number(velocity), Number(startTime), Number(duration));
      }
 
      /**
       * Schedules an audio clip to be played on a specific track for some duration of time.
       * 
+      * The format of the audio clip in the `audioClip` parameter may be a data buffer containing
+      * raw audio-encoded data (such as from a WAV file), a blob containing audio-encoded data, or
+      * a {@link MidiClip} or {@link AudioClip} that was recorded using this library.
+      * 
       * If the `duration` parameter is not specified or is set to `null`, the audio clip will
       * play to completion.
       * 
       * @param {string} trackName - Name of the track on which to play the clip
-      * @param {ArrayBuffer} buffer - Buffer containing raw, audio-encoded data
+      * @param {ArrayBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
       * @param {number} startTime - Global API time at which to start playing the clip
-      * @param {number|null} [duration] - Number of seconds for which to continue playing the clip
+      * @param {number} [duration] - Number of seconds for which to continue playing the clip
       * @returns {Promise<number>} Duration (in seconds) of the clip being played
       * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer ArrayBuffer}
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+      * @see {@link MidiClip}
       */
-     async playClip(trackName, buffer, startTime, duration) {
-        return (trackName in this.#tracks) ? await this.#tracks[trackName].playClip(buffer, startTime, duration) : 0;
+     async playClip(trackName, audioClip, startTime, duration) {
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        if (!(audioClip instanceof ArrayBuffer || audioClip instanceof Blob || (audioClip instanceof Object && Object.prototype.hasOwnProperty.call(audioClip, 'clipType'))))
+           throw new WebAudioTrackError('The audio clip is not a known type (ArrayBuffer, Blob, MidiClip, AudioClip) and cannot be played');
+        return await this.#tracks[trackName].playClip(audioClip, Number(startTime), duration ? Number(duration) : undefined);
      }
 
      /**
@@ -2921,11 +3992,13 @@
       * @param {string} trackName - Name of the track on which to play the file
       * @param {string} fileURL - URL location pointing to an audio file
       * @param {string} startTime - Global API time at which to start playing the file
-      * @param {number|null} [duration] - Number of seconds for which to continue playing the file
+      * @param {number} [duration] - Number of seconds for which to continue playing the file
       * @returns {Promise<number>} Duration (in seconds) of the file being played
       */
      async playFile(trackName, fileURL, startTime, duration) {
-        return (trackName in this.#tracks) ? await this.#tracks[trackName].playFile(fileURL, startTime, duration) : 0;
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        return await this.#tracks[trackName].playFile(fileURL, Number(startTime), duration ? Number(duration) : undefined);
      }
 
      /**
@@ -2942,8 +4015,11 @@
       * @see {@link module:Constants.Note Note}
       */
      async startNote(trackName, note, velocity=0.75) {
-        // TODO: Verify velocity within valid range, Errors.mjs
-        return (trackName in this.#tracks) ? await this.#tracks[trackName].playNoteAsync(note, velocity) : {};
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        if ((Number(velocity) < 0.0) || (Number(velocity) > 1.0))
+           throw new WebAudioValueError(`The target velocity value (${velocity}) is outside of the available range: [0.0, 1.0]`);
+        return await this.#tracks[trackName].playNoteAsync(note, Number(velocity));
      }
 
      /**
@@ -2955,8 +4031,55 @@
       * @param {Object} note - Reference to an active note that was started using {@link WebAudioAPI#startNote startNote()}
       */
      async stopNote(trackName, note) {
-        if (trackName in this.#tracks)
-           this.#tracks[trackName].stopNoteAsync(note);
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        this.#tracks[trackName].stopNoteAsync(note);
+     }
+
+     /**
+      * Schedules an audio clip to be recorded on a specific track for some duration of time.
+      * 
+      * If the `duration` parameter is not specified or is set to `null`, the audio clip will
+      * continue to record until manually stopped by the {@link AudioClip#finalize finalize()}
+      * function on the returned {@link AudioClip} object.
+      * 
+      * Note that the recorded audio clip will **not** include any effects that might exist on
+      * the target track. This is so that recording on an effect-modified track and then
+      * immediately playing back on the same track will not cause the effects to be doubled.
+      * 
+      * @param {string} trackName - Name of the track on which to record the audio clip
+      * @param {number} startTime - Global API time at which to start recording the audio clip
+      * @param {number} [duration] - Number of seconds for which to continue recording the audio clip
+      * @returns {AudioClip} Reference to an {@link AudioClip} object representing the audio data to be recorded
+      * @see {@link AudioClip}
+      */
+     recordAudioClip(trackName, startTime, duration) {
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        return this.#tracks[trackName].recordAudioClip(Number(startTime), duration ? Number(duration) : undefined);
+     }
+
+     /**
+      * Schedules a MIDI clip to be recorded on a specific track for some duration of time.
+      * 
+      * If the `duration` parameter is not specified or is set to `null`, the MIDI clip will
+      * continue to record until manually stopped by the {@link MidiClip#finalize finalize()}
+      * function on the returned {@link MidiClip} object.
+      * 
+      * Note that the recorded MIDI clip will **not** include any effects that might exist on
+      * the target track. This is so that recording on an effect-modified track and then
+      * immediately playing back on the same track will not cause the effects to be doubled.
+      * 
+      * @param {string} trackName - Name of the track on which to record the MIDI clip
+      * @param {number} startTime - Global API time at which to start recording the MIDI clip
+      * @param {number} [duration] - Number of seconds for which to continue recording the MIDI clip
+      * @returns {MidiClip} Reference to a {@link MidiClip} object representing the MIDI data to be recorded
+      * @see {@link MidiClip}
+      */
+     recordMidiClip(trackName, startTime, duration) {
+        if (!(trackName in this.#tracks))
+           throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+        return this.#tracks[trackName].recordMidiClip(Number(startTime), duration ? Number(duration) : undefined);
      }
 
      /**
@@ -2986,6 +4109,37 @@
      audioAPI.createTrack('default');
      audioAPI.start();
      const availableEffects = audioAPI.getAvailableEffects();
+
+
+      /**
+       * Object representing a mapping between an effect type and its unique internal code.
+       * @constant {Object.<string, number>}
+       */
+      const EffectType = {
+          Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
+          Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
+          Panning: 31, Equalization: 32,                                                   // Spectral Effects
+          Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
+          LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
+      };
+
+      const EffectsPreset = {
+          'Under Water': ['LowPassFilter', {
+              ['cutoffFrequency']: 500,
+              ['resonance']: 12,
+          }],
+          'Telephone': ['HighPassFilter', {
+              ['cutoffFrequency'] : 1800,
+              ['resonance']: 10,
+          }],
+          'Cave': ['Echo', {
+              ['feedback'] : 0.5,
+              ['intensity'] : 0.4,
+          }],
+          'Fan Blade': ['Tremolo', {
+              ['tremeloFrequency'] : 18,
+          }],
+      };
 
       function base64toArrayBuffer(base64){
           var binaryString = window.atob(base64.replace("data:audio/mpeg;base64,", ""));
@@ -3035,7 +4189,7 @@
           const effectType = availableEffects[effectName];
           const parameters = audioAPI.getAvailableEffectParameters(effectType);
           const effectOptions = {[Object.values(parameters).name] : level};
-          console.log(`HERE ARE THE PARAMETERS: `, effectOptions);
+          console.log(`HERE ARE THE PARAMETERS ${trackName}:`, effectOptions);
           // await audioAPI.updateTrackEffect(trackName,effectName,effectOptions);
       }
 
@@ -3045,7 +4199,7 @@
 
       function stopAudio(){
           audioAPI.stop();
-          audioAPI.removeAllTracks();
+          audioAPI.clearAllTracks();
       }
 
       function masterVolume(percent){
@@ -3056,6 +4210,12 @@
       }
       function  beatsPerMinute(bpm){
           return audioAPI.updateBeatsPerMinute(bpm);
+      }
+      async function addFxPreset(track, effect) {
+          const effectName = EffectsPreset[effect][0];
+          await audioAPI.applyTrackEffect(track, effectName, EffectType[effectName]);
+          const effectOptions = EffectsPreset[effect][1];
+          await audioAPI.updateTrackEffect(track, effectName, effectOptions);
       }
 
       async function wait(duration) {
@@ -3091,7 +4251,7 @@
 
           getCategories() {
               return [
-                  new Extension.Category('music', new Color(215, 10, 10)),
+                  new Extension.Category('music', new Color(250, 51, 51)),
               ];
           }
 
@@ -3105,7 +4265,8 @@
                   new Extension.Palette.Block('setGlobalBPM'),
                   new Extension.Palette.Block('setTrackPanning'),
                   new Extension.Palette.Block('applyTrackEffect'),
-                  new Extension.Palette.Block('setTrackEffect')
+                  new Extension.Palette.Block('setTrackEffect'),
+                  new Extension.Palette.Block('presetEffect')
               ];
               return [
                   new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -3121,7 +4282,6 @@
                   block('playAudioClip', 'command', 'music', 'play audio clip %s', ['clip'], function (audioBuffer){
                       this.runAsyncFn(async () =>{
                           const trackName = this.receiver.id;
-                          createTrack(trackName);
                           const duration = await playAudio(audioBuffer, trackName);
                           await wait(duration-.02);
                       },{ args: [], timeout: I32_MAX });
@@ -3129,7 +4289,6 @@
                   block('playAudioClipforDuration', 'command', 'music', 'play audio clip for duration %n %s', ['1', 'clip'], function (dur,audioBuffer){
                       this.runAsyncFn(async () =>{
                           const trackName = this.receiver.id;
-                          createTrack(trackName);
                           const duration = await playAudioForDuration(audioBuffer, trackName, dur);
                           await wait(duration-Math.max(.02,0));
                       },{ args: [], timeout: I32_MAX });
@@ -3166,7 +4325,24 @@
                           const trackName = this.receiver.id;
                           await setTrackEffect(trackName, effectName, level);
                       },{ args: [], timeout: I32_MAX });
-                  })
+                  }),
+                  block('presetEffect', 'command', 'music', 'preset effects %fxPreset %onOff', ['', 'on'], function (effect, status) {
+                      const trackName = this.receiver.id;
+                      if (effect != '') {
+                          if (status == 'on') {
+                              this.runAsyncFn(async () => {
+                                  await addFxPreset(trackName, effect);
+                              });
+                          } else {
+                              const effectName = EffectsPreset[effect][0];
+                              this.runAsyncFn(async () => {
+                                  await window.audioAPI.removeTrackEffect(trackName, effectName);
+                              });
+                          }
+                      } else {
+                          throw Error('must select an effect');
+                      }         
+                  }),
               ];
           }
           getLabelParts() { 
@@ -3189,7 +4365,7 @@
                   unionMaps([
                       identityMap([ 'Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'Thirtysecondth']),
                   ]),
-                  false,
+                  true,
               )),
               new Extension.LabelPart('enabled', () => new InputSlotMorph(
                   null, //text
@@ -3197,14 +4373,26 @@
                   unionMaps([
                       identityMap(['Enabled', 'Disabled']),
                   ]),
-                  false,
+                  true,
               )),
               new Extension.LabelPart('effects', () => new InputSlotMorph(
                   null, //text
                   false, //numeric
                   identityMap(Object.keys(availableEffects)),
-                  false,
-              ))
+                  true, //readonly (no arbitrary text)
+              )),
+              new Extension.LabelPart('fxPreset', () => new InputSlotMorph(
+                  null, // text
+                  false, //numeric
+                  identityMap(['Under Water', 'Telephone', 'Cave', 'Fan Blade']),
+                  true, // readonly (no arbitrary text)
+              )),
+              new Extension.LabelPart('onOff', () => new InputSlotMorph(
+                  null, // text
+                  false, //numeric
+                  identityMap(['on', 'off']),
+                  true, // readonly (no arbitrary text)
+              )),
           ];           
       }
 
