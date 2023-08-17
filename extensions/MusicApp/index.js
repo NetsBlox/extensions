@@ -104,7 +104,7 @@
    * @constant {Object.<string, number>}
    */
   const AnalysisType = {
-     PowerSpectrum: 1, TotalPower: 2
+     TimeSeries: 1, PowerSpectrum: 2, TotalPower: 3
   };
 
   /**
@@ -1774,7 +1774,7 @@
      // Track-local variable definitions
      let instrument = null, midiDevice = null, audioDeviceInput = null;
      const audioSources = [], asyncAudioSources = [], effects = [];
-     const audioSink = new AnalyserNode(audioContext, { fftSize: 256 });
+     const audioSink = new AnalyserNode(audioContext, { fftSize: 1024, maxDecibels: -10.0, smoothingTimeConstant: 0.5 });
      const analysisBuffer = new Uint8Array(audioSink.frequencyBinCount);
      audioSink.connect(trackAudioSink);
 
@@ -1828,12 +1828,16 @@
       * Returns a buffer containing the realtime frequency content of the audio being produced by
       * the current track.
       * 
-      * @returns {Uint8Array} Array containing frequency content of the track's current audio output
+      * @param {number} analysisType - Audio {@link module:Constants.AnalysisType AnalysisType} for which the buffer will be used
+      * @returns {Uint8Array} Array containing time or frequency content of the track's current audio output
       * @memberof Track
       * @instance
       */
-     function getAnalysisBuffer() {
-        audioSink.getByteFrequencyData(analysisBuffer);
+     function getAnalysisBuffer(analysisType) {
+        if (analysisType == AnalysisType.TimeSeries)
+           audioSink.getByteTimeDomainData(analysisBuffer);
+        else
+           audioSink.getByteFrequencyData(analysisBuffer);
         return analysisBuffer;
      }
 
@@ -3152,15 +3156,15 @@
 
      /**
       * Performs a power spectrum analysis on the passed-in buffer containing audio
-      * frequency content.
+      * frequency content. The bins of the resulting power spectrum will contain values between
+      * [0, 255], where 0 represents silence and 255 represents the maximum representable power.
       * 
       * @param {Uint8Array} frequencyContent - {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array} containing audio frequency data
-      * @returns {Float32Array} Array containing the power spectrum corresponding to the specified frequency data
-      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Float32Array Float32Array}
+      * @returns {Uint8Array} Array containing the power spectrum corresponding to the specified frequency data as values between [0, 255]
       * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array}
       */
      static analyze(frequencyContent) {
-        return undefined;
+        return frequencyContent;
      }
   }
 
@@ -3183,14 +3187,16 @@
 
      /**
       * Performs a total power spectral analysis on the passed-in buffer containing audio
-      * frequency content.
+      * frequency content. The resulting value will be between [0, 1], where 0 represents
+      * silence and 1 represents the maximum representable power.
       * 
       * @param {Uint8Array} frequencyContent - {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array} containing audio frequency data
-      * @returns {number} Total power content across all frequencies in the specified frequency data
+      * @returns {number} Total power content across all frequencies in the specified frequency data as a value between [0, 1]
       * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array}
       */
      static analyze(frequencyContent) {
-        return undefined;
+        const frequencyTotal = frequencyContent.reduce(function(a, b) { return a + b; });
+        return frequencyTotal / (frequencyContent.length * 255);
      }
   }
 
@@ -3216,7 +3222,7 @@
    * @see {@link AnalysisBase}
    */
   function getAnalyzerFor(analysisType) {
-     return new AnalysisClasses[analysisType];
+     return AnalysisClasses[analysisType];
   }
 
   var version = "0.3.0";
@@ -3307,7 +3313,7 @@
         // Generate and connect all required audio nodes
         this.#sourceSinkNode = new GainNode(this.#audioContext);
         this.#compressorNode = new DynamicsCompressorNode(this.#audioContext);
-        this.#analysisNode = new AnalyserNode(this.#audioContext, { fftSize: 256 });
+        this.#analysisNode = new AnalyserNode(this.#audioContext, { fftSize: 1024, maxDecibels: -10.0, smoothingTimeConstant: 0.5 });
         this.#analysisBuffer = new Uint8Array(this.#analysisNode.frequencyBinCount);
         this.#sourceSinkNode.connect(this.#compressorNode).connect(this.#analysisNode).connect(this.#audioContext.destination);
      }
@@ -3413,6 +3419,19 @@
      }
 
      /**
+      * Returns a listing of all available audio analysis types in the {@link WebAudioAPI} library.
+      * 
+      * This function can be used to enumerate available analysis options for displaying on a
+      * web page.
+      * 
+      * @returns {Object.<string, number>} Listing of all available audio analysis types in the {@link WebAudioAPI} library
+      * @see {@link module:Constants.AnalysisType AnalysisType}
+      */
+     getAvailableAnalysisTypes() {
+        return AnalysisType;
+     }
+
+     /**
       * Returns a listing of the available instruments located in the specified asset library.
       * 
       * Individual results from this function call can be passed directly to the
@@ -3475,7 +3494,7 @@
            delete this.#audioInputDevices[key];
         if (navigator.mediaDevices?.enumerateDevices) {
            try {
-              await navigator.mediaDevices.getUserMedia({audio: true, video: false});
+              await navigator.mediaDevices.getUserMedia({ audio: true });
               for (const device of await navigator.mediaDevices.enumerateDevices())
                  if (device.kind == 'audioinput') {
                     let alreadyFound = false;
@@ -3514,7 +3533,7 @@
            delete this.#audioOutputDevices[key];
         if (navigator.mediaDevices?.enumerateDevices) {
            try {
-              await navigator.mediaDevices.getUserMedia({audio: true, video: false});
+              await navigator.mediaDevices.getUserMedia({ audio: true });
               for (const device of await navigator.mediaDevices.enumerateDevices())
                  if (device.kind == 'audiooutput') {
                     let alreadyFound = false;
@@ -3555,19 +3574,22 @@
       * @see {@link module:Constants.AnalysisType AnalysisType}
       */
      analyzeAudio(analysisType, trackName) {
-        let frequencyContent = null;
+        let analysisBuffer = null;
         if (!Object.values(AnalysisType).includes(Number(analysisType)))
            throw new WebAudioTargetError(`The target analysis type identifier (${analysisType}) does not exist`);
         if (trackName) {
            if (!(trackName in this.#tracks))
               throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
-           frequencyContent = this.#tracks[trackName].getAnalysisBuffer();
+           analysisBuffer = this.#tracks[trackName].getAnalysisBuffer(analysisType);
         }
         else {
-           frequencyContent = this.#analysisBuffer;
-           this.#analysisNode.getByteFrequencyData(frequencyContent);
+           analysisBuffer = this.#analysisBuffer;
+           if (analysisType == AnalysisType.TimeSeries)
+              this.#analysisNode.getByteTimeDomainData(analysisBuffer);
+           else
+              this.#analysisNode.getByteFrequencyData(analysisBuffer);
         }
-        return getAnalyzerFor(analysisType).analyze(frequencyContent);
+        return (analysisType == AnalysisType.TimeSeries) ? analysisBuffer : getAnalyzerFor(analysisType).analyze(analysisBuffer);
      }
 
      /**
@@ -4176,7 +4198,7 @@
 
       async function setTrackPanning(trackName, level){
           const effectOptions = { ["leftToRightRatio"]:Number(level)};
-          await audioAPI.applyTrackEffect(trackName,"Panning",availableEffects["Panning"]);
+          // await audioAPI.applyTrackEffect(trackName,"Panning",availableEffects["Panning"]);
           await audioAPI.updateTrackEffect(trackName,"Panning",effectOptions);
       }
 
