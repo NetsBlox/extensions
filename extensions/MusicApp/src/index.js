@@ -100,11 +100,13 @@ import {WebAudioAPI} from "./WebAudioAPI/build/lib/webAudioAPI";
         audioAPI.clearAllTracks();
     }
 
-    function masterVolume(percent){
-        return audioAPI.updateMasterVolume(percent, null);
+    async function masterVolume(percent){
+        const effectOptions = { ["intensity"]:Number(percent)};
+        await audioAPI.updateMasterEffect(trackName,"Volume",effectOptions);
     }
-    function trackVolume(trackName, percent){
-        return audioAPI.updateTrackVolume(trackName, percent, 0);
+    async function trackVolume(trackName, percent){
+        const effectOptions = { ["intensity"]:Number(percent)};
+        await audioAPI.updateTrackEffect(trackName,"Volume",effectOptions);
     }
     function  beatsPerMinute(bpm){
         return audioAPI.updateBeatsPerMinute(bpm);
