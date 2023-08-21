@@ -353,9 +353,10 @@
       * 
       * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update(effectOptions, updateTime) { return false; }
+     async update(effectOptions, updateTime, timeConstant) { return false; }
 
      /**
       * Returns a reference to the {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
@@ -435,17 +436,21 @@
       * @param {number} lowerCutoffFrequency - Frequency below which audio content will be reduced
       * @param {number} upperCutoffFrequency - Frequency above which audio content will be reduced
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({lowerCutoffFrequency, upperCutoffFrequency}, updateTime) {
+     async update({lowerCutoffFrequency, upperCutoffFrequency}, updateTime, timeConstant) {
+        if ((lowerCutoffFrequency == null) && (upperCutoffFrequency == null))
+           throw new WebAudioValueError('Cannot update the BandPassFilter effect without at least one of the following parameters: "lowerCutoffFrequency, upperCutoffFrequency"');
         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
         if (lowerCutoffFrequency != null)
            this.#lowerCutoffFrequency = lowerCutoffFrequency;
         if (upperCutoffFrequency != null)
            this.#upperCutoffFrequency = upperCutoffFrequency;
         const centerFrequency = this.#calcCenterFrequency();
-        this.#filterNode.frequency.setValueAtTime(centerFrequency, timeToUpdate);
-        this.#filterNode.Q.setValueAtTime(centerFrequency / (this.#upperCutoffFrequency - this.#lowerCutoffFrequency), timeToUpdate);
+        this.#filterNode.frequency.setTargetAtTime(centerFrequency, timeToUpdate, timeConstantTarget);
+        this.#filterNode.Q.setTargetAtTime(centerFrequency / (this.#upperCutoffFrequency - this.#lowerCutoffFrequency), timeToUpdate, timeConstantTarget);
         return true;
      }
 
@@ -522,17 +527,21 @@
       * @param {number} lowerCutoffFrequency - Frequency above which audio content will be reduced
       * @param {number} upperCutoffFrequency - Frequency below which audio content will be reduced
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({lowerCutoffFrequency, upperCutoffFrequency}, updateTime) {
+     async update({lowerCutoffFrequency, upperCutoffFrequency}, updateTime, timeConstant) {
+        if ((lowerCutoffFrequency == null) && (upperCutoffFrequency == null))
+           throw new WebAudioValueError('Cannot update the BandRejectFilter effect without at least one of the following parameters: "lowerCutoffFrequency, upperCutoffFrequency"');
         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
         if (lowerCutoffFrequency != null)
            this.#lowerCutoffFrequency = lowerCutoffFrequency;
         if (upperCutoffFrequency != null)
            this.#upperCutoffFrequency = upperCutoffFrequency;
         const centerFrequency = this.#calcCenterFrequency();
-        this.#filterNode.frequency.setValueAtTime(centerFrequency, timeToUpdate);
-        this.#filterNode.Q.setValueAtTime((this.#upperCutoffFrequency - this.#lowerCutoffFrequency) / centerFrequency, timeToUpdate);
+        this.#filterNode.frequency.setTargetAtTime(centerFrequency, timeToUpdate, timeConstantTarget);
+        this.#filterNode.Q.setTargetAtTime((this.#upperCutoffFrequency - this.#lowerCutoffFrequency) / centerFrequency, timeToUpdate, timeConstantTarget);
         return true;
      }
 
@@ -579,7 +588,7 @@
      static getParameters() {
         return [
            { name: 'rate', type: 'number', validValues: [0, 2], defaultValue: 0 },
-           { name: 'shape', type: 'string', validValues: ["sine", "triangle"], defaultValue: "sine" },
+           { name: 'shape', type: 'string', validValues: ['sine', 'triangle'], defaultValue: 'sine' },
            { name: 'delayOffset', type: 'number', validValues: [0, 0.05], defaultValue: 0 },
            { name: 'variableFeedback', type: 'number', validValues: [0, 1], defaultValue: 0 },
            { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
@@ -603,9 +612,13 @@
       * @param {number} variableFeedback - Percentage of processed signal to be fed back into the chorus circuit
       * @param {number} intensity - Ratio of chorus-to-original sound as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime) {
+     async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime, timeConstant) {
+        if ((rate == null) && (shape == null) && (delayOffset == null) && (variableFeedback == null) && (intensity == null))
+           throw new WebAudioValueError('Cannot update the Chorus effect without at least one of the following parameters: "rate, shape, delayOffset, variableFeedback, intensity"');
+        (updateTime == null) ? this.audioContext.currentTime : updateTime;
         return false;
      }
 
@@ -676,19 +689,23 @@
       * @param {number} release - Number of seconds required to increase signal gain by 10 dB between [0.0, 1.0]
       * @param {number} intensity - Amount of compression applied as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({threshold, attack, release, intensity}, updateTime) {
+     async update({threshold, attack, release, intensity}, updateTime, timeConstant) {
+        if ((threshold == null) && (attack == null) && (release == null) && (intensity == null))
+           throw new WebAudioValueError('Cannot update the Compression effect without at least one of the following parameters: "threshold, attack, release, intensity"');
         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
         if (threshold != null)
-           this.#compressorNode.threshold.setValueAtTime(threshold, timeToUpdate);
+           this.#compressorNode.threshold.setTargetAtTime(threshold, timeToUpdate, timeConstantTarget);
         if (attack != null)
-           this.#compressorNode.attack.setValueAtTime(attack, timeToUpdate);
+           this.#compressorNode.attack.setTargetAtTime(attack, timeToUpdate, timeConstantTarget);
         if (release != null)
-           this.#compressorNode.release.setValueAtTime(release, timeToUpdate);
+           this.#compressorNode.release.setTargetAtTime(release, timeToUpdate, timeConstantTarget);
         if (intensity != null) {
            const ratioValue = 1.0 + (intensity * 19.0);
-           this.#compressorNode.ratio.setValueAtTime(ratioValue, timeToUpdate);
+           this.#compressorNode.ratio.setTargetAtTime(ratioValue, timeToUpdate, timeConstantTarget);
         }
         return true;
      }
@@ -752,9 +769,13 @@
       * @param {number} cutoffFrequencyUpper - Frequency above which to block acoustic content
       * @param {number} intensity - Ratio of delayed-to-original sound as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({feedback, time, cutoffFrequencyLower, cutoffFrequencyUpper, intensity}, updateTime) {
+     async update({feedback, time, cutoffFrequencyLower, cutoffFrequencyUpper, intensity}, updateTime, timeConstant) {
+        if ((feedback == null) && (time == null) && (cutoffFrequencyLower == null) && (cutoffFrequencyUpper == null) && (intensity == null))
+           throw new WebAudioValueError('Cannot update the Delay effect without at least one of the following parameters: "feedback, time, cutoffFrequencyLower, cutoffFrequencyUpper, intensity"');
+        (updateTime == null) ? this.audioContext.currentTime : updateTime;
         return false;
      }
 
@@ -811,9 +832,13 @@
       * @param {boolean} tone - Whether to smooth distortion by adding tasty tone to it
       * @param {number} intensity - Ratio of distorted-to-original sound as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({drive, tone, intensity}, updateTime) {
+     async update({drive, tone, intensity}, updateTime, timeConstant) {
+        if ((drive == null) && (tone == null) && (intensity == null))
+           throw new WebAudioValueError('Cannot update the Distortion effect without at least one of the following parameters: "drive, tone, intensity"');
+        (updateTime == null) ? this.audioContext.currentTime : updateTime;
         return false;
      }
 
@@ -842,13 +867,13 @@
      /** @type {GainNode} */
      #gain;
      /** @type {GainNode} */
-     #destination
+     #destination;
 
      #echo = {
         feedback: 0.2,
         intensity: 0.2,
         maxDuration: 1,
-     }
+     };
 
      /**
       * Constructs a new {@link Echo} effect object.
@@ -897,16 +922,21 @@
       * @param {number} feedback - Amount of reflection fed back into the original sound
       * @param {number} intensity - Ratio of echoed-to-original sound as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({feedback, intensity}, updateTime) {
+     async update({feedback, intensity}, updateTime, timeConstant) {
+        if ((feedback == null) && (intensity == null))
+           throw new WebAudioValueError('Cannot update the Echo effect without at least one of the following parameters: "feedback, intensity"');
+        const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
         if (feedback != null) {
            this.#echo.feedback = feedback;
-           this.#delay.delayTime.value = this.#echo.feedback * this.#echo.maxDuration;
+           this.#delay.delayTime.setTargetAtTime(this.#echo.feedback * this.#echo.maxDuration, timeToUpdate, timeConstantTarget);
         }
         if (intensity != null) {
            this.#echo.intensity = intensity;
-           this.#gain.gain.value = this.#echo.intensity;
+           this.#gain.gain.setTargetAtTime(this.#echo.intensity, timeToUpdate, timeConstantTarget);
         }
         return true;
      }
@@ -963,9 +993,13 @@
       * @param {number[]} frequencyBandUpperCutoffs - Upper frequency cutoffs for each band in the equalizer
       * @param {number[]} frequencyBandVolumes - Volumes for each frequency band in the equalizer
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({frequencyBandUpperCutoffs, frequencyBandVolumes}, updateTime) {
+     async update({frequencyBandUpperCutoffs, frequencyBandVolumes}, updateTime, timeConstant) {
+        if ((frequencyBandUpperCutoffs == null) && (frequencyBandVolumes == null))
+           throw new WebAudioValueError('Cannot update the Equalization effect without at least one of the following parameters: "frequencyBandUpperCutoffs, frequencyBandVolumes"');
+        (updateTime == null) ? this.audioContext.currentTime : updateTime;
         return false;
      }
 
@@ -989,17 +1023,17 @@
   class Flanger extends EffectBase {
 
      /** @type {GainNode} */
-     #destination
+     #destination;
      /** @type {GainNode} */
-     #dry
+     #dry;
      /** @type {GainNode} */
-     #wet
+     #wet;
      /** @type {DelayNode} */
      #delayNode;
      /** @type {OscillatorNode} */
      #lfo;
      /** @type {GainNode} */
-     #feedback
+     #feedback;
 
      /**
       * Constructs a new {@link Flanger} effect object.
@@ -1017,7 +1051,7 @@
         this.#wet.gain.value = 0.2;
         this.#feedback.gain.value = 0;
         this.#delayNode.delayTime.value = 0;
-        this.#lfo.type = "sine";
+        this.#lfo.type = 'sine';
         this.#lfo.start();
 
         this.#dry.connect(this.#wet);
@@ -1038,7 +1072,7 @@
      static getParameters() {
         return [
            { name: 'rate', type: 'number', validValues: [0, 2], defaultValue: 0 },
-           { name: 'shape', type: 'string', validValues: ["sine", "triangle"], defaultValue: "sine" },
+           { name: 'shape', type: 'string', validValues: ['sine', 'triangle'], defaultValue: 'sine' },
            { name: 'delayOffset', type: 'number', validValues: [0, 0.015], defaultValue: 0 },
            { name: 'variableFeedback', type: 'number', validValues: [0, 1], defaultValue: 0 },
            { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
@@ -1062,19 +1096,26 @@
       * @param {number} variableFeedback - Percentage of processed signal to be fed back into the flanger circuit
       * @param {number} intensity - Ratio of flangered-to-original sound as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime) {
+     async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime, timeConstant) {
+        if ((rate == null) && (shape == null) && (delayOffset == null) && (variableFeedback == null) && (intensity == null))
+           throw new WebAudioValueError('Cannot update the Flanger effect without at least one of the following parameters: "rate, shape, delayOffset, variableFeedback, intensity"');
+        if ((shape != 'sine') && (shape != 'triangle'))
+           throw new WebAudioValueError('Flanger effect "shape" parameter must take one of the following values: "sine, "triangle"');
+        const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
         if (rate != null)
-           this.#lfo.frequency.value = rate; 
+           this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
         if (shape != null) 
-           this.#lfo.type = shape == 0 ? "sine" : "triangle";
+           this.#lfo.type = shape;
         if (delayOffset != null)
-           this.#delayNode.delayTime.value = delayOffset * 1;
+           this.#delayNode.delayTime.setTargetAtTime(delayOffset * 1, timeToUpdate, timeConstantTarget);
         if (variableFeedback != null)
-           this.#feedback.gain.value = variableFeedback;
+           this.#feedback.gain.setTargetAtTime(variableFeedback, timeToUpdate, timeConstantTarget);
         if (intensity != null)
-           this.#wet.gain.value = intensity;
+           this.#wet.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);
         return false;
      }
 
@@ -1138,14 +1179,18 @@
       * @param {number} cutoffFrequency - Frequency below which audio content will be reduced
       * @param {number} resonance - Amount of frequency exaggeration around the cutoff as a value between [0.0, 1000.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({cutoffFrequency, resonance}, updateTime) {
+     async update({cutoffFrequency, resonance}, updateTime, timeConstant) {
+        if ((cutoffFrequency == null) && (resonance == null))
+           throw new WebAudioValueError('Cannot update the HighPassFilter effect without at least one of the following parameters: "cutoffFrequency, resonance"');
         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
         if (cutoffFrequency != null)
-           this.#filterNode.frequency.setValueAtTime(cutoffFrequency, timeToUpdate);
+           this.#filterNode.frequency.setTargetAtTime(cutoffFrequency, timeToUpdate, timeConstantTarget);
         if (resonance != null)
-           this.#filterNode.Q.setValueAtTime(Math.max(resonance, 0.0001), timeToUpdate);
+           this.#filterNode.Q.setTargetAtTime(Math.max(resonance, 0.0001), timeToUpdate, timeConstantTarget);
         return true;
      }
 
@@ -1209,14 +1254,18 @@
       * @param {number} cutoffFrequency - Frequency above which audio content will be reduced
       * @param {number} resonance - Amount of frequency exaggeration around the cutoff as a value between [0.0, 1000.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({cutoffFrequency, resonance}, updateTime) {
+     async update({cutoffFrequency, resonance}, updateTime, timeConstant) {
+        if ((cutoffFrequency == null) && (resonance == null))
+           throw new WebAudioValueError('Cannot update the LowPassFilter effect without at least one of the following parameters: "cutoffFrequency, resonance"');
         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
         if (cutoffFrequency != null)
-           this.#filterNode.frequency.setValueAtTime(cutoffFrequency, timeToUpdate);
+           this.#filterNode.frequency.setTargetAtTime(cutoffFrequency, timeToUpdate, timeConstantTarget);
         if (resonance != null)
-           this.#filterNode.Q.setValueAtTime(Math.max(resonance, 0.0001), timeToUpdate);
+           this.#filterNode.Q.setTargetAtTime(Math.max(resonance, 0.0001), timeToUpdate, timeConstantTarget);
         return true;
      }
 
@@ -1279,13 +1328,16 @@
       * 
       * @param {number} leftToRightRatio - Ratio of sound output from the left speaker to the right speaker as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({leftToRightRatio}, updateTime) {
+     async update({leftToRightRatio}, updateTime, timeConstant) {
         if (leftToRightRatio == null)
            throw new WebAudioValueError('Cannot update the Panning effect without at least one of the following parameters: "leftToRightRatio"');
+        const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
         const panningValue = 2.0 * (leftToRightRatio - 0.5);
-        this.#panningNode.pan.setValueAtTime(panningValue, updateTime == null ? this.audioContext.currentTime : updateTime);
+        this.#panningNode.pan.setTargetAtTime(panningValue, timeToUpdate, timeConstantTarget);
         return true;
      }
 
@@ -1346,9 +1398,13 @@
       * @param {number} widthUpper - Highest frequency through which the bandpass filters will sweep
       * @param {number} intensity - Ratio of phased-to-original sound as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({speed, feedback, widthLower, widthUpper, intensity}, updateTime) {
+     async update({speed, feedback, widthLower, widthUpper, intensity}, updateTime, timeConstant) {
+        if ((speed == null) && (feedback == null) && (widthLower == null) && (widthUpper == null) && (intensity == null))
+           throw new WebAudioValueError('Cannot update the Phaser effect without at least one of the following parameters: "speed, feedback, widthLower, widthUpper, intensity"');
+        (updateTime == null) ? this.audioContext.currentTime : updateTime;
         return false;
      }
 
@@ -1408,9 +1464,13 @@
       * @param {number} lowCutoffFrequency - Frequency below which to block acoustic reverb content
       * @param {number} intensity - Ratio of reverbed-to-original sound as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity}, updateTime) {
+     async update({preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity}, updateTime, timeConstant) {
+        if ((preDelay == null) && (decay ==  null) && (highCutoffFrequency == null) && (lowCutoffFrequency ==  null) && (intensity == null))
+           throw new WebAudioValueError('Cannot update the Reverb effect without at least one of the following parameters: "preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity"');
+        (updateTime == null) ? this.audioContext.currentTime : updateTime;
         return false;
      }
 
@@ -1461,7 +1521,7 @@
       */
      static getParameters() {
         return [
-           { name: 'tremeloFrequency', type: 'number', validValues: [0, 20], defaultValue: 0 },
+           { name: 'rate', type: 'number', validValues: [0, 20], defaultValue: 0 },
         ];
      }
 
@@ -1476,14 +1536,17 @@
       * Note that the `updateTime` parameter can be omitted to immediately cause the requested
       * changes to take effect.
       * 
-      * @param {number} tremeloFrequency - Frequency at which an oscillator modulates the tremolo signal
+      * @param {number} rate - Frequency at which an oscillator modulates the tremolo signal
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({ tremeloFrequency }, updateTime) {
-        (updateTime == null) ? this.audioContext.currentTime : updateTime;
-        if (tremeloFrequency != null) 
-           this.#lfo.frequency.value = tremeloFrequency;
+     async update({ rate }, updateTime, timeConstant) {
+        if (rate == null)
+           throw new WebAudioValueError('Cannot update the Tremolo effect without at least one of the following parameters: "rate"');
+        const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+        this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
         return true;
      }
 
@@ -1554,13 +1617,20 @@
       * @param {number} rate - Frequency at which an oscillator modulates the audio signal
       * @param {number} depth - Amount of pitch variation as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({rate, depth}, updateTime) {
-        if (rate != null)
-           this.#lfo.frequency.value = rate;
-        if (depth != null) 
-           this.#gain.gain.value = (depth / (2 * Math.PI * this.#lfo.frequency.value));
+     async update({rate, depth}, updateTime, timeConstant) {
+        if ((rate == null) && (depth == null))
+           throw new WebAudioValueError('Cannot update the Vibrato effect without at least one of the following parameters: "rate, depth"');
+        const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+        if (rate != null) 
+           this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
+        if (depth != null) {
+           const gainValue = (depth / (2.0 * Math.PI * (rate != null) ? rate : this.#lfo.frequency.value));
+           this.#gain.gain.setTargetAtTime(gainValue, timeToUpdate, timeConstantTarget);
+        }
         return true;
      }
 
@@ -1621,12 +1691,15 @@
       * 
       * @param {number} intensity - Intensity of the volume as a percentage between [0.0, 1.0]
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
       * @returns {Promise<boolean>} Whether the effect update was successfully applied
       */
-     async update({intensity}, updateTime) {
+     async update({intensity}, updateTime, timeConstant) {
         if (intensity == null)
            throw new WebAudioValueError('Cannot update the Volume effect without at least one of the following parameters: "intensity"');
-        this.#volumeNode.gain.setValueAtTime(intensity, updateTime == null ? this.audioContext.currentTime : updateTime);
+        const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+        const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+        this.#volumeNode.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);
         return true;
      }
 
@@ -1741,6 +1814,7 @@
          * @function
          * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
          * @param {number} [updateTime] - Global API time at which to update the effect
+         * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
          * @returns {Promise<boolean>} Whether the effect update was successfully applied
          * @memberof Effect
          * @instance
@@ -1885,14 +1959,15 @@
       * 
       * @param {string} effectName - Name of the track effect to be updated
       * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
-      * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} updateTime - Global API time at which to update the effect
+      * @param {number} timeConstant - Time constant defining an exponential approach to the target
       * @memberof Track
       * @instance
       */
-     async function updateEffect(effectName, effectOptions, updateTime) {
+     async function updateEffect(effectName, effectOptions, updateTime, timeConstant) {
         for (const effect of effects)
            if (effect.name == effectName) {
-              await effect.update(effectOptions, updateTime);
+              await effect.update(effectOptions, updateTime, timeConstant);
               return;
            }
         throw new WebAudioTargetError(`The target track effect (${effectName}) does not exist`);
@@ -3770,11 +3845,12 @@
       * @param {string} effectName - Name of the master effect to be updated
       * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [transitionLength] - Number of seconds over which to update the effect
       */
-     async updateMasterEffect(effectName, effectOptions, updateTime) {
+     async updateMasterEffect(effectName, effectOptions, updateTime, transitionLength) {
         for (const effect of this.#effects)
            if (effect.name == effectName) {
-              await effect.update(effectOptions, updateTime ? Number(updateTime) : undefined);
+              await effect.update(effectOptions, updateTime ? Number(updateTime) : undefined, transitionLength ? (0.333 * Number(transitionLength)) : undefined);
               return;
            }
         throw new WebAudioTargetError(`The target master effect (${effectName}) does not exist`);
@@ -3793,11 +3869,12 @@
       * @param {string} effectName - Name of the track effect to be updated
       * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
       * @param {number} [updateTime] - Global API time at which to update the effect
+      * @param {number} [transitionLength] - Number of seconds over which to update the effect
       */
-     async updateTrackEffect(trackName, effectName, effectOptions, updateTime) {
+     async updateTrackEffect(trackName, effectName, effectOptions, updateTime, transitionLength) {
         if (!(trackName in this.#tracks))
            throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
-        await this.#tracks[trackName].updateEffect(effectName, effectOptions, updateTime ? Number(updateTime) : undefined);
+        await this.#tracks[trackName].updateEffect(effectName, effectOptions, updateTime ? Number(updateTime) : undefined, transitionLength ? (0.333 * Number(transitionLength)) : undefined);
      }
 
      /**
