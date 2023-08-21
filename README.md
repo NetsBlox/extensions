@@ -6,6 +6,8 @@ Extensions currently included in this repository:
  
  - [HideCategories](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/HideCategories/index.js%22]#) - This extension allows you to automatically hide categories and is particularly useful when setting different visible categories for collaborating users.
  
+ - [MusicApp](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/MusicApp/index.js%22]#) - Music Application by Tito Ebiwonjumi, Vanderbilt University
+ 
  - [🤖 RoboScape Online](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]#) - Networked robotics simulation in the browser! (WIP)
  
  - [TimeSync](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/TimeSync/index.js%22]#) - calculate time sync info from the NetsBlox server
