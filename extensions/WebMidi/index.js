@@ -8,36 +8,6 @@
         WAV: 1
     };
 
-    /**
-     * Object representing a mapping between an effect type and its unique internal code.
-     * @constant {Object.<string, number>}
-     */
-    const EffectType = {
-        Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
-        Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
-        Panning: 31, Equalization: 32,                                                   // Spectral Effects
-        Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
-        LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
-    };
-
-    const EffectsPreset = {
-        'Under Water': ['LowPassFilter', {
-            ['cutoffFrequency']: 500,
-            ['resonance']: 12,
-        }],
-        'Telephone': ['HighPassFilter', {
-            ['cutoffFrequency'] : 1800,
-            ['resonance']: 10,
-        }],
-        'Cave': ['Echo', {
-            ['feedback'] : 0.5,
-            ['intensity'] : 0.4,
-        }],
-        'Fan Blade': ['Tremolo', {
-            ['tremeloFrequency'] : 18,
-        }],
-    }
-
     let midiDevices = [], midiInstruments = [];
     const I32_MAX = 2147483647;
 
@@ -117,13 +87,6 @@
         return new Sound(audio, 'netsblox-sound');
     }
 
-    async function addFxPreset(track, effect) {
-        const effectName = EffectsPreset[effect][0];
-        await window.audioAPI.applyTrackEffect(track, effectName, EffectType[effectName]);
-        const effectOptions = EffectsPreset[effect][1];
-        await window.audioAPI.updateTrackEffect(track, effectName, effectOptions);
-    }
-
     class WebMidi extends Extension {
         
         constructor (ide) {
@@ -137,7 +100,7 @@
 
         getCategories() {
             return [
-                new Extension.Category('music', new Color(215, 10, 10)),
+                new Extension.Category('midi', new Color(235, 110, 110)),
             ];
         }
 
@@ -148,16 +111,13 @@
                 new Extension.Palette.Block('startRecording'),
                 new Extension.Palette.Block('recordForDuration'),
                 new Extension.Palette.Block('stopRecording'),
-                new Extension.Palette.Block('playClip'),
-                new Extension.Palette.Block('playClipForDuration'),
                 new Extension.Palette.Block('exportAudio'),
                 new Extension.Palette.Block('convertToSnap'),
-                new Extension.Palette.Block('addFX'),
                 new Extension.Palette.Block('soundDemo'),
             ];
             return [
-                new Extension.PaletteCategory('music', blocks, SpriteMorph),
-                new Extension.PaletteCategory('music', blocks, StageMorph),
+                new Extension.PaletteCategory('midi', blocks, SpriteMorph),
+                new Extension.PaletteCategory('midi', blocks, StageMorph),
             ];
         }
 
@@ -166,68 +126,38 @@
                 return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph);
             }
             return [
-                block('setMidiDevice', 'command', 'music', 'midi device: %webMidiDevice', [''], function(device) {
+                block('setMidiDevice', 'command', 'midi', 'midi device: %webMidiDevice', [''], function(device) {
                     midiConnect(device);
                 }),
-                block('setInstrument', 'command', 'music', 'instrument %webMidiInstrument', [''], function(instrument) {
+                block('setInstrument', 'command', 'midi', 'instrument %webMidiInstrument', [''], function(instrument) {
                     changeInsturment(instrument);
                 }),
-                block('startRecording', 'reporter', 'music', 'start recording', [], function() {
+                block('startRecording', 'reporter', 'midi', 'start recording', [], function() {
                     return window.audioAPI.recordMidiClip(
                         'defaultTrack', window.audioAPI.getCurrentTime()
                     );
                 }),
-                block('recordForDuration', 'reporter', 'music', 'record for %n seconds', [0], function(time) {
+                block('recordForDuration', 'reporter', 'midi', 'record for %n seconds', [0], function(time) {
                     return window.audioAPI.recordMidiClip(
                         'defaultTrack', window.audioAPI.getCurrentTime(), time
                     );
                 }),
-                block('stopRecording', 'command', 'music', 'stop recording %s', ['clip'], function(clip) {
+                block('stopRecording', 'command', 'midi', 'stop recording %s', ['clip'], function(clip) {
                     this.runAsyncFn(async () => {
                         await clip.finalize();
                     }, { args: [], timeout: I32_MAX });
                 }),
-                block('playClip', 'command', 'music', 'play clip %s', ['clip'], function (clip) {
-                    this.runAsyncFn(async () => {
-                        await window.audioAPI.playClip(
-                            'defaultTrack', clip, window.audioAPI.getCurrentTime()
-                        );
-                    }, { args: [], timeout: I32_MAX });
-                }),
-                block('playClipForDuration', 'command', 'music', 'play clip %s for %n seconds', ['clip', 0], function (clip, length) {
-                    this.runAsyncFn(async () => {
-                        await window.audioAPI.playClip(
-                            'defaultTrack', clip, window.audioAPI.getCurrentTime(), length
-                        );
-                    }, { args: [], timeout: I32_MAX });
-                }),
-                block('exportAudio', 'command', 'music', 'bounce %s as %fileFormats', ['clip'], function (clip, format) {
+                block('exportAudio', 'command', 'midi', 'bounce %s as %fileFormats', ['clip'], function (clip, format) {
                     this.runAsyncFn(async () => {
                         await exportClip(clip, format);
                     }, { args: [], timeout: I32_MAX });
                 }),
-                block('convertToSnap', 'reporter', 'music', 'convert %s to Snap! Sound', ['clip'], function (clip) {
+                block('convertToSnap', 'reporter', 'midi', 'convert %s to Snap! Sound', ['clip'], function (clip) {
                     return this.runAsyncFn(async () => {
                         return await clipToSnap(clip);
                     }, { args: [], timeout: I32_MAX });
                 }),
-                block('addFX', 'command', 'music', 'Track Effect %fxPreset %onOff', ['', 'on'], function (effect, status) {
-                    if (effect != '') {
-                        if (status == 'on') {
-                            this.runAsyncFn(async () => {
-                                await addFxPreset('defaultTrack', effect);
-                            });
-                        } else {
-                            const effectName = EffectsPreset[effect][0];
-                            this.runAsyncFn(async () => {
-                                await window.audioAPI.removeTrackEffect('defaultTrack', effectName)
-                            });
-                        }
-                    } else {
-                        throw Error('must select an effect');
-                    }         
-                }),
-                block('soundDemo', 'command', 'music', 'sound demo', [], function () {
+                block('soundDemo', 'command', 'midi', 'sound demo', [], function () {
                     this.runAsyncFn(async () => {
                         await window.audioAPI.playFile('defaultTrack', 'http://localhost:8000/extensions/WebMidi/audioFiles/PianoLoop.mp3', window.audioAPI.getCurrentTime());
                     })
@@ -261,18 +191,6 @@
                     null, // text
                     false, //numeric
                     identityMap(['WAV']),
-                    true, // readonly (no arbitrary text)
-                )),
-                new Extension.LabelPart('fxPreset', () => new InputSlotMorph(
-                    null, // text
-                    false, //numeric
-                    identityMap(['Under Water', 'Telephone', 'Cave', 'Fan Blade']),
-                    true, // readonly (no arbitrary text)
-                )),
-                new Extension.LabelPart('onOff', () => new InputSlotMorph(
-                    null, // text
-                    false, //numeric
-                    identityMap(['on', 'off']),
                     true, // readonly (no arbitrary text)
                 )),
             ];

@@ -18,9 +18,5 @@
   "homepage": "https://github.com/NetsBlox/extensions#readme",
   "devDependencies": {
     "lodash": "^4.17.21"
-  },
-  "dependencies": {
-    "type": "module",
-    "webAudioAPI": "extensions/MusicApp/WebAudioAPI/library/webaudioapi/webAudioAPI.js"
   }
 }
