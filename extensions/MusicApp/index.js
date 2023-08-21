@@ -4306,6 +4306,7 @@
                   block('playAudioClip', 'command', 'music', 'play audio clip %s', ['clip'], function (audioBuffer){
                       this.runAsyncFn(async () =>{
                           const trackName = this.receiver.id;
+                          console.log(audioBuffer);
                           const duration = await playAudio(audioBuffer, trackName);
                           await wait(duration-.02);
                       },{ args: [], timeout: I32_MAX });
