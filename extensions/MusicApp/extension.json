@@ -1,4 +1,5 @@
 {
     "customName": "MusicApp",
-    "description": "Music Application by Tito Ebiwonjumi, Vanderbilt University",
+    "description": "Extends Music Functionality within Netsblox",
     "useDev": true
+}
