@@ -174,4 +174,5 @@
     }
 
     NetsBloxExtensions.register(HandGestures);
+    disableRetinaSupport();
 })();
