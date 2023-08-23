@@ -1,3 +1,4 @@
+import { WebAudioAPI } from "./WebAudioAPI/build/lib/webAudioAPI";
 (function () {
   'use strict';
 
