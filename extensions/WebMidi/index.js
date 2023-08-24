@@ -4354,20 +4354,20 @@
                     return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph);
                 }
                 return [
-                    block('setAudioDevice', 'command', 'music', 'audio device: %audioDevice', [''], function (device) {
+                    block('setAudioDevice', 'command', 'midi', 'audio device: %audioDevice', [''], function (device) {
                         audioConnect(device);
                     }),
-                    block('disconnectAudioDevice', 'command', 'music', 'disconnect audio device', [], function () {
+                    block('disconnectAudioDevice', 'command', 'midi', 'disconnect audio device', [], function () {
                         this.runAsyncFn(async () => {
                             await audioAPI.disconnectAudioInputDeviceFromTrack('defaultTrack');
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    block('startRecordingAudio', 'reporter', 'music', 'start recording audio', [], function () {
+                    block('startRecordingAudio', 'reporter', 'midi', 'start recording audio', [], function () {
                         return audioAPI.recordAudioClip(
                             'defaultTrack', audioAPI.getCurrentTime()
                         );
                     }),
-                    block('recordForDurationAudio', 'reporter', 'music', 'record audio for %n seconds', [0], function (time) {
+                    block('recordForDurationAudio', 'reporter', 'midi', 'record audio for %n seconds', [0], function (time) {
                         return audioAPI.recordAudioClip(
                             'defaultTrack', audioAPI.getCurrentTime(), time
                         );
