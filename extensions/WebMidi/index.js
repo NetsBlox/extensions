@@ -4331,9 +4331,11 @@
             getPalette() {
                 const blocks = [
                     new Extension.Palette.Block('setAudioDevice'),
+                    new Extension.Palette.Block('disconnectAudioDevice'),
                     new Extension.Palette.Block('startRecordingAudio'),
                     new Extension.Palette.Block('recordForDurationAudio'),
                     new Extension.Palette.Block('setMidiDevice'),
+                    new Extension.Palette.Block('disconnectMidiDevice'),
                     new Extension.Palette.Block('setInstrument'),
                     new Extension.Palette.Block('startRecording'),
                     new Extension.Palette.Block('recordForDuration'),
@@ -4355,6 +4357,11 @@
                     block('setAudioDevice', 'command', 'music', 'audio device: %audioDevice', [''], function (device) {
                         audioConnect(device);
                     }),
+                    block('disconnectAudioDevice', 'command', 'music', 'disconnect audio device', [], function () {
+                        this.runAsyncFn(async () => {
+                            await audioAPI.disconnectAudioInputDeviceFromTrack('defaultTrack');
+                        }, { args: [], timeout: I32_MAX });
+                    }),
                     block('startRecordingAudio', 'reporter', 'music', 'start recording audio', [], function () {
                         return audioAPI.recordAudioClip(
                             'defaultTrack', audioAPI.getCurrentTime()
@@ -4367,6 +4374,11 @@
                     }),
                     block('setMidiDevice', 'command', 'midi', 'midi device: %webMidiDevice', [''], function (device) {
                         midiConnect(device);
+                    }),
+                    block('disconnectMidiDevice', 'command', 'midi', 'disconnect midi device', [], function () {
+                        this.runAsyncFn(async () => {
+                            await audioAPI.disconnectMidiDeviceFromTrack('defaultTrack');
+                        }, { args: [], timeout: I32_MAX });
                     }),
                     block('setInstrument', 'command', 'midi', 'instrument %webMidiInstrument', [''], function (instrument) {
                         changeInsturment(instrument);
