@@ -4206,7 +4206,7 @@
         let midiDevices = [], midiInstruments = [], audioDevices = [];
         const I32_MAX = 2147483647;
   
-        audioAPI = new WebAudioAPI();
+        const audioAPI = new WebAudioAPI();
         audioAPI.createTrack('defaultTrack');
         audioAPI.getAvailableMidiDevices().then(returnMidiDevice, fail);
         audioAPI.getAvailableAudioInputDevices().then(returnAudioDevice, fail);
