@@ -9,10 +9,12 @@
 
         <p>Welcome to the list of supported NetsBlox extensions! Click on one below to try it out!</p>
 
+        <input id="search" placeholder="🔍 Search" />  
+
         <label for="multiSelect"><input type="checkbox" name="multiSelect" id="multiSelect" /> Enable multiple selections</label>
 
         <% extensions.forEach(ext=> { %>
-        <details>
+        <details class="extension">
             <summary><input type="checkbox" class="extensionOption" name="<%= ext.name %>" style="margin-right: 10px" hidden /><a href="<%= ext.linkUrl %>" target="_blank"> <%= ext.displayName %> </a></summary>
             <p>
                 <input type="hidden" name="<%= ext.name %>_script" id="<%= ext.name %>_script" value="<%= ext.scriptUrl %>" />
@@ -44,5 +46,6 @@
         </p>
 
         <script src="./index.js" async defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/fuzzysort@2.0.4/fuzzysort.min.js" async></script>
     </body>
 </html>

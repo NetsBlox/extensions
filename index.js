@@ -43,3 +43,13 @@ document.getElementById("loadButton").onclick = () => {
 
 document.getElementById("loadButton").disabled = getSelectedExtensions().length == 0;
 document.getElementById("multiSelect").onchange();
+
+let search = document.getElementById("search");
+search.oninput = () => {
+    let extensions = document.querySelectorAll(".extension");
+    for(let i = 0; i < extensions.length; i++){
+        let extension = extensions[i];
+        let fullText =  extension.innerText + " " + extension.children[1].innerText.trim()
+        extension.style.display = (search.value == "" || fuzzysort.single(search.value, fullText))? "block" : "none";
+    }
+};
