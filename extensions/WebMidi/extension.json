@@ -1,4 +1,0 @@
-{
-    "description": "Takes input from a MIDI controller and brings the data into Netsblox",
-    "useDev": false
-}
