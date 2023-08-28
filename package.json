@@ -18,8 +18,5 @@
   "homepage": "https://github.com/NetsBlox/extensions#readme",
   "devDependencies": {
     "lodash": "^4.17.21"
-  },
-  "dependencies": {
-    "rollup": "^3.28.1"
   }
 }
