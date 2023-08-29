@@ -2,6 +2,11 @@
     <head>
         <title>NetsBlox Extensions</title>
         <link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" type="text/css" />
+        <style>
+            details p {
+                margin-bottom: 4px;
+            }
+        </style>
     </head>
 
     <body>
@@ -12,6 +17,9 @@
         <input id="search" placeholder="🔍 Search" />  
 
         <label for="multiSelect"><input type="checkbox" name="multiSelect" id="multiSelect" /> Enable multiple selections</label>
+
+        <a style="font-size: 12px;" id="showAllDescriptions">Show all descriptions</a>
+        <a style="font-size: 12px;" id="hideAllDescriptions">Hide all descriptions</a>
 
         <% extensions.forEach(ext=> { %>
         <details class="extension">
