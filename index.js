@@ -43,3 +43,58 @@ document.getElementById("loadButton").onclick = () => {
 
 document.getElementById("loadButton").disabled = getSelectedExtensions().length == 0;
 document.getElementById("multiSelect").onchange();
+
+let search = document.getElementById("search");
+search.oninput = () => {
+    let extensions = document.querySelectorAll(".extension");
+    for(let i = 0; i < extensions.length; i++){
+        let extension = extensions[i];
+        let title = extension.querySelector('summary a');
+        let desc = extension.querySelector('details p');
+
+        let fullText =  title.innerText;
+
+        if(extension.open) {
+            fullText += desc.innerText;
+        }
+
+        let result = fuzzysort.single(search.value, fullText);
+        extension.style.display = (search.value == "" || result)? "block" : "none";
+
+
+        if(search.value == "") {
+            // Clear highlight when no match
+            title.innerHTML = title.innerText;
+            desc.innerHTML = desc.innerText;
+        }
+
+        if(result) {
+            // Apply highlight on match
+            let titleMatch = fuzzysort.single(search.value, title.innerText);
+            if(titleMatch) {
+                title.innerHTML = fuzzysort.highlight(titleMatch);
+            }
+
+            let descMatch = fuzzysort.single(search.value, desc.innerText);
+            if(descMatch) {
+                desc.innerHTML = fuzzysort.highlight(descMatch);
+            }
+        }
+    }
+};
+
+document.getElementById("showAllDescriptions").onclick = () => {
+    let extensions = document.querySelectorAll(".extension");
+    for(let i = 0; i < extensions.length; i++){
+        extensions[i].open = true;
+    }
+    search.oninput();
+};
+
+document.getElementById("hideAllDescriptions").onclick = () => {
+    let extensions = document.querySelectorAll(".extension");
+    for(let i = 0; i < extensions.length; i++){
+        extensions[i].open = false;
+    }
+    search.oninput();
+};
