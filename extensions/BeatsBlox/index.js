@@ -4211,7 +4211,12 @@
       const availableEffects = audioAPI.getAvailableEffects();
       audioAPI.getAvailableMidiDevices().then(returnMidiDevice, fail);
       audioAPI.getAvailableAudioInputDevices().then(returnAudioDevice, fail);
-      audioAPI.getAvailableInstruments('http://localhost:8000/extensions/MusicApp/instruments').then(
+ 
+      const devRoot = 'http://localhost:8000/extensions/BeatsBlox/instruments/';
+      const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatsBlox/instruments/';
+      const instrumentLocation = window.origin.includes('localhost') ? devRoot : releaseRoot;
+ 
+      audioAPI.getAvailableInstruments(instrumentLocation).then(
           instruments => instruments.forEach(
               instrument => midiInstruments.push(instrument)
           )
