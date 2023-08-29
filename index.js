@@ -64,6 +64,29 @@ search.oninput = () => {
     for(let i = 0; i < extensions.length; i++){
         let extension = extensions[i];
         let fullText =  extension.innerText;
-        extension.style.display = (search.value == "" || fuzzysort.single(search.value, fullText))? "block" : "none";
+        let result = fuzzysort.single(search.value, fullText);
+        extension.style.display = (search.value == "" || result)? "block" : "none";
+
+        let title = extension.querySelector('summary a');
+        let desc = extension.querySelector('details p');
+
+        if(search.value == "") {
+            // Clear highlight when no match
+            title.innerHTML = title.innerText;
+            desc.innerHTML = desc.innerText;
+        }
+
+        if(result) {
+            // Apply highlight on match
+            let titleMatch = fuzzysort.single(search.value, title.innerText);
+            if(titleMatch) {
+                title.innerHTML = fuzzysort.highlight(titleMatch);
+            }
+
+            let descMatch = fuzzysort.single(search.value, desc.innerText);
+            if(descMatch) {
+                desc.innerHTML = fuzzysort.highlight(descMatch);
+            }
+        }
     }
 };
