@@ -44,20 +44,6 @@ document.getElementById("loadButton").onclick = () => {
 document.getElementById("loadButton").disabled = getSelectedExtensions().length == 0;
 document.getElementById("multiSelect").onchange();
 
-document.getElementById("showAllDescriptions").onclick = () => {
-    let extensions = document.querySelectorAll(".extension");
-    for(let i = 0; i < extensions.length; i++){
-        extensions[i].open = true;
-    }
-};
-
-document.getElementById("hideAllDescriptions").onclick = () => {
-    let extensions = document.querySelectorAll(".extension");
-    for(let i = 0; i < extensions.length; i++){
-        extensions[i].open = false;
-    }
-};
-
 let search = document.getElementById("search");
 search.oninput = () => {
     let extensions = document.querySelectorAll(".extension");
