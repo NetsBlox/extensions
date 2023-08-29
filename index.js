@@ -44,31 +44,23 @@ document.getElementById("loadButton").onclick = () => {
 document.getElementById("loadButton").disabled = getSelectedExtensions().length == 0;
 document.getElementById("multiSelect").onchange();
 
-document.getElementById("showAllDescriptions").onclick = () => {
-    let extensions = document.querySelectorAll(".extension");
-    for(let i = 0; i < extensions.length; i++){
-        extensions[i].open = true;
-    }
-};
-
-document.getElementById("hideAllDescriptions").onclick = () => {
-    let extensions = document.querySelectorAll(".extension");
-    for(let i = 0; i < extensions.length; i++){
-        extensions[i].open = false;
-    }
-};
-
 let search = document.getElementById("search");
 search.oninput = () => {
     let extensions = document.querySelectorAll(".extension");
     for(let i = 0; i < extensions.length; i++){
         let extension = extensions[i];
-        let fullText =  extension.innerText;
+        let title = extension.querySelector('summary a');
+        let desc = extension.querySelector('details p');
+
+        let fullText =  title.innerText;
+
+        if(extension.open) {
+            fullText += desc.innerText;
+        }
+
         let result = fuzzysort.single(search.value, fullText);
         extension.style.display = (search.value == "" || result)? "block" : "none";
 
-        let title = extension.querySelector('summary a');
-        let desc = extension.querySelector('details p');
 
         if(search.value == "") {
             // Clear highlight when no match
@@ -89,4 +81,20 @@ search.oninput = () => {
             }
         }
     }
+};
+
+document.getElementById("showAllDescriptions").onclick = () => {
+    let extensions = document.querySelectorAll(".extension");
+    for(let i = 0; i < extensions.length; i++){
+        extensions[i].open = true;
+    }
+    search.oninput();
+};
+
+document.getElementById("hideAllDescriptions").onclick = () => {
+    let extensions = document.querySelectorAll(".extension");
+    for(let i = 0; i < extensions.length; i++){
+        extensions[i].open = false;
+    }
+    search.oninput();
 };
