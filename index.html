@@ -2,6 +2,11 @@
     <head>
         <title>NetsBlox Extensions</title>
         <link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" type="text/css" />
+        <style>
+            details p {
+                margin-bottom: 4px;
+            }
+        </style>
     </head>
 
     <body>
@@ -9,8 +14,21 @@
 
         <p>Welcome to the list of supported NetsBlox extensions! Click on one below to try it out!</p>
 
+        <input id="search" placeholder="🔍 Search" />  
+
         <label for="multiSelect"><input type="checkbox" name="multiSelect" id="multiSelect" /> Enable multiple selections</label>
 
+        <a style="font-size: 12px;" id="showAllDescriptions">Show all descriptions</a>
+        <a style="font-size: 12px;" id="hideAllDescriptions">Hide all descriptions</a>
+
+        
+        <details class="extension">
+            <summary><input type="checkbox" class="extensionOption" name="BeatsBlox" style="margin-right: 10px" hidden /><a href="https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BeatsBlox/index.js%22]#" target="_blank"> BeatsBlox </a></summary>
+            <p>
+                <input type="hidden" name="BeatsBlox_script" id="BeatsBlox_script" value="https://extensions.netsblox.org/extensions/BeatsBlox/index.js" />
+                BeatsBlox extends Music Functionality within NetsBlox
+            </p>
+        </details>
         
         <details>
             <summary><input type="checkbox" class="extensionOption" name="BeatsBlox" style="margin-right: 10px" hidden /><a href="https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BeatsBlox/index.js%22]#" target="_blank"> BeatsBlox </a></summary>
@@ -20,7 +38,7 @@
             </p>
         </details>
         
-        <details>
+        <details class="extension">
             <summary><input type="checkbox" class="extensionOption" name="BetterShare" style="margin-right: 10px" hidden /><a href="https://editor.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BetterShare/index.js%22]#" target="_blank"> BetterShare </a></summary>
             <p>
                 <input type="hidden" name="BetterShare_script" id="BetterShare_script" value="https://extensions.netsblox.org/extensions/BetterShare/index.js" />
@@ -28,7 +46,7 @@
             </p>
         </details>
         
-        <details>
+        <details class="extension">
             <summary><input type="checkbox" class="extensionOption" name="HandGestures" style="margin-right: 10px" hidden /><a href="https://editor.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/HandGestures/index.js%22]#" target="_blank"> HandGestures </a></summary>
             <p>
                 <input type="hidden" name="HandGestures_script" id="HandGestures_script" value="https://extensions.netsblox.org/extensions/HandGestures/index.js" />
@@ -36,7 +54,7 @@
             </p>
         </details>
         
-        <details>
+        <details class="extension">
             <summary><input type="checkbox" class="extensionOption" name="HideCategories" style="margin-right: 10px" hidden /><a href="https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/HideCategories/index.js%22]#" target="_blank"> HideCategories </a></summary>
             <p>
                 <input type="hidden" name="HideCategories_script" id="HideCategories_script" value="https://extensions.netsblox.org/extensions/HideCategories/index.js" />
@@ -44,7 +62,7 @@
             </p>
         </details>
         
-        <details>
+        <details class="extension">
             <summary><input type="checkbox" class="extensionOption" name="RoboScapeOnline" style="margin-right: 10px" hidden /><a href="https://editor.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]#" target="_blank"> 🤖 RoboScape Online </a></summary>
             <p>
                 <input type="hidden" name="RoboScapeOnline_script" id="RoboScapeOnline_script" value="https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js" />
@@ -52,7 +70,7 @@
             </p>
         </details>
         
-        <details>
+        <details class="extension">
             <summary><input type="checkbox" class="extensionOption" name="TimeSync" style="margin-right: 10px" hidden /><a href="https://editor.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/TimeSync/index.js%22]#" target="_blank"> TimeSync </a></summary>
             <p>
                 <input type="hidden" name="TimeSync_script" id="TimeSync_script" value="https://extensions.netsblox.org/extensions/TimeSync/index.js" />
@@ -60,7 +78,7 @@
             </p>
         </details>
         
-        <details>
+        <details class="extension">
             <summary><input type="checkbox" class="extensionOption" name="TuneScope" style="margin-right: 10px" hidden /><a href="https://editor.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/TuneScope/index.js%22]#" target="_blank"> TuneScope </a></summary>
             <p>
                 <input type="hidden" name="TuneScope_script" id="TuneScope_script" value="https://extensions.netsblox.org/extensions/TuneScope/index.js" />
@@ -68,7 +86,7 @@
             </p>
         </details>
         
-        <details>
+        <details class="extension">
             <summary><input type="checkbox" class="extensionOption" name="WebSerial" style="margin-right: 10px" hidden /><a href="https://editor.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/WebSerial/index.js%22]#" target="_blank"> WebSerial </a></summary>
             <p>
                 <input type="hidden" name="WebSerial_script" id="WebSerial_script" value="https://extensions.netsblox.org/extensions/WebSerial/index.js" />
@@ -76,7 +94,7 @@
             </p>
         </details>
         
-        <details>
+        <details class="extension">
             <summary><input type="checkbox" class="extensionOption" name="WhenKeyPressedLogger" style="margin-right: 10px" hidden /><a href="https://editor.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/WhenKeyPressedLogger/index.js%22]#" target="_blank"> WhenKeyPressedLogger </a></summary>
             <p>
                 <input type="hidden" name="WhenKeyPressedLogger_script" id="WhenKeyPressedLogger_script" value="https://extensions.netsblox.org/extensions/WhenKeyPressedLogger/index.js" />
@@ -108,5 +126,6 @@
         </p>
 
         <script src="./index.js" async defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/fuzzysort@2.0.4/fuzzysort.min.js" async></script>
     </body>
 </html>
