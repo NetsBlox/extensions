@@ -4228,9 +4228,9 @@
 
 
       /**
-    * Object representing a mapping between an encoding file type and its unique internal code.
-    * @constant {Object.<string, number>}
-    */
+       * Object representing a mapping between an encoding file type and its unique internal code.
+       * @constant {Object.<string, number>}
+       */
       const EncodingType = {
          WAV: 1
       };
@@ -4327,7 +4327,6 @@
        * @param {String} instrument - Name of instrument being loaded.
        */
       function changeInsturment(trackName, instrument) {
-         audioAPI.start();
          audioAPI.updateInstrument(trackName, instrument).then(() => {
             console.log('Instrument loading complete!');
          });
@@ -4591,6 +4590,7 @@
                }),
                block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
                   const trackName = this.receiver.id;
+
                   if (device === '')
                      this.runAsyncFn(async () => {
                         disconnectDevices(trackName);
@@ -4601,6 +4601,13 @@
                      audioConnect(trackName, device);
                   else
                      throw Error('device not found');
+
+                  if (midiInstruments.length > 0)
+                     audioAPI.updateInstrument(trackName, midiInstruments[0]).then(() => {
+                        console.log('default instrument set');
+                     });
+                  else
+                     console.log('no default instruments');
                }),
                block('startRecording', 'command', 'music', 'start recording', [], function () {
                   const trackName = this.receiver.id;
@@ -4634,7 +4641,7 @@
                   }
                   recordingInProgress = true;
                }),
-               block('setInstrument', 'command', 'music', 'instrument %webMidiInstrument', [''], function (instrument) {
+               block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', [''], function (instrument) {
                   const trackName = this.receiver.id;
                   changeInsturment(trackName, instrument);
                }),
