@@ -4,13 +4,13 @@ This repository contains the NetsBlox Extensions to be hosted on https://extensi
 
 Extensions currently included in this repository:
  
+ - [BeatsBlox](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BeatsBlox/index.js%22]#) - BeatsBlox extends Music Functionality within NetsBlox
+ 
  - [BetterShare](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BetterShare/index.js%22]#) - WIP - Provides a few utilities that can make sharing projects easier
  
  - [HandGestures](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/HandGestures/index.js%22]#) - Track 3D hand gestures in images/video using MediaPipe!
  
  - [HideCategories](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/HideCategories/index.js%22]#) - This extension allows you to automatically hide categories and is particularly useful when setting different visible categories for collaborating users.
- 
- - [MusicApp](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/MusicApp/index.js%22]#) - Extends Music Functionality within Netsblox
  
  - [🤖 RoboScape Online](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]#) - Networked robotics simulation in the browser! (WIP)
  
