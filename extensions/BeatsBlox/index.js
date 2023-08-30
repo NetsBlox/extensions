@@ -4209,6 +4209,8 @@
       audioAPI.createTrack('default');
       audioAPI.start();
       const availableEffects = audioAPI.getAvailableEffects();
+      const availableMidiNotes = audioAPI.getAvailableNotes();
+      const availableNoteDurations = audioAPI.getAvailableNoteDurations();
       audioAPI.getAvailableMidiDevices().then(returnMidiDevice, fail);
       audioAPI.getAvailableAudioInputDevices().then(returnAudioDevice, fail);
  
@@ -4290,11 +4292,12 @@
  
        /**
         * Connects a MIDI device to the WebAudioAPI
+        * @param {String} trackName - Name of the Track 
         * @param {String} device - Name of the MIDI device being connected.
         */
-       function midiConnect(device) {
+       function midiConnect(trackName,device) {
            if (device != "") {
-               audioAPI.connectMidiDeviceToTrack('defaultTrack', device).then(() => {
+               audioAPI.connectMidiDeviceToTrack(trackName, device).then(() => {
                    console.log('Connected to MIDI device!');
                });
                // audioAPI.registerMidiDeviceCallback(device, midiCallback);
@@ -4303,11 +4306,12 @@
  
        /**
         * Connects and audio input device to NetsBlox
+        * @param {String} trackName - Name of the Track 
         * @param {String} device - Name of the audio device being connected.
         */
-       function audioConnect(device) {
+       function audioConnect(trackName,device) {
            if (device != "") {
-               audioAPI.connectAudioInputDeviceToTrack('defaultTrack', device).then(() => {
+               audioAPI.connectAudioInputDeviceToTrack(trackName, device).then(() => {
                    console.log('Connected to audio device!');
                });
            }
@@ -4315,11 +4319,12 @@
  
        /**
         * Connects an instrument sample to the WebAudioAPI
+        * @param {String} trackName - Name of the Track 
         * @param {String} instrument - Name of instrument being loaded.
         */
-       function changeInsturment(instrument) {
+       function changeInsturment(trackName,instrument) {
            audioAPI.start();
-           audioAPI.updateInstrument('defaultTrack', instrument).then(() => {
+           audioAPI.updateInstrument(trackName, instrument).then(() => {
                console.log('Instrument loading complete!');
            });
        }
@@ -4347,6 +4352,19 @@
            const blob = await clip.getEncodedData(EncodingType['WAV']);
            const audio = new Audio(URL.createObjectURL(blob, { type: "audio/wav" }));
            return new Sound(audio, 'netsblox-sound');
+       }
+ 
+       /**
+        * Disconnects all audio and midi devices from NetsBlox
+        * @param {String} trackName - name of the Track 
+        * @async
+        */
+       async function disconnectDevices(trackName) {
+           console.log('device disconnected');
+           if (audioDevices.length > 0)
+               await audioAPI.disconnectAudioInputDeviceFromTrack(trackName);
+           if (midiDevices.length > 0)
+               await audioAPI.disconnectMidiDeviceFromTrack(trackName);
        }
  
        function base64toArrayBuffer(base64){
@@ -4477,17 +4495,15 @@
                    new Extension.Palette.Block('applyTrackEffect'),
                    new Extension.Palette.Block('setTrackEffect'),
                    new Extension.Palette.Block('presetEffect'),
-                   new Extension.Palette.Block('setAudioDevice'),
-                   new Extension.Palette.Block('disconnectAudioDevice'),
+                   new Extension.Palette.Block('setInputDevice'),
                    new Extension.Palette.Block('startRecordingAudio'),
                    new Extension.Palette.Block('recordForDurationAudio'),
-                   new Extension.Palette.Block('setMidiDevice'),
-                   new Extension.Palette.Block('disconnectMidiDevice'),
                    new Extension.Palette.Block('setInstrument'),
                    new Extension.Palette.Block('startRecording'),
                    new Extension.Palette.Block('recordForDuration'),
                    new Extension.Palette.Block('stopRecording'),
                    new Extension.Palette.Block('exportAudio'),
+                   new Extension.Palette.Block('playNote'),
                    new Extension.Palette.Block('convertToSnap')
                ];
                return [
@@ -4504,7 +4520,6 @@
                    block('playAudioClip', 'command', 'music', 'play audio clip %s', ['clip'], function (audioBuffer){
                        this.runAsyncFn(async () =>{
                            const trackName = this.receiver.id;
-                           console.log(audioBuffer);
                            const duration = await playAudio(audioBuffer, trackName);
                            await wait(duration-.02);
                        },{ args: [], timeout: I32_MAX });
@@ -4514,6 +4529,12 @@
                            const trackName = this.receiver.id;
                            const duration = await playAudioForDuration(audioBuffer, trackName, dur);
                            await wait(duration-Math.max(.02,0));
+                       },{ args: [], timeout: I32_MAX });
+                   }),
+                   block('playNote', 'command', 'music', 'play note %midiNotes for %noteDurations', ['', ''], function (note,duration){
+                       this.runAsyncFn(async () =>{
+                           const trackName = this.receiver.id;
+                           await wait(audioAPI.playNote(trackName,availableMidiNotes[note], audioAPI.getCurrentTime(), availableNoteDurations[duration]));
                        },{ args: [], timeout: I32_MAX });
                    }),
                    block('stopClips', 'command', 'music', 'stop all clips', [], function (){
@@ -4566,43 +4587,44 @@
                            throw Error('must select an effect');
                        }         
                    }),
-                   block('setAudioDevice', 'command', 'music', 'audio device: %audioDevice', [''], function (device) {
-                       audioConnect(device);
-                   }),
-                   block('disconnectAudioDevice', 'command', 'music', 'disconnect audio device', [], function () {
-                       this.runAsyncFn(async () => {
-                           await audioAPI.disconnectAudioInputDeviceFromTrack('defaultTrack');
-                       }, { args: [], timeout: I32_MAX });
+                   block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
+                       if (device === '') 
+                           this.runAsyncFn(async () => {
+                               disconnectDevices();
+                           }, { args: [], timeout: I32_MAX });
+                       else if (midiDevices.indexOf(device) != -1)
+                           midiConnect(device);
+                       else if (audioDevices.indexOf(device != -1))
+                           audioConnect(device);
+                       else
+                           throw Error('device not found');
                    }),
                    block('startRecordingAudio', 'reporter', 'music', 'start recording audio', [], function () {
+                       const trackName = this.receiver.id;
                        return audioAPI.recordAudioClip(
-                           'defaultTrack', audioAPI.getCurrentTime()
+                           trackName, audioAPI.getCurrentTime()
                        );
                    }),
                    block('recordForDurationAudio', 'reporter', 'music', 'record audio for %n seconds', [0], function (time) {
+                       const trackName = this.receiver.id;
                        return audioAPI.recordAudioClip(
-                           'defaultTrack', audioAPI.getCurrentTime(), time
+                           trackName, audioAPI.getCurrentTime(), time
                        );
                    }),
-                   block('setMidiDevice', 'command', 'music', 'midi device: %webMidiDevice', [''], function(device) {
-                       midiConnect(device);
-                   }),
-                   block('disconnectMidiDevice', 'command', 'music', 'disconnect midi device', [], function () {
-                       this.runAsyncFn(async () => {
-                           await audioAPI.disconnectMidiDeviceFromTrack('defaultTrack');
-                       }, { args: [], timeout: I32_MAX });
-                   }),
                    block('setInstrument', 'command', 'music', 'instrument %webMidiInstrument', [''], function(instrument) {
-                       changeInsturment(instrument);
+                       const trackName = this.receiver.id;
+                       changeInsturment(trackName,instrument);
                    }),
                    block('startRecording', 'reporter', 'music', 'start recording', [], function() {
+                       const trackName = this.receiver.id;
                        return audioAPI.recordMidiClip(
-                           'defaultTrack', audioAPI.getCurrentTime()
+                           trackName, audioAPI.getCurrentTime()
                        );
                    }),
                    block('recordForDuration', 'reporter', 'music', 'record for %n seconds', [0], function(time) {
+                       const trackName = this.receiver.id;
                        return audioAPI.recordMidiClip(
-                           'defaultTrack', audioAPI.getCurrentTime(), time
+                           trackName, audioAPI.getCurrentTime(), time
                        );
                    }),
                    block('stopRecording', 'command', 'music', 'stop recording %s', ['clip'], function(clip) {
@@ -4658,6 +4680,18 @@
                    identityMap(Object.keys(availableEffects)),
                    true, //readonly (no arbitrary text)
                )),
+               new Extension.LabelPart('midiNotes', () => new InputSlotMorph(
+                   null, //text
+                   false, //numeric
+                   identityMap(Object.keys(availableMidiNotes)),
+                   true, //readonly (no arbitrary text)
+               )),
+               new Extension.LabelPart('noteDurations', () => new InputSlotMorph(
+                   null, //text
+                   false, //numeric
+                   identityMap(Object.keys(availableNoteDurations)),
+                   true, //readonly (no arbitrary text)
+               )),
                new Extension.LabelPart('fxPreset', () => new InputSlotMorph(
                    null, // text
                    false, //numeric
@@ -4676,22 +4710,16 @@
                    identityMap(midiInstruments),
                    true, // readonly (no arbitrary text)
                )),
-               new Extension.LabelPart('webMidiDevice', () => new InputSlotMorph(
-                   null, // text
-                   false, //numeric
-                   identityMap(midiDevices),
-                   true, // readonly (no arbitrary text)
-               )),
                new Extension.LabelPart('fileFormats', () => new InputSlotMorph(
                    null, // text
                    false, //numeric
                    identityMap(['WAV']),
                    true, // readonly (no arbitrary text)
                )),
-               new Extension.LabelPart('audioDevice', () => new InputSlotMorph(
+               new Extension.LabelPart('inputDevice', () => new InputSlotMorph(
                    null, // text
                    false, //numeric
-                   identityMap(audioDevices),
+                   identityMap(midiDevices.concat(audioDevices)),
                    true, // readonly (no arbitrary text)
                )),
            ];           
