@@ -4345,6 +4345,18 @@
          return new Sound(audio, 'netsblox-sound');
       }
 
+      /**
+       * Disconnects all audio and midi devices from NetsBlox
+       * @async
+       */
+      async function disconnectDevices() {
+         console.log('device disconnected');
+         if (audioDevices.length > 0)
+            await audioAPI.disconnectAudioInputDeviceFromTrack('default');
+         if (midiDevices.length > 0)
+            await audioAPI.disconnectMidiDeviceFromTrack('default');
+      }
+
       function base64toArrayBuffer(base64) {
          var binaryString = window.atob(base64.replace("data:audio/mpeg;base64,", ""));
          var bytes = new Uint8Array(binaryString.length);
@@ -4473,12 +4485,9 @@
                new Extension.Palette.Block('applyTrackEffect'),
                new Extension.Palette.Block('setTrackEffect'),
                new Extension.Palette.Block('presetEffect'),
-               new Extension.Palette.Block('setAudioDevice'),
-               new Extension.Palette.Block('disconnectAudioDevice'),
+               new Extension.Palette.Block('setInputDevice'),
                new Extension.Palette.Block('startRecordingAudio'),
                new Extension.Palette.Block('recordForDurationAudio'),
-               new Extension.Palette.Block('setMidiDevice'),
-               new Extension.Palette.Block('disconnectMidiDevice'),
                new Extension.Palette.Block('setInstrument'),
                new Extension.Palette.Block('startRecording'),
                new Extension.Palette.Block('recordForDuration'),
@@ -4562,13 +4571,17 @@
                      throw Error('must select an effect');
                   }
                }),
-               block('setAudioDevice', 'command', 'music', 'audio device: %audioDevice', [''], function (device) {
-                  audioConnect(device);
-               }),
-               block('disconnectAudioDevice', 'command', 'music', 'disconnect audio device', [], function () {
-                  this.runAsyncFn(async () => {
-                     await audioAPI.disconnectAudioInputDeviceFromTrack('default');
-                  }, { args: [], timeout: I32_MAX });
+               block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
+                  if (device === '')
+                     this.runAsyncFn(async () => {
+                        disconnectDevices();
+                     }, { args: [], timeout: I32_MAX });
+                  else if (midiDevices.indexOf(device) != -1)
+                     midiConnect(device);
+                  else if (audioDevices.indexOf(device != -1))
+                     audioConnect(device);
+                  else
+                     throw Error('device not found');
                }),
                block('startRecordingAudio', 'reporter', 'music', 'start recording audio', [], function () {
                   return audioAPI.recordAudioClip(
@@ -4579,14 +4592,6 @@
                   return audioAPI.recordAudioClip(
                      'default', audioAPI.getCurrentTime(), time
                   );
-               }),
-               block('setMidiDevice', 'command', 'music', 'midi device: %webMidiDevice', [''], function (device) {
-                  midiConnect(device);
-               }),
-               block('disconnectMidiDevice', 'command', 'music', 'disconnect midi device', [], function () {
-                  this.runAsyncFn(async () => {
-                     await audioAPI.disconnectMidiDeviceFromTrack('default');
-                  }, { args: [], timeout: I32_MAX });
                }),
                block('setInstrument', 'command', 'music', 'instrument %webMidiInstrument', [''], function (instrument) {
                   changeInsturment(instrument);
@@ -4672,22 +4677,16 @@
                   identityMap(midiInstruments),
                   true, // readonly (no arbitrary text)
                )),
-               new Extension.LabelPart('webMidiDevice', () => new InputSlotMorph(
-                  null, // text
-                  false, //numeric
-                  identityMap(midiDevices),
-                  true, // readonly (no arbitrary text)
-               )),
                new Extension.LabelPart('fileFormats', () => new InputSlotMorph(
                   null, // text
                   false, //numeric
                   identityMap(['WAV']),
                   true, // readonly (no arbitrary text)
                )),
-               new Extension.LabelPart('audioDevice', () => new InputSlotMorph(
+               new Extension.LabelPart('inputDevice', () => new InputSlotMorph(
                   null, // text
                   false, //numeric
-                  identityMap(audioDevices),
+                  identityMap(midiDevices.concat(audioDevices)),
                   true, // readonly (no arbitrary text)
                )),
             ];
