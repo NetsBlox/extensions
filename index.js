@@ -65,7 +65,10 @@ search.oninput = () => {
         if(search.value == "") {
             // Clear highlight when no match
             title.innerHTML = title.innerText;
-            desc.innerHTML = desc.innerText;
+            
+            if(extension.open) {
+                desc.innerHTML = desc.innerText;
+            }
         }
 
         if(result) {
