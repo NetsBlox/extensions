@@ -4213,6 +4213,8 @@
       const availableEffects = audioAPI.getAvailableEffects();
       const availableMidiNotes = audioAPI.getAvailableNotes();
       const availableNoteDurations = audioAPI.getAvailableNoteDurations();
+      const availableMidiNotes = audioAPI.getAvailableNotes();
+      const availableNoteDurations = audioAPI.getAvailableNoteDurations();
       audioAPI.getAvailableMidiDevices().then(returnMidiDevice, fail);
       audioAPI.getAvailableAudioInputDevices().then(returnAudioDevice, fail);
 
