@@ -1,92 +1,92 @@
 (function () {
    'use strict';
-
+ 
    /**
     * Module containing all musical notation constants in the various formats expected by the
     * {@link WebAudioAPI} library.
     * 
     * @module Constants
     */
-
+ 
    /**
     * Object representing a mapping between the notational name of a musical note and its MIDI value.
     * @constant {Object.<string, number>}
     */
    const Note = {
-      C0: 12, D0bb: 12, C0s: 13, D0b: 13, D0: 14, C0ss: 14, E0bb: 14,
-      D0s: 15, E0b: 15, F0bb: 15, E0: 16, D0ss: 16, F0b: 16, F0: 17, E0s: 17, G0bb: 17,
-      F0s: 18, E0ss: 18, G0b: 18, G0: 19, F0ss: 19, A0bb: 19, G0s: 20, A0b: 20,
-      A0: 21, G0ss: 21, B0bb: 21, A0s: 22, B0b: 22, C1bb: 22, B0: 23, A0ss: 23, C1b: 23,
-      C1: 24, B0s: 24, D1bb: 24, C1s: 25, B0ss: 25, D1b: 25, D1: 26, C1ss: 26, E1bb: 26,
-      D1s: 27, E1b: 27, F1bb: 27, E1: 28, D1ss: 28, F1b: 28, F1: 29, E1s: 29, G1bb: 29,
-      F1s: 30, E1ss: 30, G1b: 30, G1: 31, F1ss: 31, A1bb: 31, G1s: 32, A1b: 32,
-      A1: 33, G1ss: 33, B1bb: 33, A1s: 34, B1b: 34, C2bb: 34, B1: 35, A1ss: 35, C2b: 35,
-      C2: 36, B1s: 36, D2bb: 36, C2s: 37, B1ss: 37, D2b: 37, D2: 38, C2ss: 38, E2bb: 38,
-      D2s: 39, E2b: 39, F2bb: 39, E2: 40, D2ss: 40, F2b: 40, F2: 41, E2s: 41, G2bb: 41,
-      F2s: 42, E2ss: 42, G2b: 42, G2: 43, F2ss: 43, A2bb: 43, G2s: 44, A2b: 44,
-      A2: 45, G2ss: 45, B2bb: 45, A2s: 46, B2b: 46, C3bb: 46, B2: 47, A2ss: 47, C3b: 47,
-      C3: 48, B2s: 48, D3bb: 48, C3s: 49, B2ss: 49, D3b: 49, D3: 50, C3ss: 50, E3bb: 50,
-      D3s: 51, E3b: 51, F3bb: 51, E3: 52, D3ss: 52, F3b: 52, F3: 53, E3s: 53, G3bb: 53,
-      F3s: 54, E3ss: 54, G3b: 54, G3: 55, F3ss: 55, A3bb: 55, G3s: 56, A3b: 56,
-      A3: 57, G3ss: 57, B3bb: 57, A3s: 58, B3b: 58, C4bb: 58, B3: 59, A3ss: 59, C4b: 59,
-      C4: 60, B3s: 60, D4bb: 60, C4s: 61, B3ss: 61, D4b: 61, D4: 62, C4ss: 62, E4bb: 62,
-      D4s: 63, E4b: 63, F4bb: 63, E4: 64, D4ss: 64, F4b: 64, F4: 65, E4s: 65, G4bb: 65,
-      F4s: 66, E4ss: 66, G4b: 66, G4: 67, F4ss: 67, A4bb: 67, G4s: 68, A4b: 68,
-      A4: 69, G4ss: 69, B4bb: 69, A4s: 70, B4b: 70, C5bb: 70, B4: 71, A4ss: 71, C5b: 71,
-      C5: 72, B4s: 72, D5bb: 72, C5s: 73, B4ss: 73, D5b: 73, D5: 74, C5ss: 74, E5bb: 74,
-      D5s: 75, E5b: 75, F5bb: 75, E5: 76, D5ss: 76, F5b: 76, F5: 77, E5s: 77, G5bb: 77,
-      F5s: 78, E5ss: 78, G5b: 78, G5: 79, F5ss: 79, A5bb: 79, G5s: 80, A5b: 80,
-      A5: 81, G5ss: 81, B5bb: 81, A5s: 82, B5b: 82, C6bb: 82, B5: 83, A5ss: 83, C6b: 83,
-      C6: 84, B5s: 84, D6bb: 84, C6s: 85, B5ss: 85, D6b: 85, D6: 86, C6ss: 86, E6bb: 86,
-      D6s: 87, E6b: 87, F6bb: 87, E6: 88, D6ss: 88, F6b: 88, F6: 89, E6s: 89, G6bb: 89,
-      F6s: 90, E6ss: 90, G6b: 90, G6: 91, F6ss: 91, A6bb: 91, G6s: 92, A6b: 92,
-      A6: 93, G6ss: 93, B6bb: 93, A6s: 94, B6b: 94, C7bb: 94, B6: 95, A6ss: 95, C7b: 95,
-      C7: 96, B6s: 96, D7bb: 96, C7s: 97, B6ss: 97, D7b: 97, D7: 98, C7ss: 98, E7bb: 98,
-      D7s: 99, E7b: 99, F7bb: 99, E7: 100, D7ss: 100, F7b: 100, F7: 101, E7s: 101, G7bb: 101,
-      F7s: 102, E7ss: 102, G7b: 102, G7: 103, F7ss: 103, A7bb: 103, G7s: 104, A7b: 104,
-      A7: 105, G7ss: 105, B7bb: 105, A7s: 106, B7b: 106, C8bb: 106, B7: 107, A7ss: 107, C8b: 107,
-      C8: 108, B7s: 108, D8bb: 108, C8s: 109, B7ss: 109, D8b: 109, D8: 110, C8ss: 110, E8bb: 110,
-      D8s: 111, E8b: 111, F8bb: 111, E8: 112, D8ss: 112, F8b: 112, F8: 113, E8s: 113, G8bb: 113,
-      F8s: 114, E8ss: 114, G8b: 114, G8: 115, F8ss: 115, A8bb: 115, G8s: 116, A8b: 116,
-      A8: 117, G8ss: 117, B8bb: 117, A8s: 118, B8b: 118, C9bb: 118, B8: 119, A8ss: 119, C9b: 119,
-      C9: 120, B8s: 120, D9bb: 120, C9s: 121, B8ss: 121, D9b: 121, D9: 122, C9ss: 122, E9bb: 122,
-      D9s: 123, E9b: 123, F9bb: 123, E9: 124, D9ss: 124, F9b: 124, F9: 125, E9s: 125, G9bb: 125,
-      F9s: 126, E9ss: 126, G9b: 126, G9: 127, F9ss: 127, A9bb: 127, G9s: 128, A9b: 128,
-      A9: 129, G9ss: 129, B9bb: 129, A9s: 130, B9b: 130, B9: 131, A9ss: 131
+      C0: 12,             D0bb: 12,  C0s: 13,              D0b: 13,   D0: 14,  C0ss: 14,  E0bb: 14,
+     D0s: 15,   E0b: 15,  F0bb: 15,   E0: 16,  D0ss: 16,   F0b: 16,   F0: 17,   E0s: 17,  G0bb: 17,
+     F0s: 18,  E0ss: 18,   G0b: 18,   G0: 19,  F0ss: 19,  A0bb: 19,  G0s: 20,   A0b: 20,
+      A0: 21,  G0ss: 21,  B0bb: 21,  A0s: 22,   B0b: 22,  C1bb: 22,   B0: 23,  A0ss: 23,   C1b: 23,
+      C1: 24,   B0s: 24,  D1bb: 24,  C1s: 25,  B0ss: 25,   D1b: 25,   D1: 26,  C1ss: 26,  E1bb: 26,
+     D1s: 27,   E1b: 27,  F1bb: 27,   E1: 28,  D1ss: 28,   F1b: 28,   F1: 29,   E1s: 29,  G1bb: 29,
+     F1s: 30,  E1ss: 30,   G1b: 30,   G1: 31,  F1ss: 31,  A1bb: 31,  G1s: 32,   A1b: 32,
+      A1: 33,  G1ss: 33,  B1bb: 33,  A1s: 34,   B1b: 34,  C2bb: 34,   B1: 35,  A1ss: 35,   C2b: 35,
+      C2: 36,   B1s: 36,  D2bb: 36,  C2s: 37,  B1ss: 37,   D2b: 37,   D2: 38,  C2ss: 38,  E2bb: 38,
+     D2s: 39,   E2b: 39,  F2bb: 39,   E2: 40,  D2ss: 40,   F2b: 40,   F2: 41,   E2s: 41,  G2bb: 41,
+     F2s: 42,  E2ss: 42,   G2b: 42,   G2: 43,  F2ss: 43,  A2bb: 43,  G2s: 44,   A2b: 44,
+      A2: 45,  G2ss: 45,  B2bb: 45,  A2s: 46,   B2b: 46,  C3bb: 46,   B2: 47,  A2ss: 47,   C3b: 47,
+      C3: 48,   B2s: 48,  D3bb: 48,  C3s: 49,  B2ss: 49,   D3b: 49,   D3: 50,  C3ss: 50,  E3bb: 50,
+     D3s: 51,   E3b: 51,  F3bb: 51,   E3: 52,  D3ss: 52,   F3b: 52,   F3: 53,   E3s: 53,  G3bb: 53,
+     F3s: 54,  E3ss: 54,   G3b: 54,   G3: 55,  F3ss: 55,  A3bb: 55,  G3s: 56,   A3b: 56,
+      A3: 57,  G3ss: 57,  B3bb: 57,  A3s: 58,   B3b: 58,  C4bb: 58,   B3: 59,  A3ss: 59,   C4b: 59,
+      C4: 60,   B3s: 60,  D4bb: 60,  C4s: 61,  B3ss: 61,   D4b: 61,   D4: 62,  C4ss: 62,  E4bb: 62,
+     D4s: 63,   E4b: 63,  F4bb: 63,   E4: 64,  D4ss: 64,   F4b: 64,   F4: 65,   E4s: 65,  G4bb: 65,
+     F4s: 66,  E4ss: 66,   G4b: 66,   G4: 67,  F4ss: 67,  A4bb: 67,  G4s: 68,   A4b: 68,
+      A4: 69,  G4ss: 69,  B4bb: 69,  A4s: 70,   B4b: 70,  C5bb: 70,   B4: 71,  A4ss: 71,   C5b: 71,
+      C5: 72,   B4s: 72,  D5bb: 72,  C5s: 73,  B4ss: 73,   D5b: 73,   D5: 74,  C5ss: 74,  E5bb: 74,
+     D5s: 75,   E5b: 75,  F5bb: 75,   E5: 76,  D5ss: 76,   F5b: 76,   F5: 77,   E5s: 77,  G5bb: 77,
+     F5s: 78,  E5ss: 78,   G5b: 78,   G5: 79,  F5ss: 79,  A5bb: 79,  G5s: 80,   A5b: 80,
+      A5: 81,  G5ss: 81,  B5bb: 81,  A5s: 82,   B5b: 82,  C6bb: 82,   B5: 83,  A5ss: 83,   C6b: 83,
+      C6: 84,   B5s: 84,  D6bb: 84,  C6s: 85,  B5ss: 85,   D6b: 85,   D6: 86,  C6ss: 86,  E6bb: 86,
+     D6s: 87,   E6b: 87,  F6bb: 87,   E6: 88,  D6ss: 88,   F6b: 88,   F6: 89,   E6s: 89,  G6bb: 89,
+     F6s: 90,  E6ss: 90,   G6b: 90,   G6: 91,  F6ss: 91,  A6bb: 91,  G6s: 92,   A6b: 92,
+      A6: 93,  G6ss: 93,  B6bb: 93,  A6s: 94,   B6b: 94,  C7bb: 94,   B6: 95,  A6ss: 95,   C7b: 95,
+      C7: 96,   B6s: 96,  D7bb: 96,  C7s: 97,  B6ss: 97,   D7b: 97,   D7: 98,  C7ss: 98,  E7bb: 98,
+     D7s: 99,   E7b: 99,  F7bb: 99,   E7: 100, D7ss: 100,  F7b: 100,  F7: 101,  E7s: 101, G7bb: 101,
+     F7s: 102, E7ss: 102,  G7b: 102,  G7: 103, F7ss: 103, A7bb: 103, G7s: 104,  A7b: 104,
+      A7: 105, G7ss: 105, B7bb: 105, A7s: 106,  B7b: 106, C8bb: 106,  B7: 107, A7ss: 107,  C8b: 107,
+      C8: 108,  B7s: 108, D8bb: 108, C8s: 109, B7ss: 109,  D8b: 109,  D8: 110, C8ss: 110, E8bb: 110,
+     D8s: 111,  E8b: 111, F8bb: 111,  E8: 112, D8ss: 112,  F8b: 112,  F8: 113,  E8s: 113, G8bb: 113,
+     F8s: 114, E8ss: 114,  G8b: 114,  G8: 115, F8ss: 115, A8bb: 115, G8s: 116,  A8b: 116,
+      A8: 117, G8ss: 117, B8bb: 117, A8s: 118,  B8b: 118, C9bb: 118,  B8: 119, A8ss: 119,  C9b: 119,
+      C9: 120,  B8s: 120, D9bb: 120, C9s: 121, B8ss: 121,  D9b: 121,  D9: 122, C9ss: 122, E9bb: 122,
+     D9s: 123,  E9b: 123, F9bb: 123,  E9: 124, D9ss: 124,  F9b: 124,  F9: 125,  E9s: 125, G9bb: 125,
+     F9s: 126, E9ss: 126,  G9b: 126,  G9: 127, F9ss: 127, A9bb: 127, G9s: 128,  A9b: 128,
+      A9: 129, G9ss: 129, B9bb: 129, A9s: 130,  B9b: 130,   B9: 131,           A9ss: 131
    };
-
+ 
    /**
     * Array containing the frequency (in Hz) of the MIDI value at the corresponding array index.
     * @constant {number[]}
     */
    const Frequency = [
-      8.18, 8.66, 9.18, 9.72, 10.30, 10.91, 11.56, 12.25, 12.98, 13.75, 14.57, 15.43,
-      16.35, 17.32, 18.35, 19.45, 20.60, 21.83, 23.12, 24.50, 25.96, 27.50, 29.14, 30.87,
-      32.70, 34.65, 36.71, 38.89, 41.20, 43.65, 46.25, 49.00, 51.91, 55.00, 58.27, 61.74,
-      65.41, 69.30, 73.42, 77.78, 82.41, 87.31, 92.50, 98.00, 103.83, 110.00, 116.54, 123.47,
-      130.81, 138.59, 146.83, 155.56, 164.81, 174.61, 185.00, 196.00, 207.65, 220.00, 233.08, 246.94,
-      261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 415.30, 440.00, 466.16, 493.88,
-      523.25, 554.37, 587.33, 622.25, 659.26, 698.46, 739.99, 783.99, 830.61, 880.00, 932.33, 987.77,
-      1046.50, 1108.73, 1174.66, 1244.51, 1318.51, 1396.91, 1479.98, 1567.98, 1661.22, 1760.00, 1864.66, 1975.53,
-      2093.00, 2217.46, 2349.32, 2489.02, 2637.02, 2793.83, 2959.96, 3135.96, 3322.44, 3520.00, 3729.31, 3951.07,
-      4186.01, 4434.92, 4698.64, 4978.03, 5274.04, 5587.65, 5919.91, 6271.93, 6644.88, 7040.00, 7458.62, 7902.13,
-      8372.02, 8869.84, 9397.27, 9956.06, 10548.08, 11175.30, 11839.82, 12534.86, 13289.75, 14080.00, 14917.24, 15804.26
+        8.18,    8.66,    9.18,    9.72,    10.30,    10.91,    11.56,    12.25,    12.98,    13.75,    14.57,    15.43,
+       16.35,   17.32,   18.35,   19.45,    20.60,    21.83,    23.12,    24.50,    25.96,    27.50,    29.14,    30.87,
+       32.70,   34.65,   36.71,   38.89,    41.20,    43.65,    46.25,    49.00,    51.91,    55.00,    58.27,    61.74,
+       65.41,   69.30,   73.42,   77.78,    82.41,    87.31,    92.50,    98.00,   103.83,   110.00,   116.54,   123.47,
+      130.81,  138.59,  146.83,  155.56,   164.81,   174.61,   185.00,   196.00,   207.65,   220.00,   233.08,   246.94,
+      261.63,  277.18,  293.66,  311.13,   329.63,   349.23,   369.99,   392.00,   415.30,   440.00,   466.16,   493.88,
+      523.25,  554.37,  587.33,  622.25,   659.26,   698.46,   739.99,   783.99,   830.61,   880.00,   932.33,   987.77,
+     1046.50, 1108.73, 1174.66, 1244.51,  1318.51,  1396.91,  1479.98,  1567.98,  1661.22,  1760.00,  1864.66,  1975.53,
+     2093.00, 2217.46, 2349.32, 2489.02,  2637.02,  2793.83,  2959.96,  3135.96,  3322.44,  3520.00,  3729.31,  3951.07,
+     4186.01, 4434.92, 4698.64, 4978.03,  5274.04,  5587.65,  5919.91,  6271.93,  6644.88,  7040.00,  7458.62,  7902.13,
+     8372.02, 8869.84, 9397.27, 9956.06, 10548.08, 11175.30, 11839.82, 12534.86, 13289.75, 14080.00, 14917.24, 15804.26
    ];
-
+ 
    /**
     * Object representing a mapping between the notational name of a musical duration and its associated beat scaling factor.
     * @constant {Object.<string, number>}
     */
    const Duration = {
-      Whole: 1.0, DottedWhole: 2.0 / 3.0, DottedDottedWhole: 4.0 / 7.0,
-      Half: 2.0, DottedHalf: 4.0 / 3.0, DottedDottedHalf: 8.0 / 7.0,
-      Quarter: 4.0, DottedQuarter: 8.0 / 3.0, DottedDottedQuarter: 16.0 / 7.0,
-      Eighth: 8.0, DottedEighth: 16.0 / 3.0, DottedDottedEighth: 32.0 / 7.0,
-      Sixteenth: 16.0, DottedSixteenth: 32.0 / 3.0, DottedDottedSixteenth: 64.0 / 7.0,
-      ThirtySecond: 32.0, DottedThirtySecond: 64.0 / 3.0, DottedDottedThirtySecond: 128.0 / 7.0,
-      SixtyFourth: 64.0, DottedSixtyFourth: 128.0 / 3.0, DottedDottedSixtyFourth: 256.0 / 7.0
+             Whole: 1.0,         DottedWhole: 2.0 / 3.0,          DottedDottedWhole: 4.0 / 7.0,
+              Half: 2.0,          DottedHalf: 4.0 / 3.0,           DottedDottedHalf: 8.0 / 7.0,
+           Quarter: 4.0,       DottedQuarter: 8.0 / 3.0,       DottedDottedQuarter: 16.0 / 7.0,
+            Eighth: 8.0,       DottedEighth: 16.0 / 3.0,        DottedDottedEighth: 32.0 / 7.0,
+        Sixteenth: 16.0,    DottedSixteenth: 32.0 / 3.0,     DottedDottedSixteenth: 64.0 / 7.0,
+     ThirtySecond: 32.0, DottedThirtySecond: 64.0 / 3.0, DottedDottedThirtySecond: 128.0 / 7.0,
+      SixtyFourth: 64.0, DottedSixtyFourth: 128.0 / 3.0,  DottedDottedSixtyFourth: 256.0 / 7.0
    };
-
+ 
    /**
     * Object representing a mapping between an effect type and its unique internal code.
     * @constant {Object.<string, number>}
@@ -98,7 +98,7 @@
       Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
       LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
    };
-
+ 
    /**
     * Object representing a mapping between an acoustic analysis type and its unique internal code.
     * @constant {Object.<string, number>}
@@ -106,7 +106,7 @@
    const AnalysisType = {
       TimeSeries: 1, PowerSpectrum: 2, TotalPower: 3
    };
-
+ 
    /**
     * Object representing a mapping between an encoding file type and its unique internal code.
     * @constant {Object.<string, number>}
@@ -114,13 +114,13 @@
    const EncodingType = {
       WAV: 1
    };
-
+ 
    /**
     * Module containing all MIDI constants and functionality available in the {@link WebAudioAPI} library.
     * 
     * @module Midi
     */
-
+ 
    /**
     * Object representing a mapping between a General MIDI command and its protocol value.
     * @constant {Object.<string, number>}
@@ -129,7 +129,7 @@
       Unknown: 0x00, NoteOff: 0x80, NoteOn: 0x90, Aftertouch: 0xA0, ContinuousController: 0xB0,
       ProgramChange: 0xC0, ChannelPressure: 0xD0, PitchBend: 0xE0, SystemMessage: 0xF0
    };
-
+ 
    /**
     * Returns a value representing the MIDI command in the specified `midiData`.
     * 
@@ -140,7 +140,7 @@
    function getMidiCommand(midiData) {
       return midiData[0] & 0xF0;
    }
-
+ 
    /**
     * Returns the MIDI note corresponding to the `NoteOn` or `NoteOff` command in the specified
     * `midiData` parameter.
@@ -151,7 +151,7 @@
    function getMidiNote(midiData) {
       return midiData[1] & 0x7F;
    }
-
+ 
    /**
     * Returns the note velocity corresponding to the `NoteOn` or `NoteOff` command in the
     * specified `midiData` parameter. This velocity will be in the range from [0.0, 1.0].
@@ -162,64 +162,64 @@
    function getMidiVelocity(midiData) {
       return (midiData[2] & 0x7F) / 127.0;
    }
-
+ 
    /**
     * Module containing all {@link WebAudioAPI} error functionality.
     * 
     * @module Errors
     */
-
+ 
    class WebAudioMidiError extends Error {
       constructor(message) {
          super(message);
          this.name = 'WebAudioMidiError';
       }
    }
-
+ 
    class WebAudioDeviceError extends Error {
       constructor(message) {
          super(message);
          this.name = 'WebAudioDeviceError';
       }
    }
-
+ 
    class WebAudioTargetError extends Error {
       constructor(message) {
          super(message);
          this.name = 'WebAudioTargetError';
       }
    }
-
+ 
    class WebAudioValueError extends Error {
       constructor(message) {
          super(message);
          this.name = 'WebAudioValueError';
       }
    }
-
+ 
    class WebAudioTrackError extends Error {
       constructor(message) {
          super(message);
          this.name = 'WebAudioTrackError';
       }
    }
-
+ 
    class WebAudioRecordingError extends Error {
       constructor(message) {
          super(message);
          this.name = 'WebAudioRecordingError';
       }
    }
-
+ 
    /** Class representing all built-in {@link WebAudioAPI} audio encoders */
    class EncoderBase {
-
+ 
       /**
        * Called by a concrete encoder instance to initialize the inherited {@link EncoderBase} data
        * structure.
        */
       constructor() { /* Empty constructor */ }
-
+ 
       /**
        * Encodes the corresponding audio buffer, and returns a
        * {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly
@@ -232,43 +232,43 @@
        */
       encode(audioData) { return undefined; }
    }
-
+ 
    /**
     * Class containing all WAV file encoding functionality.
     * @extends EncoderBase
     */
    class WavFileEncoder extends EncoderBase {
-
+ 
       /**
        * Constructs a new {@link WavFileEncoder} object.
        */
       constructor() {
          super();
       }
-
+ 
       encode(audioData) {
          // Code taken from https://russellgood.com/how-to-convert-audiobuffer-to-audio-file/
          const numChannels = audioData.numberOfChannels, length = audioData.length * numChannels * 2 + 44;
          const buffer = new ArrayBuffer(length), channels = [];
          const view = new DataView(buffer);
          let offset = 0, pos = 0;
-
+ 
          // Nested helper functions
          function setUint16(data) {
             view.setUint16(pos, data, true);
             pos += 2;
          }
-
+ 
          function setUint32(data) {
             view.setUint32(pos, data, true);
             pos += 4;
          }
-
+ 
          // Write WAVE header
          setUint32(0x46464952);                              // "RIFF"
          setUint32(length - 8);                              // file length - 8
          setUint32(0x45564157);                              // "WAVE"
-
+ 
          setUint32(0x20746d66);                              // "fmt " chunk
          setUint32(16);                                      // length = 16
          setUint16(1);                                       // PCM (uncompressed)
@@ -277,10 +277,10 @@
          setUint32(audioData.sampleRate * 2 * numChannels);  // avg. bytes/sec
          setUint16(numChannels * 2);                         // block-align
          setUint16(16);                                      // 16-bit (hardcoded in this demo)
-
+ 
          setUint32(0x61746164);                              // "data" - chunk
          setUint32(length - pos - 4);                        // chunk length
-
+ 
          // Write interleaved data
          for (let i = 0; i < audioData.numberOfChannels; ++i)
             channels.push(audioData.getChannelData(i));
@@ -296,17 +296,17 @@
          return new Blob([view.buffer], { type: 'audio/wav' });
       }
    }
-
+ 
    /**
     * Module containing functionality to create and utilize {@link WebAudioAPI} data encoders.
     * @module Encoder
     */
-
-
+ 
+ 
    const EncoderClasses = {
       [EncodingType.WAV]: WavFileEncoder,
    };
-
+ 
    /**
     * Returns a concrete encoder implementation for the specified file type. The value passed
     * to the `fileType` parameter must be the **numeric value** associated with a certain
@@ -320,14 +320,14 @@
    function getEncoderFor(encodingType) {
       return new EncoderClasses[encodingType]();
    }
-
+ 
    /** Class representing all base-level {@link WebAudioAPI} effects */
    class EffectBase {
-
+ 
       // Reference to the stored global AudioContext
       /** @type {AudioContext} */
       audioContext = null;
-
+ 
       /**
        * Called by a concrete effect instance to initialize the inherited {@link EffectBase} data
        * structure.
@@ -338,13 +338,13 @@
       constructor(audioContext) {
          this.audioContext = audioContext;
       }
-
+ 
       /**
        * Loads the necessary data to implement the corresponding {@link Effect}, which can then be
        * applied to an individual {@link Track} or to the aggregate output of all tracks.
        */
       async load() { return; }
-
+ 
       /**
        * Updates the parameters of the effect at the specified time.
        * 
@@ -357,7 +357,7 @@
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
       async update(effectOptions, updateTime, timeConstant) { return false; }
-
+ 
       /**
        * Returns a reference to the {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
        * to which all source {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNodes}
@@ -367,7 +367,7 @@
        * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
        */
       getInputNode() { return undefined; }
-
+ 
       /**
        * Returns a reference to the {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
        * from which all effect-modified output audio is produced.
@@ -377,7 +377,7 @@
        */
       getOutputNode() { return undefined; }
    }
-
+ 
    /**
     * Class representing a Band-Pass Filter effect.
     * 
@@ -388,7 +388,7 @@
     * @extends EffectBase
     */
    class BandPassFilter extends EffectBase {
-
+ 
       // Effect-specific private variables
       /** @type {BiquadFilterNode} */
       #filterNode;
@@ -396,7 +396,7 @@
       #lowerCutoffFrequency;
       /** @type {number} */
       #upperCutoffFrequency;
-
+ 
       /**
        * Constructs a new {@link BandPassFilter} effect object.
        */
@@ -406,7 +406,7 @@
          this.#lowerCutoffFrequency = 1.0;
          this.#upperCutoffFrequency = 22050.0;
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -420,12 +420,12 @@
             { name: 'upperCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 22050 }
          ];
       }
-
+ 
       async load() {
          this.#filterNode.frequency.value = 11025.0;
          this.#filterNode.Q.value = 0.0001;
       }
-
+ 
       /**
        * Updates the {@link BandPassFilter} effect according to the specified parameters at the
        * specified time.
@@ -439,7 +439,7 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ lowerCutoffFrequency, upperCutoffFrequency }, updateTime, timeConstant) {
+      async update({lowerCutoffFrequency, upperCutoffFrequency}, updateTime, timeConstant) {
          if ((lowerCutoffFrequency == null) && (upperCutoffFrequency == null))
             throw new WebAudioValueError('Cannot update the BandPassFilter effect without at least one of the following parameters: "lowerCutoffFrequency, upperCutoffFrequency"');
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
@@ -453,22 +453,22 @@
          this.#filterNode.Q.setTargetAtTime(centerFrequency / (this.#upperCutoffFrequency - this.#lowerCutoffFrequency), timeToUpdate, timeConstantTarget);
          return true;
       }
-
+ 
       #calcCenterFrequency() {
          if (this.#upperCutoffFrequency / this.#lowerCutoffFrequency >= 1.1)
             return Math.sqrt(this.#upperCutoffFrequency * this.#lowerCutoffFrequency);
          return ((this.#upperCutoffFrequency + this.#lowerCutoffFrequency) / 2);
       }
-
+ 
       getInputNode() {
          return this.#filterNode;
       }
-
+ 
       getOutputNode() {
          return this.#filterNode;
       }
    }
-
+ 
    /**
     * Class representing a Band-Reject Filter effect.
     * 
@@ -479,7 +479,7 @@
     * @extends EffectBase
     */
    class BandRejectFilter extends EffectBase {
-
+ 
       // Effect-specific private variables
       /** @type {BiquadFilterNode} */
       #filterNode;
@@ -487,7 +487,7 @@
       #lowerCutoffFrequency;
       /** @type {number} */
       #upperCutoffFrequency;
-
+ 
       /**
        * Constructs a new {@link BandRejectFilter} effect object.
        */
@@ -497,7 +497,7 @@
          this.#lowerCutoffFrequency = 1.0;
          this.#upperCutoffFrequency = 1.0;
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -511,12 +511,12 @@
             { name: 'upperCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 1 }
          ];
       }
-
+ 
       async load() {
          this.#filterNode.frequency.value = 11025.0;
          this.#filterNode.Q.value = 1000.0;
       }
-
+ 
       /**
        * Updates the {@link BandRejectFilter} effect according to the specified parameters at the
        * specified time.
@@ -530,7 +530,7 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ lowerCutoffFrequency, upperCutoffFrequency }, updateTime, timeConstant) {
+      async update({lowerCutoffFrequency, upperCutoffFrequency}, updateTime, timeConstant) {
          if ((lowerCutoffFrequency == null) && (upperCutoffFrequency == null))
             throw new WebAudioValueError('Cannot update the BandRejectFilter effect without at least one of the following parameters: "lowerCutoffFrequency, upperCutoffFrequency"');
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
@@ -544,22 +544,22 @@
          this.#filterNode.Q.setTargetAtTime((this.#upperCutoffFrequency - this.#lowerCutoffFrequency) / centerFrequency, timeToUpdate, timeConstantTarget);
          return true;
       }
-
+ 
       #calcCenterFrequency() {
          if (this.#upperCutoffFrequency / this.#lowerCutoffFrequency >= 1.1)
             return Math.sqrt(this.#upperCutoffFrequency * this.#lowerCutoffFrequency);
          return ((this.#upperCutoffFrequency + this.#lowerCutoffFrequency) / 2);
       }
-
+ 
       getInputNode() {
          return this.#filterNode;
       }
-
+ 
       getOutputNode() {
          return this.#filterNode;
       }
    }
-
+ 
    /**
     * Class representing a Chorus effect.
     * 
@@ -570,14 +570,14 @@
     * @extends EffectBase
     */
    class Chorus extends EffectBase {
-
+ 
       /**
        * Constructs a new {@link Chorus} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -594,11 +594,11 @@
             { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
          ];
       }
-
+ 
       async load() {
          return;
       }
-
+ 
       /**
        * Updates the {@link Chorus} effect according to the specified parameters at the
        * specified time.
@@ -615,22 +615,22 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ rate, shape, delayOffset, variableFeedback, intensity }, updateTime, timeConstant) {
+      async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime, timeConstant) {
          if ((rate == null) && (shape == null) && (delayOffset == null) && (variableFeedback == null) && (intensity == null))
             throw new WebAudioValueError('Cannot update the Chorus effect without at least one of the following parameters: "rate, shape, delayOffset, variableFeedback, intensity"');
          (updateTime == null) ? this.audioContext.currentTime : updateTime;
          return false;
       }
-
+ 
       getInputNode() {
          return;
       }
-
+ 
       getOutputNode() {
          return;
       }
    }
-
+ 
    /**
     * Class representing a Compression effect.
     * 
@@ -641,11 +641,11 @@
     * @extends EffectBase
     */
    class Compression extends EffectBase {
-
+ 
       // Effect-specific private variables
       /** @type {DynamicsCompressorNode} */
       #compressorNode;
-
+ 
       /**
        * Constructs a new {@link Compression} effect object.
        */
@@ -653,7 +653,7 @@
          super(audioContext);
          this.#compressorNode = new DynamicsCompressorNode(audioContext);
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -669,14 +669,14 @@
             { name: 'intensityPercent', type: 'number', validValues: [0, 1], defaultValue: 0 }
          ];
       }
-
+ 
       async load() {
          this.#compressorNode.threshold.value = -24;
          this.#compressorNode.attack.value = 0.003;
          this.#compressorNode.release.value = 0.25;
          this.#compressorNode.ratio.value = 1.0;
       }
-
+ 
       /**
        * Updates the {@link Compression} effect according to the specified parameters at the
        * specified time.
@@ -692,7 +692,7 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ threshold, attack, release, intensity }, updateTime, timeConstant) {
+      async update({threshold, attack, release, intensity}, updateTime, timeConstant) {
          if ((threshold == null) && (attack == null) && (release == null) && (intensity == null))
             throw new WebAudioValueError('Cannot update the Compression effect without at least one of the following parameters: "threshold, attack, release, intensity"');
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
@@ -709,16 +709,16 @@
          }
          return true;
       }
-
+ 
       getInputNode() {
          return this.#compressorNode;
       }
-
+ 
       getOutputNode() {
          return this.#compressorNode;
       }
    }
-
+ 
    /**
     * Class representing a Delay effect.
     * 
@@ -728,11 +728,11 @@
     * @extends EffectBase
     */
    class Delay extends EffectBase {
-
+ 
       // Effect-specific private variables
       /** @type {DelayNode} */
       #delayNode;
-
+ 
       /**
        * Constructs a new {@link Delay} effect object.
        */
@@ -740,7 +740,7 @@
          super(audioContext);
          this.#delayNode = new DelayNode(audioContext);
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -751,11 +751,11 @@
       static getParameters() {
          return [];
       }
-
+ 
       async load() {
          return;
       }
-
+ 
       /**
        * Updates the {@link Delay} effect according to the specified parameters at the
        * specified time.
@@ -772,22 +772,22 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ feedback, time, cutoffFrequencyLower, cutoffFrequencyUpper, intensity }, updateTime, timeConstant) {
+      async update({feedback, time, cutoffFrequencyLower, cutoffFrequencyUpper, intensity}, updateTime, timeConstant) {
          if ((feedback == null) && (time == null) && (cutoffFrequencyLower == null) && (cutoffFrequencyUpper == null) && (intensity == null))
             throw new WebAudioValueError('Cannot update the Delay effect without at least one of the following parameters: "feedback, time, cutoffFrequencyLower, cutoffFrequencyUpper, intensity"');
          (updateTime == null) ? this.audioContext.currentTime : updateTime;
          return false;
       }
-
+ 
       getInputNode() {
          return;
       }
-
+ 
       getOutputNode() {
          return;
       }
    }
-
+ 
    /**
     * Class representing a Distortion effect.
     * 
@@ -798,14 +798,14 @@
     * @extends EffectBase
     */
    class Distortion extends EffectBase {
-
+ 
       /**
        * Constructs a new {@link Distortion} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -816,11 +816,11 @@
       static getParameters() {
          return [];
       }
-
+ 
       async load() {
          return;
       }
-
+ 
       /**
        * Updates the {@link Distortion} effect according to the specified parameters at the
        * specified time.
@@ -835,22 +835,22 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ drive, tone, intensity }, updateTime, timeConstant) {
+      async update({drive, tone, intensity}, updateTime, timeConstant) {
          if ((drive == null) && (tone == null) && (intensity == null))
             throw new WebAudioValueError('Cannot update the Distortion effect without at least one of the following parameters: "drive, tone, intensity"');
          (updateTime == null) ? this.audioContext.currentTime : updateTime;
          return false;
       }
-
+ 
       getInputNode() {
          return;
       }
-
+ 
       getOutputNode() {
          return;
       }
    }
-
+ 
    /**
     * Class representing an Echo effect.
     * 
@@ -861,39 +861,39 @@
     * @extends EffectBase
     */
    class Echo extends EffectBase {
-
+ 
       /** @type {DelayNode} */
       #delay;
       /** @type {GainNode} */
       #gain;
       /** @type {GainNode} */
       #destination;
-
+ 
       #echo = {
          feedback: 0.2,
          intensity: 0.2,
          maxDuration: 1,
       };
-
+ 
       /**
        * Constructs a new {@link Echo} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
-
+ 
          this.#delay = new DelayNode(audioContext);
          this.#delay.delayTime.value = this.#echo.feedback * this.#echo.maxDuration;
-
+ 
          this.#gain = new GainNode(audioContext);
          this.#gain.gain.value = this.#echo.intensity;
-
+ 
          this.#destination = new GainNode(audioContext);
          this.#destination.gain.value = 1;
-
+ 
          this.#gain.connect(this.#delay);
          this.#delay.connect(this.#gain).connect(this.#destination);
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -907,11 +907,11 @@
             { name: 'intensity', type: 'number', validValues: [0, 1], defaultValue: 0.2 },
          ];
       }
-
+ 
       async load() {
          return;
       }
-
+ 
       /**
        * Updates the {@link Echo} effect according to the specified parameters at the
        * specified time.
@@ -925,7 +925,7 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ feedback, intensity }, updateTime, timeConstant) {
+      async update({feedback, intensity}, updateTime, timeConstant) {
          if ((feedback == null) && (intensity == null))
             throw new WebAudioValueError('Cannot update the Echo effect without at least one of the following parameters: "feedback, intensity"');
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
@@ -940,16 +940,16 @@
          }
          return true;
       }
-
+ 
       getInputNode() {
          return this.#delay;
       }
-
+ 
       getOutputNode() {
          return this.#destination;
       }
    }
-
+ 
    /**
     * Class representing an Equalization effect.
     * 
@@ -960,14 +960,14 @@
     * @extends EffectBase
     */
    class Equalization extends EffectBase {
-
+ 
       /**
        * Constructs a new {@link Equalization} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -978,11 +978,11 @@
       static getParameters() {
          return [];
       }
-
+ 
       async load() {
          return;
       }
-
+ 
       /**
        * Updates the {@link Equalization} effect according to the specified parameters at the
        * specified time.
@@ -996,22 +996,22 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ frequencyBandUpperCutoffs, frequencyBandVolumes }, updateTime, timeConstant) {
+      async update({frequencyBandUpperCutoffs, frequencyBandVolumes}, updateTime, timeConstant) {
          if ((frequencyBandUpperCutoffs == null) && (frequencyBandVolumes == null))
             throw new WebAudioValueError('Cannot update the Equalization effect without at least one of the following parameters: "frequencyBandUpperCutoffs, frequencyBandVolumes"');
          (updateTime == null) ? this.audioContext.currentTime : updateTime;
          return false;
       }
-
+ 
       getInputNode() {
          return;
       }
-
+ 
       getOutputNode() {
          return;
       }
    }
-
+ 
    /**
     * Class representing a Flanger effect.
     * 
@@ -1021,7 +1021,7 @@
     * @extends EffectBase
     */
    class Flanger extends EffectBase {
-
+ 
       /** @type {GainNode} */
       #destination;
       /** @type {GainNode} */
@@ -1034,7 +1034,7 @@
       #lfo;
       /** @type {GainNode} */
       #feedback;
-
+ 
       /**
        * Constructs a new {@link Flanger} effect object.
        */
@@ -1046,14 +1046,14 @@
          this.#delayNode = new DelayNode(audioContext);
          this.#lfo = new OscillatorNode(audioContext, { frequency: 0 });
          this.#feedback = new GainNode(audioContext);
-
+ 
          this.#dry.gain.value = 1;
          this.#wet.gain.value = 0.2;
          this.#feedback.gain.value = 0;
          this.#delayNode.delayTime.value = 0;
          this.#lfo.type = 'sine';
          this.#lfo.start();
-
+ 
          this.#dry.connect(this.#wet);
          this.#dry.connect(this.#destination);
          this.#wet.connect(this.#delayNode).connect(this.#destination);
@@ -1061,7 +1061,7 @@
          this.#lfo.connect(this.#delayNode);
          this.#feedback.connect(this.#wet);
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -1078,11 +1078,11 @@
             { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
          ];
       }
-
+ 
       async load() {
          return;
       }
-
+ 
       /**
        * Updates the {@link Flanger} effect according to the specified parameters at the
        * specified time.
@@ -1099,7 +1099,7 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ rate, shape, delayOffset, variableFeedback, intensity }, updateTime, timeConstant) {
+      async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime, timeConstant) {
          if ((rate == null) && (shape == null) && (delayOffset == null) && (variableFeedback == null) && (intensity == null))
             throw new WebAudioValueError('Cannot update the Flanger effect without at least one of the following parameters: "rate, shape, delayOffset, variableFeedback, intensity"');
          if ((shape != 'sine') && (shape != 'triangle'))
@@ -1108,7 +1108,7 @@
          const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
          if (rate != null)
             this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
-         if (shape != null)
+         if (shape != null) 
             this.#lfo.type = shape;
          if (delayOffset != null)
             this.#delayNode.delayTime.setTargetAtTime(delayOffset * 1, timeToUpdate, timeConstantTarget);
@@ -1118,16 +1118,16 @@
             this.#wet.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);
          return false;
       }
-
+ 
       getInputNode() {
          return this.#dry;
       }
-
+ 
       getOutputNode() {
          return this.#destination;
       }
    }
-
+ 
    /**
     * Class representing a High-Pass Filter effect.
     * 
@@ -1137,11 +1137,11 @@
     * @extends EffectBase
     */
    class HighPassFilter extends EffectBase {
-
+ 
       // Effect-specific private variables
       /** @type {BiquadFilterNode} */
       #filterNode;
-
+ 
       /**
        * Constructs a new {@link HighPassFilter} effect object.
        */
@@ -1149,7 +1149,7 @@
          super(audioContext);
          this.#filterNode = new BiquadFilterNode(audioContext, { type: 'highpass' });
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -1163,12 +1163,12 @@
             { name: 'resonance', type: 'number', validValues: [0, 1000], defaultValue: 0 }
          ];
       }
-
+ 
       async load() {
          this.#filterNode.frequency.value = 0.0;
          this.#filterNode.Q.value = 0.0001;
       }
-
+ 
       /**
        * Updates the {@link HighPassFilter} effect according to the specified parameters at the
        * specified time.
@@ -1182,7 +1182,7 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ cutoffFrequency, resonance }, updateTime, timeConstant) {
+      async update({cutoffFrequency, resonance}, updateTime, timeConstant) {
          if ((cutoffFrequency == null) && (resonance == null))
             throw new WebAudioValueError('Cannot update the HighPassFilter effect without at least one of the following parameters: "cutoffFrequency, resonance"');
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
@@ -1193,16 +1193,16 @@
             this.#filterNode.Q.setTargetAtTime(Math.max(resonance, 0.0001), timeToUpdate, timeConstantTarget);
          return true;
       }
-
+ 
       getInputNode() {
          return this.#filterNode;
       }
-
+ 
       getOutputNode() {
          return this.#filterNode;
       }
    }
-
+ 
    /**
     * Class representing a Low-Pass Filter effect.
     * 
@@ -1212,11 +1212,11 @@
     * @extends EffectBase
     */
    class LowPassFilter extends EffectBase {
-
+ 
       // Effect-specific private variables
       /** @type {BiquadFilterNode} */
       #filterNode;
-
+ 
       /**
        * Constructs a new {@link LowPassFilter} effect object.
        */
@@ -1224,7 +1224,7 @@
          super(audioContext);
          this.#filterNode = new BiquadFilterNode(audioContext, { type: 'lowpass' });
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -1238,12 +1238,12 @@
             { name: 'resonance', type: 'number', validValues: [0, 1000], defaultValue: 0 }
          ];
       }
-
+ 
       async load() {
          this.#filterNode.frequency.value = 22050.0;
          this.#filterNode.Q.value = 0.0001;
       }
-
+ 
       /**
        * Updates the {@link LowPassFilter} effect according to the specified parameters at the
        * specified time.
@@ -1257,7 +1257,7 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ cutoffFrequency, resonance }, updateTime, timeConstant) {
+      async update({cutoffFrequency, resonance}, updateTime, timeConstant) {
          if ((cutoffFrequency == null) && (resonance == null))
             throw new WebAudioValueError('Cannot update the LowPassFilter effect without at least one of the following parameters: "cutoffFrequency, resonance"');
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
@@ -1268,16 +1268,16 @@
             this.#filterNode.Q.setTargetAtTime(Math.max(resonance, 0.0001), timeToUpdate, timeConstantTarget);
          return true;
       }
-
+ 
       getInputNode() {
          return this.#filterNode;
       }
-
+ 
       getOutputNode() {
          return this.#filterNode;
       }
    }
-
+ 
    /**
     * Class representing a Panning effect.
     * 
@@ -1288,11 +1288,11 @@
     * @extends EffectBase
     */
    class Panning extends EffectBase {
-
+ 
       // Effect-specific private variables
       /** @type {StereoPannerNode} */
       #panningNode;
-
+ 
       /**
        * Constructs a new {@link Panning} effect object.
        */
@@ -1300,7 +1300,7 @@
          super(audioContext);
          this.#panningNode = new StereoPannerNode(audioContext);
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -1313,11 +1313,11 @@
             { name: 'leftToRightRatio', type: 'number', validValues: [0, 1], defaultValue: 0.5 }
          ];
       }
-
+ 
       async load() {
          this.#panningNode.pan.value = 0.0;
       }
-
+ 
       /* eslint no-empty-pattern: "off" */
       /**
        * Updates the {@link Panning} effect according to the specified parameters at the
@@ -1331,7 +1331,7 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ leftToRightRatio }, updateTime, timeConstant) {
+      async update({leftToRightRatio}, updateTime, timeConstant) {
          if (leftToRightRatio == null)
             throw new WebAudioValueError('Cannot update the Panning effect without at least one of the following parameters: "leftToRightRatio"');
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
@@ -1340,16 +1340,16 @@
          this.#panningNode.pan.setTargetAtTime(panningValue, timeToUpdate, timeConstantTarget);
          return true;
       }
-
+ 
       getInputNode() {
          return this.#panningNode;
       }
-
+ 
       getOutputNode() {
          return this.#panningNode;
       }
    }
-
+ 
    /**
     * Class representing a Phaser effect.
     * 
@@ -1362,14 +1362,14 @@
     * @extends EffectBase
     */
    class Phaser extends EffectBase {
-
+ 
       /**
        * Constructs a new {@link Phaser} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -1380,11 +1380,11 @@
       static getParameters() {
          return [];
       }
-
+ 
       async load() {
          return;
       }
-
+ 
       /**
        * Updates the {@link Phaser} effect according to the specified parameters at the
        * specified time.
@@ -1401,22 +1401,22 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ speed, feedback, widthLower, widthUpper, intensity }, updateTime, timeConstant) {
+      async update({speed, feedback, widthLower, widthUpper, intensity}, updateTime, timeConstant) {
          if ((speed == null) && (feedback == null) && (widthLower == null) && (widthUpper == null) && (intensity == null))
             throw new WebAudioValueError('Cannot update the Phaser effect without at least one of the following parameters: "speed, feedback, widthLower, widthUpper, intensity"');
          (updateTime == null) ? this.audioContext.currentTime : updateTime;
          return false;
       }
-
+ 
       getInputNode() {
          return;
       }
-
+ 
       getOutputNode() {
          return;
       }
    }
-
+ 
    /**
     * Class representing a Reverb effect.
     * 
@@ -1428,14 +1428,14 @@
     * @extends EffectBase
     */
    class Reverb extends EffectBase {
-
+ 
       /**
        * Constructs a new {@link Reverb} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -1446,11 +1446,11 @@
       static getParameters() {
          return [];
       }
-
+ 
       async load() {
          return;
       }
-
+ 
       /**
        * Updates the {@link Reverb} effect according to the specified parameters at the
        * specified time.
@@ -1467,22 +1467,22 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity }, updateTime, timeConstant) {
-         if ((preDelay == null) && (decay == null) && (highCutoffFrequency == null) && (lowCutoffFrequency == null) && (intensity == null))
+      async update({preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity}, updateTime, timeConstant) {
+         if ((preDelay == null) && (decay ==  null) && (highCutoffFrequency == null) && (lowCutoffFrequency ==  null) && (intensity == null))
             throw new WebAudioValueError('Cannot update the Reverb effect without at least one of the following parameters: "preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity"');
          (updateTime == null) ? this.audioContext.currentTime : updateTime;
          return false;
       }
-
+ 
       getInputNode() {
          return;
       }
-
+ 
       getOutputNode() {
          return;
       }
    }
-
+ 
    /**
     * Class representing a Tremolo effect.
     * 
@@ -1494,12 +1494,12 @@
     * @extends EffectBase
     */
    class Tremolo extends EffectBase {
-
+ 
       /** @type {OscillatorNode} */
       #lfo;
       /** @type {GainNode} */
       #gain;
-
+ 
       /**
        * Constructs a new {@link Tremolo} effect object.
        */
@@ -1511,7 +1511,7 @@
          this.#lfo.connect(this.#gain.gain);
          this.#lfo.start();
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -1524,11 +1524,11 @@
             { name: 'rate', type: 'number', validValues: [0, 20], defaultValue: 0 },
          ];
       }
-
+ 
       async load() {
          return;
       }
-
+ 
       /**
        * Updates the {@link Tremolo} effect according to the specified parameters at the
        * specified time.
@@ -1549,16 +1549,16 @@
          this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
          return true;
       }
-
+ 
       getInputNode() {
          return this.#gain;
       }
-
+ 
       getOutputNode() {
          return this.#gain;
       }
    }
-
+ 
    /**
     * Class representing a Vibrato effect.
     * 
@@ -1569,26 +1569,26 @@
     * @extends EffectBase
     */
    class Vibrato extends EffectBase {
-
+ 
       /** @type {DelayNode} */
       #delay;
       /** @type {OscillatorNode} */
       #lfo;
       /** @type {GainNode} */
       #gain;
-
+ 
       /**
        * Constructs a new {@link Vibrato} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
-         this.#delay = new DelayNode(audioContext, { delayTime: 1, maxDelayTime: 10 });
-         this.#lfo = new OscillatorNode(audioContext, { frequency: 5 });
-         this.#gain = new GainNode(audioContext, { gain: 0 });
+         this.#delay = new DelayNode(audioContext, {delayTime: 1, maxDelayTime: 10});
+         this.#lfo = new OscillatorNode(audioContext, {frequency: 5});
+         this.#gain = new GainNode(audioContext, {gain: 0});
          this.#lfo.connect(this.#gain).connect(this.#delay.delayTime);
          this.#lfo.start();
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -1598,15 +1598,15 @@
        */
       static getParameters() {
          return [
-            { name: 'rate', type: 'number', validValues: [0, 8], defaultValue: 5 },
-            { name: 'depth', type: 'number', validValues: [0, 0.1], defaultValue: 0 },
+            { name: 'rate', type: 'number', validValues: [0, 8], defaultValue: 5 }, 
+            { name: 'depth', type: 'number', validValues: [0, 0.1], defaultValue: 0 }, 
          ];
       }
-
+ 
       async load() {
          return;
       }
-
+ 
       /**
        * Updates the {@link Vibrato} effect according to the specified parameters at the
        * specified time.
@@ -1620,12 +1620,12 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ rate, depth }, updateTime, timeConstant) {
+      async update({rate, depth}, updateTime, timeConstant) {
          if ((rate == null) && (depth == null))
             throw new WebAudioValueError('Cannot update the Vibrato effect without at least one of the following parameters: "rate, depth"');
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
          const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
-         if (rate != null)
+         if (rate != null) 
             this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
          if (depth != null) {
             const gainValue = (depth / (2.0 * Math.PI * (rate != null) ? rate : this.#lfo.frequency.value));
@@ -1633,16 +1633,16 @@
          }
          return true;
       }
-
+ 
       getInputNode() {
          return this.#delay;
       }
-
+ 
       getOutputNode() {
          return this.#delay;
       }
    }
-
+ 
    /**
     * Class representing a Volume effect.
     * 
@@ -1651,11 +1651,11 @@
     * @extends EffectBase
     */
    class Volume extends EffectBase {
-
+ 
       // Effect-specific private variables
       /** @type {GainNode} */
       #volumeNode;
-
+ 
       /**
        * Constructs a new {@link Volume} effect object.
        */
@@ -1663,7 +1663,7 @@
          super(audioContext);
          this.#volumeNode = new GainNode(audioContext);
       }
-
+ 
       /**
        * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
        * of the {@link EffectBase#update update()} function for this {@link Effect}.
@@ -1676,11 +1676,11 @@
             { name: 'intensity', type: 'number', validValues: [0, 1], defaultValue: 1 }
          ];
       }
-
+ 
       async load() {
          this.#volumeNode.gain.value = 1.0;
       }
-
+ 
       /* eslint no-empty-pattern: "off" */
       /**
        * Updates the {@link Volume} effect according to the specified parameters at the
@@ -1694,7 +1694,7 @@
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ intensity }, updateTime, timeConstant) {
+      async update({intensity}, updateTime, timeConstant) {
          if (intensity == null)
             throw new WebAudioValueError('Cannot update the Volume effect without at least one of the following parameters: "intensity"');
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
@@ -1702,22 +1702,22 @@
          this.#volumeNode.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);
          return true;
       }
-
+ 
       getInputNode() {
          return this.#volumeNode;
       }
-
+ 
       getOutputNode() {
          return this.#volumeNode;
       }
    }
-
+ 
    /**
     * Module containing functionality to apply and update {@link WebAudioAPI} effects.
     * @module Effect
     */
-
-
+ 
+ 
    const EffectClasses = {
       [EffectType.Reverb]: Reverb, [EffectType.Delay]: Delay, [EffectType.Echo]: Echo, [EffectType.Chorus]: Chorus,
       [EffectType.Tremolo]: Tremolo, [EffectType.Vibrato]: Vibrato, [EffectType.Flanger]: Flanger, [EffectType.Phaser]: Phaser,
@@ -1725,8 +1725,8 @@
       [EffectType.Distortion]: Distortion, [EffectType.LowPassFilter]: LowPassFilter, [EffectType.HighPassFilter]: HighPassFilter,
       [EffectType.BandPassFilter]: BandPassFilter, [EffectType.BandRejectFilter]: BandRejectFilter
    };
-
-
+ 
+ 
    /**
     * Returns a list of effect-specific {@link EffectParameter EffectParameters} for manipulation
     * in the corresponding {@link module:Constants.EffectType EffectType}.
@@ -1742,8 +1742,8 @@
    function getEffectParameters(effectType) {
       return EffectClasses[effectType].getParameters();
    }
-
-
+ 
+ 
    /**
     * Loads a pre-defined {@link Effect} capable of being applied to an individual {@link Track} or
     * to the aggregate output of all tracks.
@@ -1758,11 +1758,11 @@
     * @async
     */
    async function loadEffect(audioContext, effectName, effectType) {
-
+ 
       // Load the requested concrete effect type
       const effect = new EffectClasses[effectType](audioContext);
       await effect.load();
-
+ 
       // Returns an object containing functions and attributes within the public Effect namespace
       return {
          /**
@@ -1771,14 +1771,14 @@
           * @instance
           */
          name: effectName,
-
+      
          /**
           * Numeric value corresponding to the {@link module:Constants.EffectType EffectType} of the {@link Effect}.
           * @memberof Effect
           * @instance
           */
          type: effectType,
-
+      
          /**
           * Reference to an {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
           * to which all source {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNodes}
@@ -1787,7 +1787,7 @@
           * @instance
           */
          input: effect.getInputNode(),
-
+      
          /**
           * Reference to an {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
           * from which all effect-modified output audio is produced, and which should be connected to all
@@ -1796,7 +1796,7 @@
           * @instance
           */
          output: effect.getOutputNode(),
-
+ 
          /**
           * List of effect-specific {@link EffectParameter EffectParameters} for manipulation in the
           * `effectOptions` parameter of the {@link Effect#update update()} function.
@@ -1804,7 +1804,7 @@
           * @instance
           */
          parameters: EffectClasses[effectType].getParameters(),
-
+ 
          /**
           * Updates the parameters of the effect at the specified time.
           * 
@@ -1823,13 +1823,13 @@
          update: effect.update.bind(effect)
       };
    }
-
+ 
    /**
     * Module containing functionality to create new {@link WebAudioAPI} tracks.
     * @module Track
     */
-
-
+ 
+ 
    /**
     * Creates a new audio {@link Track} object capable of playing sequential audio.
     * 
@@ -1844,19 +1844,19 @@
     * @see {@link Tempo}
     */
    function createTrack(name, audioContext, tempo, trackAudioSink) {
-
+ 
       // Track-local variable definitions
       let instrument = null, midiDevice = null, audioDeviceInput = null;
       const audioSources = [], asyncAudioSources = [], effects = [];
       const audioSink = new AnalyserNode(audioContext, { fftSize: 1024, maxDecibels: -10.0, smoothingTimeConstant: 0.5 });
       const analysisBuffer = new Uint8Array(audioSink.frequencyBinCount);
       audioSink.connect(trackAudioSink);
-
+ 
       // Private internal Track functions
       function createAsyncNote(noteValue, sourceNode, volumeNode) {
          return { noteValue, sourceNode, volumeNode };
       }
-
+ 
       function midiEventReceived(event) {
          const command = getMidiCommand(event.data);
          if (command === MidiCommand.NoteOff) {
@@ -1869,14 +1869,14 @@
          else if ((command === MidiCommand.NoteOn) && (getMidiVelocity(event.data) > 0))
             playNoteAsync(getMidiNote(event.data), getMidiVelocity(event.data));
       }
-
+      
       function sourceEnded(source, sourceVolume) {
          if (sourceVolume == null)
             sourceVolume = source;
          sourceVolume.disconnect();
          audioSources.splice(audioSources.indexOf(source), 1);
       }
-
+ 
       /**
        * Updates the instrument used to play back audio on the current track.
        * 
@@ -1887,7 +1887,7 @@
       function updateInstrument(instrumentObject) {
          instrument = instrumentObject;
       }
-
+ 
       /**
        * Removes the instrument used to play back audio on the current track.
        * 
@@ -1897,7 +1897,7 @@
       function removeInstrument() {
          instrument = null;
       }
-
+ 
       /**
        * Returns a buffer containing the realtime frequency content of the audio being produced by
        * the current track.
@@ -1914,7 +1914,7 @@
             audioSink.getByteFrequencyData(analysisBuffer);
          return analysisBuffer;
       }
-
+ 
       /**
        * Applies a new track effect at the specified time.
        * 
@@ -1947,7 +1947,7 @@
          }
          effects.push(newEffect);
       }
-
+ 
       /**
        * Updates the parameters of a track effect at the specified time.
        * 
@@ -1972,7 +1972,7 @@
             }
          throw new WebAudioTargetError(`The target track effect (${effectName}) does not exist`);
       }
-
+ 
       /**
        * Removes the specified track effect from being applied.
        * 
@@ -1991,8 +1991,8 @@
                   audioSink.connect(effects.length ? effects[0].input : trackAudioSink);
                }
                else {
-                  effects[index - 1].output.disconnect();
-                  effects[index - 1].output.connect((effects.length > index) ? effects[index].input : trackAudioSink);
+                  effects[index-1].output.disconnect();
+                  effects[index-1].output.connect((effects.length > index) ? effects[index].input : trackAudioSink);
                }
                existingEffect.input.disconnect();
                existingEffect.output.disconnect();
@@ -2000,7 +2000,7 @@
             }
          return existingEffect;
       }
-
+ 
       /**
        * Immediately stop playing a note on the current track. The note to be stopped must be a
        * reference to an actively playing note that was previously returned from the
@@ -2019,7 +2019,7 @@
             noteObject.volumeNode.disconnect();
          }, 200);
       }
-
+ 
       /**
        * Immediately begins playing a note on the current track. Playback continues until the note
        * is explicitly stopped using the {@link Track#stopNoteAsync stopNoteAsync()} function.
@@ -2044,7 +2044,7 @@
          noteSource.start(audioContext.currentTime);
          return noteStorage;
       }
-
+ 
       /**
        * Schedules a note to be played on the current track for some duration of time.
        * 
@@ -2074,7 +2074,7 @@
          noteSource.start(startTime, 0, durationSeconds + 0.200);
          return durationSeconds;
       }
-
+ 
       /**
        * Schedules an audio clip to be played on the current track for some duration of time.
        * 
@@ -2119,7 +2119,7 @@
                if (!duration || (Number(noteTime) < duration)) {
                   const command = getMidiCommand(midiData), note = getMidiNote(midiData);
                   if ((command === MidiCommand.NoteOn) && (getMidiVelocity(midiData) > 0))
-                     unmatchedNotes[note] = [Number(noteTime), getMidiVelocity(midiData)];
+                     unmatchedNotes[note] = [ Number(noteTime), getMidiVelocity(midiData) ];
                   else if ((command === MidiCommand.NoteOff) && (note in unmatchedNotes)) {
                      const noteDuration = ((!duration || (Number(noteTime) <= duration)) ? Number(noteTime) : duration) - unmatchedNotes[note][0];
                      playNote(note, unmatchedNotes[note][1], startTime + unmatchedNotes[note][0], -noteDuration);
@@ -2134,7 +2134,7 @@
          }
          return expectedDuration;
       }
-
+ 
       /**
        * Schedules a MIDI clip to be recorded on the current track for some duration of time.
        * 
@@ -2154,27 +2154,27 @@
        * @see {@link MidiClip}
        */
       function recordMidiClip(startTime, duration) {
-
+ 
          /**
           * Object containing all data needed to record and render a MIDI audio clip.
           * @namespace MidiClip
           * @global
           */
-
+ 
          // MIDI clip-local variable definitions
          let thisMidiDevice = midiDevice, recordedDuration = null, completionCallback = null;
          const midiLog = {};
-
+ 
          // Ensure that a MIDI device is currently connected to this track
          if (!thisMidiDevice)
             throw new WebAudioRecordingError(`The current track (${name}) has no MIDI device associated with it from which to record`);
-
+ 
          // Private MIDI handling functions
          function midiEventToRecord(event) {
             if ((audioContext.currentTime >= startTime) && (!duration || (audioContext.currentTime < startTime + duration)))
                midiLog[audioContext.currentTime - startTime] = event.data;
          }
-
+ 
          function playNoteOffline(offlineContext, note, velocity, startTime, duration) {
             const noteSource = instrument.getNoteOffline(offlineContext, note);
             const noteVolume = new GainNode(offlineContext, { gain: velocity });
@@ -2182,7 +2182,7 @@
             noteVolume.gain.setTargetAtTime(0.0, startTime + duration, 0.03);
             noteSource.start(startTime, 0, duration + 0.200);
          }
-
+ 
          /**
           * Returns a dictionary of all MIDI event data within the {@link MidiClip}, stored according
           * to the relative times (in seconds) that they were received.
@@ -2196,7 +2196,7 @@
                throw new WebAudioRecordingError('Cannot retrieve raw data from this MIDI clip because recording has not yet completed');
             return midiLog;
          }
-
+ 
          /**
           * Returns the total duration of the MIDI clip in seconds.
           * 
@@ -2209,7 +2209,7 @@
                throw new WebAudioRecordingError('Cannot retrieve duration of this MIDI clip because recording has not yet completed');
             return recordedDuration;
          }
-
+ 
          /**
           * Stops recording any future MIDI data within the {@link MidiClip}, finalizes the internal
           * storage of all recorded data, and calls the user-completion notification callback, if
@@ -2240,7 +2240,7 @@
                completionCallback = null;
             }
          }
-
+ 
          /**
           * Allows a user to register a callback for notification when all MIDI recording activities
           * have been completed for this {@link MidiClip}. This corresponds to the time when the
@@ -2260,7 +2260,7 @@
             else
                notificationCallback(this);
          }
-
+ 
          /**
           * Encodes this {@link MidiClip} into a {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
           * containing raw audio data according to the {@link module:Constants.EncodingType EncodingType}
@@ -2284,7 +2284,7 @@
             for (const [startTime, midiData] of Object.entries(midiLog)) {
                const command = getMidiCommand(midiData), note = getMidiNote(midiData);
                if ((command === MidiCommand.NoteOn) && (getMidiVelocity(midiData) > 0))
-                  unmatchedNotes[note] = [Number(startTime), getMidiVelocity(midiData)];
+                  unmatchedNotes[note] = [ Number(startTime), getMidiVelocity(midiData) ];
                else if ((command === MidiCommand.NoteOff) && (note in unmatchedNotes)) {
                   playNoteOffline(offlineContext, note, unmatchedNotes[note][1], unmatchedNotes[note][0], Number(startTime) - unmatchedNotes[note][0]);
                   delete unmatchedNotes[note];
@@ -2297,16 +2297,16 @@
             const renderedData = await offlineContext.startRendering();
             return getEncoderFor(Number(encodingType)).encode(renderedData);
          }
-
+ 
          // Begin listening for all incoming MIDI events and optionally set a timer to stop listening
          thisMidiDevice.addEventListener('midimessage', midiEventToRecord);
          if (duration)
             setTimeout(finalize, startTime + duration - audioContext.currentTime);
-
+ 
          // Returns an object containing functions and attributes within the MidiClip namespace
          return { clipType: 'midi', getRawData, getDuration, finalize, getEncodedData, notifyWhenComplete };
       }
-
+ 
       /**
        * Schedules an audio clip to be recorded on the current track for some duration of time.
        * 
@@ -2326,23 +2326,23 @@
        * @see {@link AudioClip}
        */
       function recordAudioClip(startTime, duration) {
-
+ 
          /**
           * Object containing all data needed to record and render an audio clip.
           * @namespace AudioClip
           * @global
           */
-
+ 
          // Audio clip-local variable definitions
          let recorderDestination = audioContext.createMediaStreamDestination();
          let recorder = new MediaRecorder(recorderDestination.stream);
          let thisAudioInputDevice = audioDeviceInput, audioData = null;
          let recordedDuration = null, completionCallback = null;
-
+ 
          // Ensure that an audio input device is currently connected to this track
          if (!thisAudioInputDevice)
             throw new WebAudioRecordingError(`The current track (${name}) has no audio input device associated with it from which to record`);
-
+ 
          // Private audio data handling functions
          function startRecording() {
             if (startTime >= (audioContext.currentTime + 0.001))
@@ -2350,7 +2350,7 @@
             else
                recorder.start(duration ? (1000 * duration) : undefined);
          }
-
+ 
          recorder.ondataavailable = (event) => {
             if (!audioData) {
                audioData = event.data;
@@ -2358,7 +2358,7 @@
                finalize();
             }
          };
-
+ 
          recorder.onstop = async () => {
             thisAudioInputDevice.disconnect();
             thisAudioInputDevice = null;
@@ -2368,7 +2368,7 @@
             recorderDestination = null;
             recorder = null;
          };
-
+ 
          /**
           * Returns an {@link ArrayBuffer} containing all of the recorded audio data.
           * 
@@ -2381,7 +2381,7 @@
                throw new WebAudioRecordingError('Cannot retrieve raw data from this audio clip because recording has not yet completed');
             return audioData;
          }
-
+ 
          /**
           * Returns the total duration of the audio clip in seconds.
           * 
@@ -2394,7 +2394,7 @@
                throw new WebAudioRecordingError('Cannot retrieve duration of this audio clip because recording has not yet completed');
             return recordedDuration;
          }
-
+ 
          /**
           * Stops recording any future audio data within the {@link AudioClip}, finalizes the internal
           * storage of all recorded data, and calls the user-completion notification callback, if
@@ -2417,7 +2417,7 @@
             if (recorder.state != 'inactive')
                recorder.stop();
          }
-
+ 
          /**
           * Allows a user to register a callback for notification when all audio recording activities
           * have been completed for this {@link AudioClip}. This corresponds to the time when the
@@ -2437,7 +2437,7 @@
             else
                notificationCallback(this);
          }
-
+ 
          /**
           * Encodes this {@link AudioClip} into a {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
           * containing raw audio data according to the {@link module:Constants.EncodingType EncodingType}
@@ -2463,15 +2463,15 @@
             const renderedData = await offlineContext.startRendering();
             return getEncoderFor(Number(encodingType)).encode(renderedData);
          }
-
+ 
          // Begin listening for incoming audio data
          thisAudioInputDevice.connect(recorderDestination);
          startRecording();
-
+ 
          // Returns an object containing functions and attributes within the AudioClip namespace
          return { clipType: 'audio', getRawData, getDuration, finalize, getEncodedData, notifyWhenComplete };
       }
-
+ 
       /**
        * Schedules an audio file to be played on the current track for some duration of time.
        * 
@@ -2490,7 +2490,7 @@
          const arrayBuffer = await response.arrayBuffer();
          return await playClip(arrayBuffer, startTime, duration);
       }
-
+ 
       /**
        * Disconnects the current track from the specified MIDI device so that no further MIDI events
        * will be received.
@@ -2503,7 +2503,7 @@
             midiDevice.removeEventListener('midimessage', midiEventReceived);
          midiDevice = null;
       }
-
+ 
       /**
        * Disconnects the current track from the specified audio input device so that no further audio
        * events will be received.
@@ -2516,7 +2516,7 @@
             audioDeviceInput.disconnect();
          audioDeviceInput = null;
       }
-
+ 
       /**
        * Connects the current track to the specified MIDI device so that any incoming events will be
        * automatically played in real-time.
@@ -2531,7 +2531,7 @@
          midiInput.addEventListener('midimessage', midiEventReceived);
          midiDevice = midiInput;
       }
-
+ 
       /**
        * Connects the current track to the specified audio input device so that any incoming audio
        * will be automatically played in real-time.
@@ -2543,7 +2543,7 @@
       async function connectToAudioInputDevice(audioDeviceID) {
          disconnectFromAudioInputDevice();
          try {
-            const audioStream = await navigator.mediaDevices.getUserMedia({ audio: { 'deviceId': audioDeviceID }, video: false });
+            const audioStream = await navigator.mediaDevices.getUserMedia({ audio: {'deviceId': audioDeviceID}, video: false });
             audioDeviceInput = audioContext.createMediaStreamSource(audioStream);
             audioDeviceInput.connect(audioSink);
          }
@@ -2551,7 +2551,7 @@
             throw WebAudioDeviceError('Unable to connect to the requested audio input device. Error was: ' + err);
          }
       }
-
+ 
       /**
        * Cancels any current or scheduled audio from playing on the current track.
        * 
@@ -2564,7 +2564,7 @@
          for (const source of asyncAudioSources)
             source.sourceNode.stop();
       }
-
+ 
       /**
        * Deletes the current track and cancels any scheduled audio from playing or from starting
        * to play in the future.
@@ -2578,7 +2578,7 @@
          for (const effect of effects)
             effect.output.disconnect();
       }
-
+ 
       // Returns an object containing functions and attributes within the public Track namespace
       return {
          /**
@@ -2592,7 +2592,7 @@
          connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack, clearTrack, getAnalysisBuffer
       };
    }
-
+ 
    // DEFLATE is a complex format; to read this code, you should probably check the RFC first:js
    // https://tools.ietf.org/html/rfc1951
    // You may also wish to take a look at the guide I made about this program:
@@ -2602,7 +2602,7 @@
    // However, the vast majority of the codebase has diverged from UZIP.js to increase performance and reduce bundle size.
    // Sometimes 0 will appear where -1 would be more appropriate. This is because using a uint
    // is better for memory in most engines (I *think*).
-
+ 
    // aliases for shorter compressed code (most minifers don't do this)
    let u8 = Uint8Array, u16 = Uint16Array, u32 = Uint32Array;
    // fixed length extra bits
@@ -2762,7 +2762,7 @@
       'invalid zip data'
       // determined by unknown compression method
    ];
-
+ 
    let err = function (ind, msg, nt) {
       let e = new Error(msg || ec[ind]);
       e.code = ind;
@@ -2905,7 +2905,7 @@
             cbuf(bt + 131072);
          let lms = (1 << lbt) - 1, dms = (1 << dbt) - 1;
          let lpos = pos;
-         for (; ; lpos = pos) {
+         for (;; lpos = pos) {
             // bits read, code
             let c = lm[bits16(dat, pos) & lms], sym = c >>> 4;
             pos += c & 15;
@@ -3048,14 +3048,14 @@
       td.decode(et, { stream: true });
       tds = 1;
    }
-   catch (e) { console.log(e); }
-
+   catch (e) {console.log(e);}
+ 
    /**
     * Module containing all instrument-specific {@link WebAudioAPI} functionality.
     * @module Instrument
     */
-
-
+ 
+ 
    /**
     * Loads an existing {@link Instrument} object capable of mapping audio data to musical output.
     * 
@@ -3071,7 +3071,7 @@
     * @async
     */
    async function loadInstrument(audioContext, name, url) {
-
+ 
       // Private internal Instrument functions
       function loadNumberFromArray(array, numBytes, offset) {
          let number = 0;
@@ -3079,7 +3079,7 @@
             number = (number * 256) + array[offset + i];
          return number;
       }
-
+      
       function findClosestValidNote(noteData, noteIndex) {
          let nearestLowerNote = -10000, nearestHigherNote = 10000;
          for (let i = noteIndex - 1; i >= 0; --i)
@@ -3094,7 +3094,7 @@
             }
          return ((noteIndex - nearestLowerNote) > (nearestHigherNote - noteIndex)) ? nearestHigherNote : nearestLowerNote;
       }
-
+      
       function fillInMissingNotes(noteData, missingData) {
          for (let note = 0; note < noteData.length; ++note)
             if (noteData[note] === undefined) {
@@ -3105,7 +3105,7 @@
                };
             }
       }
-
+      
       async function loadNotesAndInterpolate(instrumentData, noteData, missingData) {
          let noteIndex = 2;
          noteData.length = missingData.length = 1 + Note['B9'];
@@ -3119,12 +3119,11 @@
             noteIndex += 4;
             noteData[note] = {
                'buffer': await audioContext.decodeAudioData(decompressSync(instrumentData.slice(noteOffset, noteOffsetEnd)).buffer),
-               'detune': 0
-            };
+               'detune': 0 };
          }
          fillInMissingNotes(noteData, missingData);
       }
-
+      
       async function loadInstrument(url) {
          const noteData = [], foundData = [], missingData = [];
          const response = await fetch(url);
@@ -3135,7 +3134,7 @@
             noteData[i] = (foundData[i] === undefined) ? missingData[i] : foundData[i];
          return noteData;
       }
-
+ 
       // Create an instance of the Instrument object
       const instrumentInstance = {
          /**
@@ -3144,7 +3143,7 @@
           * @instance
           */
          name,
-
+ 
          /**
           * Returns an {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
           * that can be used to play back the specified MIDI `note`.
@@ -3156,7 +3155,7 @@
           * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
           */
          getNote: null,
-
+ 
          /**
           * Returns an {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
           * that can be used to play back the specified MIDI `note` from an {@link OfflineAudioContext}.
@@ -3170,7 +3169,7 @@
           */
          getNoteOffline: null
       };
-
+ 
       // Actually load and return the instrment
       console.log('Loading instrument:', name + '...');
       if (url == null) {
@@ -3192,16 +3191,16 @@
       }
       return instrumentInstance;
    }
-
+ 
    /** Class representing all base-level {@link WebAudioAPI} audio analysis functions */
    class AnalysisBase {
-
+ 
       /**
        * Called by a concrete analysis instance to initialize the inherited {@link AnalysisBase} data
        * structure.
        */
       constructor() { /* Empty constructor */ }
-
+ 
       /**
        * Performs a spectral analysis corresponding to an underlying concrete class on the passed-in
        * buffer containing audio frequency content.
@@ -3212,7 +3211,7 @@
        */
       static analyze(frequencyContent) { return undefined; }
    }
-
+ 
    /**
     * Class representing an acoustic "power spectrum" analysis algorithm.
     * 
@@ -3222,14 +3221,14 @@
     * @extends AnalysisBase
     */
    class PowerSpectrum extends AnalysisBase {
-
+ 
       /**
        * Constructs a new {@link PowerSpectrum} analysis object.
        */
       constructor() {
          super();
       }
-
+ 
       /**
        * Performs a power spectrum analysis on the passed-in buffer containing audio
        * frequency content. The bins of the resulting power spectrum will contain values between
@@ -3243,7 +3242,7 @@
          return frequencyContent;
       }
    }
-
+ 
    /**
     * Class representing an acoustic "total power" analysis algorithm.
     * 
@@ -3253,14 +3252,14 @@
     * @extends AnalysisBase
     */
    class TotalPower extends AnalysisBase {
-
+ 
       /**
        * Constructs a new {@link TotalPower} analysis object.
        */
       constructor() {
          super();
       }
-
+ 
       /**
        * Performs a total power spectral analysis on the passed-in buffer containing audio
        * frequency content. The resulting value will be between [0, 1], where 0 represents
@@ -3271,22 +3270,22 @@
        * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array}
        */
       static analyze(frequencyContent) {
-         const frequencyTotal = frequencyContent.reduce(function (a, b) { return a + b; });
+         const frequencyTotal = frequencyContent.reduce(function(a, b) { return a + b; });
          return frequencyTotal / (frequencyContent.length * 255);
       }
    }
-
+ 
    /**
     * Module containing functionality to create and utilize {@link WebAudioAPI} audio analyzers.
     * @module Analysis
     */
-
-
+ 
+ 
    const AnalysisClasses = {
       [AnalysisType.PowerSpectrum]: PowerSpectrum,
       [AnalysisType.TotalPower]: TotalPower
    };
-
+ 
    /**
     * Returns a concrete analyzer implementation for the specified analysis type. The value passed
     * to the `analysisType` parameter must be the **numeric value** associated with a certain
@@ -3300,9 +3299,9 @@
    function getAnalyzerFor(analysisType) {
       return AnalysisClasses[analysisType];
    }
-
+ 
    var version = "0.3.0";
-
+ 
    /**
     * Required function prototype to use when registering a MIDI device callback.
     * 
@@ -3310,7 +3309,7 @@
     * @param {MIDIMessageEvent} event - Object containing the detected MIDI event
     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/MIDIMessageEvent MIDIMessageEvent}
     */
-
+ 
    /**
     * Required function prototype to use when registering a recording completion callback.
     * 
@@ -3319,7 +3318,7 @@
     * @see {@link AudioClip}
     * @see {@link MidiClip}
     */
-
+ 
    /**
     * Composite object type for holding all tempo-related information.
     * 
@@ -3330,7 +3329,7 @@
     * @property {number} timeSignatureDenominator - Note {@link module:Constants.Duration Duration} corresponding to a measure beat
     * @property {number} measureLengthSeconds - Length (in seconds) of a measure
     */
-
+ 
    /**
     * Composite object type for holding a set of concrete {@link Effect} parameter details.
     * 
@@ -3340,13 +3339,13 @@
     * @property {Array<string|number>} validValues - For "string" types, a listing of all valid values; for "number" types, the min/max values
     * @property {string|number} defaultValue - Default effect value before any updates
     */
-
+ 
    /** Contains all WebAudioAPI top-level functionality. */
    class WebAudioAPI {
-
+ 
       // Singleton instance of the WebAudioAPI class
       static #instance = null;
-
+ 
       // WebAudioAPI private variable definitions
       #started = false;
       #audioContext = new AudioContext({ latencyHint: 'interactive', sampleRate: 44100 });
@@ -3376,7 +3375,7 @@
       #sourceSinkNode;
       /** @type {Uint8Array} */
       #analysisBuffer;
-
+ 
       /**
        * Returns a singleton instance of the WebAudioAPI interface.
        */
@@ -3385,7 +3384,7 @@
          if (WebAudioAPI.#instance)
             return WebAudioAPI.#instance;
          WebAudioAPI.#instance = this;
-
+         
          // Generate and connect all required audio nodes
          this.#sourceSinkNode = new GainNode(this.#audioContext);
          this.#compressorNode = new DynamicsCompressorNode(this.#audioContext);
@@ -3393,7 +3392,7 @@
          this.#analysisBuffer = new Uint8Array(this.#analysisNode.frequencyBinCount);
          this.#sourceSinkNode.connect(this.#compressorNode).connect(this.#analysisNode).connect(this.#audioContext.destination);
       }
-
+ 
       /**
        * Returns the current {@link WebAudioAPI} library version number.
        * 
@@ -3402,7 +3401,7 @@
       getVersion() {
          return version;
       }
-
+      
       /**
        * Returns the current global time since the {@link WebAudioAPI} library was started or
        * resumed using the {@link WebAudioAPI#start start()} function.
@@ -3412,7 +3411,7 @@
       getCurrentTime() {
          return this.#audioContext.currentTime;
       }
-
+ 
       /**
        * Returns a full listing of recognized musical notes by the {@link WebAudioAPI} library.
        * 
@@ -3427,7 +3426,7 @@
       getAvailableNotes() {
          return Note;
       }
-
+ 
       /**
        * Returns a full listing of recognized note durations by the {@link WebAudioAPI} library.
        * 
@@ -3442,7 +3441,7 @@
       getAvailableNoteDurations() {
          return Duration;
       }
-
+ 
       /**
        * Returns a listing of all available effects in the {@link WebAudioAPI} library.
        * 
@@ -3459,7 +3458,7 @@
       getAvailableEffects() {
          return EffectType;
       }
-
+ 
       /**
        * Returns a list of effect-specific {@link EffectParameter EffectParameters} for manipulation
        * in the `effectOptions` parameter of the {@link WebAudioAPI#updateMasterEffect updateMasterEffect()}
@@ -3480,7 +3479,7 @@
             throw new WebAudioTargetError(`The target effect type identifier (${effectType}) does not exist`);
          return getEffectParameters(effectType);
       }
-
+ 
       /**
        * Returns a listing of all available encoders in the {@link WebAudioAPI} library.
        * 
@@ -3493,7 +3492,7 @@
       getAvailableEncoders() {
          return EncodingType;
       }
-
+ 
       /**
        * Returns a listing of all available audio analysis types in the {@link WebAudioAPI} library.
        * 
@@ -3506,7 +3505,7 @@
       getAvailableAnalysisTypes() {
          return AnalysisType;
       }
-
+ 
       /**
        * Returns a listing of the available instruments located in the specified asset library.
        * 
@@ -3531,7 +3530,7 @@
          }
          return Object.keys(this.#instrumentListing);
       }
-
+ 
       /**
        * Returns a listing of the available MIDI devices connected to the client device.
        * 
@@ -3554,7 +3553,7 @@
          }
          return midiDevices;
       }
-
+ 
       /**
        * Returns a listing of the available audio input devices connected to the client device.
        * 
@@ -3594,7 +3593,7 @@
          inputDevices.forEach(device => this.#audioInputDevices[device.label] = device.id);
          return Object.keys(this.#audioInputDevices);
       }
-
+ 
       /**
        * Returns a listing of the available audio output devices connected to the client device.
        * 
@@ -3633,7 +3632,7 @@
          outputDevices.forEach(device => this.#audioOutputDevices[device.label] = device.id);
          return Object.keys(this.#audioOutputDevices);
       }
-
+ 
       /**
        * Analyzes the current realtime audio output according to the specified `analysisType`.
        * 
@@ -3667,7 +3666,7 @@
          }
          return (analysisType == AnalysisType.TimeSeries) ? analysisBuffer : getAnalyzerFor(analysisType).analyze(analysisBuffer);
       }
-
+ 
       /**
        * Creates a track capable of playing sequential audio. A single track can only utilize a
        * single instrument at a time.
@@ -3678,7 +3677,7 @@
          this.removeTrack(name);
          this.#tracks[name] = createTrack(name, this.#audioContext, this.#tempo, this.#sourceSinkNode);
       }
-
+ 
       /**
        * Removes the specified audio track and cancels any audio scheduled for playback on this
        * track from playing or starting to play in the future.
@@ -3691,7 +3690,7 @@
             delete this.#tracks[name];
          }
       }
-
+ 
       /**
        * Removes all existing audio tracks and cancels all current and scheduled audio.
        */
@@ -3699,7 +3698,7 @@
          for (const name in this.#tracks)
             this.removeTrack(name);
       }
-
+ 
       /**
        * Cancels all current and scheduled audio from playing on the specified track.
        * 
@@ -3709,7 +3708,7 @@
          if (name in this.#tracks)
             this.#tracks[name].clearTrack();
       }
-
+ 
       /**
        * Cancels all current and scheduled audio from playing on all existing tracks.
        */
@@ -3717,7 +3716,7 @@
          for (const name in this.#tracks)
             this.#tracks[name].clearTrack();
       }
-
+ 
       /**
        * Updates the instrument used to play back audio on the specified track.
        * 
@@ -3736,7 +3735,7 @@
             this.#loadedInstruments[instrumentName] = await loadInstrument(this.#audioContext, instrumentName, this.#instrumentListing[instrumentName]);
          this.#tracks[trackName].updateInstrument(this.#loadedInstruments[instrumentName]);
       }
-
+ 
       /**
        * Removes the instrument used to play back audio on the specified track.
        * 
@@ -3747,7 +3746,7 @@
             throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
          this.#tracks[trackName].removeInstrument();
       }
-
+ 
       /**
        * Updates the global tempo parameters for all audio tracks.
        * 
@@ -3768,7 +3767,7 @@
          this.#tempo.timeSignatureDenominator = timeSignatureDenominator ? Number(timeSignatureDenominator) : this.#tempo.timeSignatureDenominator;
          this.#tempo.measureLengthSeconds = (60.0 / this.#tempo.beatsPerMinute) * this.#tempo.beatBase * this.#tempo.timeSignatureNumerator / this.#tempo.timeSignatureDenominator;
       }
-
+ 
       /**
        * Applies a new master effect to the aggregate output from all tracks at the specified time.
        * 
@@ -3805,7 +3804,7 @@
          }
          this.#effects.push(newEffect);
       }
-
+ 
       /**
        * Applies a new effect to the specified track at the specified time.
        * 
@@ -3833,7 +3832,7 @@
             throw new WebAudioTargetError(`The target effect type identifier (${effectType}) does not exist`);
          await this.#tracks[trackName].applyEffect(effectName, Number(effectType));
       }
-
+ 
       /**
        * Updates the parameters of a master effect at the specified time.
        * 
@@ -3856,7 +3855,7 @@
             }
          throw new WebAudioTargetError(`The target master effect (${effectName}) does not exist`);
       }
-
+ 
       /**
        * Updates the parameters of a track-specific effect at the specified time.
        * 
@@ -3877,7 +3876,7 @@
             throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
          await this.#tracks[trackName].updateEffect(effectName, effectOptions, updateTime ? Number(updateTime) : undefined, transitionLength ? (0.333 * Number(transitionLength)) : undefined);
       }
-
+ 
       /**
        * Removes the specified master effect from being applied.
        * 
@@ -3895,8 +3894,8 @@
                   this.#sourceSinkNode.connect(this.#effects.length ? this.#effects[0].input : this.#compressorNode);
                }
                else {
-                  this.#effects[index - 1].output.disconnect();
-                  this.#effects[index - 1].output.connect((this.#effects.length > index) ? this.#effects[index].input : this.#compressorNode);
+                  this.#effects[index-1].output.disconnect();
+                  this.#effects[index-1].output.connect((this.#effects.length > index) ? this.#effects[index].input : this.#compressorNode);
                }
                existingEffect.input.disconnect();
                existingEffect.output.disconnect();
@@ -3904,7 +3903,7 @@
             }
          return existingEffect;
       }
-
+ 
       /**
        * Removes the specified effect from being applid on the corresponding track.
        * 
@@ -3916,7 +3915,7 @@
             throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
          await this.#tracks[trackName].removeEffect(effectName);
       }
-
+ 
       /**
        * Registers a callback function to receive incoming events from the specified MIDI device.
        * 
@@ -3942,7 +3941,7 @@
             }
          throw new WebAudioTargetError(`The target MIDI device (${midiDeviceName}) could not be located`);
       }
-
+ 
       /**
        * Removes a user-registered callback from the specified MIDI device so that it will no
        * longer fire upon reception of a MIDI event.
@@ -3956,7 +3955,7 @@
             delete this.#midiCallbacks[midiDeviceName];
          }
       }
-
+ 
       /**
        * Redirects all audio output to the specified device.
        * 
@@ -3967,7 +3966,7 @@
             throw new WebAudioTargetError(`The target audio output device (${audioOutputDeviceName}) does not exist`);
          await this.#audioContext.setSinkId(this.#audioOutputDevices[audioOutputDeviceName]);
       }
-
+ 
       /**
        * Connects a MIDI device to the specified audio track.
        * 
@@ -3989,7 +3988,7 @@
             }
          throw new WebAudioTargetError(`The target MIDI device (${midiDeviceName}) could not be located`);
       }
-
+ 
       /**
        * Connects an audio input device to the specified audio track.
        * 
@@ -4006,7 +4005,7 @@
             throw new WebAudioTargetError(`The target audio input device (${audioInputDeviceName}) does not exist`);
          await this.#tracks[trackName].connectToAudioInputDevice(this.#audioInputDevices[audioInputDeviceName]);
       }
-
+ 
       /**
        * Disconnects all MIDI devices from the specified audio track.
        * 
@@ -4017,7 +4016,7 @@
             throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
          this.#tracks[trackName].disconnectFromMidiDevice();
       }
-
+ 
       /**
        * Disconnects all audio input devices from the specified audio track.
        * 
@@ -4028,7 +4027,7 @@
             throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
          this.#tracks[trackName].disconnectFromAudioInputDevice();
       }
-
+ 
       /**
        * Schedules a note to be played on a specific track for some duration of time.
        * 
@@ -4048,14 +4047,14 @@
        * @see {@link module:Constants.Note Note}
        * @see {@link module:Constants.Duration Duration}
        */
-      async playNote(trackName, note, startTime, duration, velocity = 0.75) {
+      async playNote(trackName, note, startTime, duration, velocity=0.75) {
          if (!(trackName in this.#tracks))
             throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
          if ((Number(velocity) < 0.0) || (Number(velocity) > 1.0))
             throw new WebAudioValueError(`The target velocity value (${velocity}) is outside of the available range: [0.0, 1.0]`);
          return await this.#tracks[trackName].playNote(Number(note), Number(velocity), Number(startTime), Number(duration));
       }
-
+ 
       /**
        * Schedules an audio clip to be played on a specific track for some duration of time.
        * 
@@ -4082,7 +4081,7 @@
             throw new WebAudioTrackError('The audio clip is not a known type (ArrayBuffer, Blob, MidiClip, AudioClip) and cannot be played');
          return await this.#tracks[trackName].playClip(audioClip, Number(startTime), duration ? Number(duration) : undefined);
       }
-
+ 
       /**
        * Schedules an audio file to be played on a specific track for some duration of time.
        * 
@@ -4100,7 +4099,7 @@
             throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
          return await this.#tracks[trackName].playFile(fileURL, Number(startTime), duration ? Number(duration) : undefined);
       }
-
+ 
       /**
        * Immediately begins playing a note on the specified track. Playback continues until the note
        * is explicitly stopped using the {@link WebAudioAPI#stopNote stopNote()} function.
@@ -4114,14 +4113,14 @@
        * @returns {Promise<Object>} Reference to the newly scheduled note
        * @see {@link module:Constants.Note Note}
        */
-      async startNote(trackName, note, velocity = 0.75) {
+      async startNote(trackName, note, velocity=0.75) {
          if (!(trackName in this.#tracks))
             throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
          if ((Number(velocity) < 0.0) || (Number(velocity) > 1.0))
             throw new WebAudioValueError(`The target velocity value (${velocity}) is outside of the available range: [0.0, 1.0]`);
          return await this.#tracks[trackName].playNoteAsync(note, Number(velocity));
       }
-
+ 
       /**
        * Immediately stop playing a note on the specified track. The note to be stopped must be a
        * reference to an actively playing note that was previously returned from the
@@ -4135,7 +4134,7 @@
             throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
          this.#tracks[trackName].stopNoteAsync(note);
       }
-
+ 
       /**
        * Schedules an audio clip to be recorded on a specific track for some duration of time.
        * 
@@ -4158,7 +4157,7 @@
             throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
          return this.#tracks[trackName].recordAudioClip(Number(startTime), duration ? Number(duration) : undefined);
       }
-
+ 
       /**
        * Schedules a MIDI clip to be recorded on a specific track for some duration of time.
        * 
@@ -4181,7 +4180,7 @@
             throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
          return this.#tracks[trackName].recordMidiClip(Number(startTime), duration ? Number(duration) : undefined);
       }
-
+ 
       /**
        * Starts the {@link WebAudioAPI} library and allows audio playback to resume.
        */
@@ -4189,7 +4188,7 @@
          this.#started = true;
          await this.#audioContext.resume();
       }
-
+    
       /**
        * Stops the {@link WebAudioAPI} library and pauses any currently playing audio.
        */
@@ -4198,10 +4197,10 @@
          setTimeout(async () => { if (!this.#started) await this.#audioContext.suspend(); }, 200);
       }
    }
-
+ 
    // Attach a WebAudioAPI reference to "window" so that it can be accessed from non-module Javascript files
    window.WebAudioAPI = WebAudioAPI;
-
+ 
    (function () {
       const audioAPI = new WebAudioAPI();
       const I32_MAX = 2147483647;
@@ -4215,563 +4214,565 @@
       const availableNoteDurations = audioAPI.getAvailableNoteDurations();
       audioAPI.getAvailableMidiDevices().then(returnMidiDevice, fail);
       audioAPI.getAvailableAudioInputDevices().then(returnAudioDevice, fail);
-
+ 
       const devRoot = 'http://localhost:8000/extensions/BeatsBlox/instruments/';
       const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatsBlox/instruments/';
       const instrumentLocation = window.origin.includes('localhost') ? devRoot : releaseRoot;
-
-      audioAPI.getAvailableInstruments(instrumentLocation).then(
-         instruments => instruments.forEach(
-            instrument => midiInstruments.push(instrument)
-         )
-      );
-
-
-      /**
-       * Object representing a mapping between an encoding file type and its unique internal code.
-       * @constant {Object.<string, number>}
-       */
-      const EncodingType = {
-         WAV: 1
-      };
-
-
-
-      /**
-       * Object representing a mapping between an effect type and its unique internal code.
-       * @constant {Object.<string, number>}
-       */
-      const EffectType = {
-         Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
-         Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
-         Panning: 31, Equalization: 32,                                                   // Spectral Effects
-         Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
-         LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
-      };
-
-      const EffectsPreset = {
-         'Under Water': ['LowPassFilter', {
-            ['cutoffFrequency']: 500,
-            ['resonance']: 12,
-         }],
-         'Telephone': ['HighPassFilter', {
-            ['cutoffFrequency']: 1800,
-            ['resonance']: 10,
-         }],
-         'Cave': ['Echo', {
-            ['feedback']: 0.5,
-            ['intensity']: 0.4,
-         }],
-         'Fan Blade': ['Tremolo', {
-            ['tremeloFrequency']: 18,
-         }],
-      };
-
-      /**
-       * Creates a list of all available MIDI devices
-       * @param {[String]} devices - available MIDI device.
-       */
-      function returnMidiDevice(devices) {
-         midiDevices = devices;
-         console.log(devices);
-      }
-
-      /**
-       * Creates a list of all available audio-input devices
-       * @param {[String]} devices - available audio-input devices.
-       */
-      function returnAudioDevice(devices) {
-         audioDevices = devices;
-         console.log(devices);
-      }
-
-      /**
-       * Runs when the audio API can't return a list of available devices.
-       */
-      function fail() {
-         console.log('something went wrong');
-      }
-
-      /**
-       * Connects a MIDI device to the WebAudioAPI
-       * @param {String} trackName - Name of the Track 
-       * @param {String} device - Name of the MIDI device being connected.
-       */
-      function midiConnect(trackName, device) {
-         if (device != "") {
-            audioAPI.connectMidiDeviceToTrack(trackName, device).then(() => {
-               console.log('Connected to MIDI device!');
-            });
-            // audioAPI.registerMidiDeviceCallback(device, midiCallback);
-            currentDeviceType = 'midi';
-         }
-      }
-
-      /**
-       * Connects and audio input device to NetsBlox
-       * @param {String} trackName - Name of the Track 
-       * @param {String} device - Name of the audio device being connected.
-       */
-      function audioConnect(trackName, device) {
-         if (device != "") {
-            audioAPI.connectAudioInputDeviceToTrack(trackName, device).then(() => {
-               console.log('Connected to audio device!');
-            });
-            currentDeviceType = 'audio';
-         }
-      }
-
-      /**
-       * Connects an instrument sample to the WebAudioAPI
-       * @param {String} trackName - Name of the Track 
-       * @param {String} instrument - Name of instrument being loaded.
-       */
-      function changeInsturment(trackName, instrument) {
-         audioAPI.updateInstrument(trackName, instrument).then(() => {
-            console.log('Instrument loading complete!');
-         });
-      }
-
-      /**
-       * Exports an AudioClip as an audio file.
-       * @async
-       * @param {AudioClip} clip - the clip being exported.
-       * @param {String} format - the format of the file being created.
-       */
-      async function exportClip(clip, format) {
-         const wavLink = document.getElementById("wav-link");
-         const blob = await clip.getEncodedData(EncodingType[format]);
-         wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
-         wavLink.click();
-      }
-
-      /**
-       * Converts an AudioClip k to a Snap! Sound.
-       * @asyn
-       * @param {AudioClip} clip - The clip being rendered.
-       * @returns A Snap! Sound.
-       */
-      async function clipToSnap(clip) {
-         const blob = await clip.getEncodedData(EncodingType['WAV']);
-         const audio = new Audio(URL.createObjectURL(blob, { type: "audio/wav" }));
-         return new Sound(audio, 'netsblox-sound');
-      }
-
-      /**
-       * Disconnects all audio and midi devices from NetsBlox
-       * @param {String} trackName - name of the Track 
-       * @async
-       */
-      async function disconnectDevices(trackName) {
-         console.log('device disconnected');
-         if (audioDevices.length > 0)
-            await audioAPI.disconnectAudioInputDeviceFromTrack(trackName);
-         if (midiDevices.length > 0)
-            await audioAPI.disconnectMidiDeviceFromTrack(trackName);
-      }
-
-      function base64toArrayBuffer(base64) {
-         var binaryString = window.atob(base64.replace("data:audio/mpeg;base64,", ""));
-         var bytes = new Uint8Array(binaryString.length);
-         for (var i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-         }
-         return bytes.buffer;
-      }
-
-      async function synchronize() {
-         let currentStart = syncStart++;
-         await wait(.005);
-         do {
-            currentStart++;
-            await wait(.005);
-         } while (currentStart != syncStart);
-         audioAPI.start();
-      }
-
-      async function playAudio(binaryString, trackName) {
-         await synchronize();
-         const buffer = base64toArrayBuffer(binaryString.audio.src);
-         audioAPI.start();
-         return audioAPI.playClip(trackName, buffer, audioAPI.getCurrentTime(), 0);
-      }
-
-      async function playAudioForDuration(binaryString, trackName, dur) {
-         await synchronize();
-         const buffer = base64toArrayBuffer(binaryString.audio.src);
-         audioAPI.start();
-         return audioAPI.playClip(trackName, buffer, audioAPI.getCurrentTime(), dur);
-      }
-
-      async function setTrackPanning(trackName, level) {
-         const effectOptions = { ["leftToRightRatio"]: Number(level) };
-         // await audioAPI.applyTrackEffect(trackName,"Panning",availableEffects["Panning"]);
-         await audioAPI.updateTrackEffect(trackName, "Panning", effectOptions);
-      }
-
-      async function applyTrackEffect(trackName, effectName) {
-         await audioAPI.applyTrackEffect(trackName, effectName, availableEffects[effectName]);
-
-      }
-
-      async function setTrackEffect(trackName, effectName, level) {
-         const effectType = availableEffects[effectName];
-         const parameters = audioAPI.getAvailableEffectParameters(effectType);
-         const effectOptions = { [Object.values(parameters).name]: level };
-         console.log(`HERE ARE THE PARAMETERS ${trackName}:`, effectOptions);
-         // await audioAPI.updateTrackEffect(trackName,effectName,effectOptions);
-      }
-
-      function createTrack(trackName) {
-         audioAPI.createTrack(trackName);
-      }
-
-      function stopAudio() {
-         audioAPI.stop();
-         audioAPI.clearAllTracks();
-      }
-
-      async function masterVolume(percent) {
-         const effectOptions = { ["intensity"]: Number(percent) };
-         await audioAPI.updateMasterEffect(trackName, "Volume", effectOptions);
-      }
-      async function trackVolume(trackName, percent) {
-         const effectOptions = { ["intensity"]: Number(percent) };
-         await audioAPI.updateTrackEffect(trackName, "Volume", effectOptions);
-      }
-      function beatsPerMinute(bpm) {
-         return audioAPI.updateBeatsPerMinute(bpm);
-      }
-      async function addFxPreset(track, effect) {
-         const effectName = EffectsPreset[effect][0];
-         await audioAPI.applyTrackEffect(track, effectName, EffectType[effectName]);
-         const effectOptions = EffectsPreset[effect][1];
-         await audioAPI.updateTrackEffect(track, effectName, effectOptions);
-      }
-
-      async function wait(duration) {
-         return new Promise(resolve => {
-            setTimeout(resolve, duration * 1000);
-         })
-      }
-      // ----------------------------------------------------------------------
-      class MusicApp extends Extension {
-         constructor(ide) {
-            super('MusicApp');
-            this.ide = ide;
-            const oldStopAllActiveSounds = StageMorph.prototype.runStopScripts;
-            StageMorph.prototype.runStopScripts = function () {
-               oldStopAllActiveSounds.call(this);
-               stopAudio();
-            };
-
-         }
-
-
-         onOpenRole() {
-            for (var i = 0; i < this.ide.sprites.contents.length; i++) {
-               createTrack(this.ide.sprites.contents[i].id);
-            }
-         }
-
-         onNewSprite(sprite) {
-            createTrack(sprite.id);
-         }
-
-         getMenu() { return {}; }
-
-         getCategories() {
-            return [
-               new Extension.Category('music', new Color(148, 0, 211)),
-            ];
-         }
-
-         getPalette() {
-            const blocks = [
-               new Extension.Palette.Block('playAudioClip'),
-               new Extension.Palette.Block('playAudioClipforDuration'),
-               new Extension.Palette.Block('stopClips'),
-               new Extension.Palette.Block('masterVolume'),
-               new Extension.Palette.Block('trackVolume'),
-               new Extension.Palette.Block('setGlobalBPM'),
-               new Extension.Palette.Block('setTrackPanning'),
-               new Extension.Palette.Block('applyTrackEffect'),
-               new Extension.Palette.Block('setTrackEffect'),
-               new Extension.Palette.Block('presetEffect'),
-               new Extension.Palette.Block('setInputDevice'),
-               new Extension.Palette.Block('setInstrument'),
-               new Extension.Palette.Block('startRecording'),
-               new Extension.Palette.Block('recordForDuration'),
-               new Extension.Palette.Block('stopRecording'),
-               new Extension.Palette.Block('exportAudio'),
-               new Extension.Palette.Block('playNote'),
-               new Extension.Palette.Block('getLastRecordedClip'),
-            ];
-            return [
-               new Extension.PaletteCategory('music', blocks, SpriteMorph),
-               new Extension.PaletteCategory('music', blocks, StageMorph),
-            ];
-         }
-
-         getBlocks() {
-            function block(name, type, category, spec, defaults, action) {
-               return new Extension.Block(name, type, category, spec, defaults, action)
-            }
-            return [
-               block('playAudioClip', 'command', 'music', 'play audio clip %s', ['clip'], function (audioBuffer) {
-                  this.runAsyncFn(async () => {
-                     const trackName = this.receiver.id;
-                     const duration = await playAudio(audioBuffer, trackName);
-                     await wait(duration - .02);
-                  }, { args: [], timeout: I32_MAX });
-               }),
-               block('playAudioClipforDuration', 'command', 'music', 'play audio clip for duration %n %s', ['1', 'clip'], function (dur, audioBuffer) {
-                  this.runAsyncFn(async () => {
-                     const trackName = this.receiver.id;
-                     const duration = await playAudioForDuration(audioBuffer, trackName, dur);
-                     await wait(duration - Math.max(.02, 0));
-                  }, { args: [], timeout: I32_MAX });
-               }),
-               block('playNote', 'command', 'music', 'play note %midiNotes for %noteDurations', ['', ''], function (note, duration) {
-                  this.runAsyncFn(async () => {
-                     const trackName = this.receiver.id;
-                     await wait(audioAPI.playNote(trackName, availableMidiNotes[note], audioAPI.getCurrentTime(), availableNoteDurations[duration]));
-                  }, { args: [], timeout: I32_MAX });
-               }),
-               block('stopClips', 'command', 'music', 'stop all clips', [], function () {
-                  stopAudio();
-                  this.doStopAll();
-               }),
-               block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (percent) {
-                  masterVolume(percent * 0.01);
-               }),
-               block('trackVolume', 'command', 'music', 'track volume %n %', ['50'], function (percent) {
-                  const trackName = this.receiver.id;
-                  trackVolume(trackName, percent * 0.01);
-               }),
-               block('setGlobalBPM', 'command', 'music', 'set global BPM %n', ['120'], function (bpm) {
-                  beatsPerMinute(bpm);
-               }),
-               block('setTrackPanning', 'command', 'music', 'set track panning %n', ['0.5'], function (level) {
-                  this.runAsyncFn(async () => {
-                     const trackName = this.receiver.id;
-                     await setTrackPanning(trackName, level);
-
-                  }, { args: [], timeout: I32_MAX });
-               }),
-               block('applyTrackEffect', 'command', 'music', 'apply track %effects effect', [], function (effectName) {
-                  this.runAsyncFn(async () => {
-                     const trackName = this.receiver.id;
-                     await applyTrackEffect(trackName, effectName);
-                  }, { args: [], timeout: I32_MAX });
-               }),
-               block('setTrackEffect', 'command', 'music', 'set track %effects effect to %n', ['', '0'], function (effectName, level) {
-                  this.runAsyncFn(async () => {
-                     const trackName = this.receiver.id;
-                     await setTrackEffect(trackName, effectName, level);
-                  }, { args: [], timeout: I32_MAX });
-               }),
-               block('presetEffect', 'command', 'music', 'preset effects %fxPreset %onOff', ['', 'on'], function (effect, status) {
-                  const trackName = this.receiver.id;
-                  if (effect != '') {
-                     if (status == 'on') {
-                        this.runAsyncFn(async () => {
-                           await addFxPreset(trackName, effect);
-                        });
-                     } else {
-                        const effectName = EffectsPreset[effect][0];
-                        this.runAsyncFn(async () => {
-                           await window.audioAPI.removeTrackEffect(trackName, effectName);
-                        });
-                     }
-                  } else {
-                     throw Error('must select an effect');
-                  }
-               }),
-               block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
-                  const trackName = this.receiver.id;
-
-                  if (device === '')
-                     this.runAsyncFn(async () => {
-                        disconnectDevices(trackName);
-                     }, { args: [], timeout: I32_MAX });
-                  else if (midiDevices.indexOf(device) != -1)
-                     midiConnect(trackName, device);
-                  else if (audioDevices.indexOf(device != -1))
-                     audioConnect(trackName, device);
-                  else
-                     throw Error('device not found');
-
-                  if (midiInstruments.length > 0)
-                     audioAPI.updateInstrument(trackName, midiInstruments[0]).then(() => {
-                        console.log('default instrument set');
-                     });
-                  else
-                     console.log('no default instruments');
-               }),
-               block('startRecording', 'command', 'music', 'start recording', [], function () {
-                  const trackName = this.receiver.id;
-                  switch (currentDeviceType) {
-                     case 'midi':
-                        lastRecordedClip = audioAPI.recordMidiClip(
-                           trackName, audioAPI.getCurrentTime()
-                        );
-                        break;
-                     case 'audio':
-                        lastRecordedClip = audioAPI.recordAudioClip(
-                           trackName, audioAPI.getCurrentTime()
-                        );
-                        break;
-                  }
-                  recordingInProgress = true;
-               }),
-               block('recordForDuration', 'command', 'music', 'record for %n seconds', [0], function (time) {
-                  const trackName = this.receiver.id;
-                  switch (currentDeviceType) {
-                     case 'midi':
-                        lastRecordedClip = audioAPI.recordMidiClip(
-                           trackName, audioAPI.getCurrentTime(), time
-                        );
-                        break;
-                     case 'audio':
-                        lastRecordedClip = audioAPI.recordAudioClip(
-                           trackName, audioAPI.getCurrentTime(), time
-                        );
-                        break;
-                  }
-                  recordingInProgress = true;
-               }),
-               block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', [''], function (instrument) {
-                  const trackName = this.receiver.id;
-                  changeInsturment(trackName, instrument);
-               }),
-               block('stopRecording', 'command', 'music', 'stop recording', [], function () {
-                  this.runAsyncFn(async () => {
-                     await lastRecordedClip.finalize();
-                  }, { args: [], timeout: I32_MAX });
-                  recordingInProgress = false;
-               }),
-               block('exportAudio', 'command', 'music', 'bounce %s as %fileFormats', ['clip'], function (clip, format) {
-                  this.runAsyncFn(async () => {
-                     await exportClip(clip, format);
-                  }, { args: [], timeout: I32_MAX });
-               }),
-               block('getLastRecordedClip', 'reporter', 'music', 'get last recorded clip', [], function () {
-                  if (recordingInProgress)
-                     throw Error('recording in progress');
-                  else if (lastRecordedClip == null)
-                     throw Error('no clip found');
-                  else
-                     return this.runAsyncFn(async () => {
-                        return await clipToSnap(lastRecordedClip);
-                     }, { args: [], timeout: I32_MAX });
-               }),
-            ];
-         }
-         getLabelParts() {
-            function identityMap(s) {
-               const res = {};
-               for (const x of s) res[x] = x;
-               return res;
-            }
-            function unionMaps(maps) {
-               const res = {};
-               for (const map of maps) {
-                  for (const key in map) res[key] = map[key];
+ 
+       audioAPI.getAvailableInstruments(instrumentLocation).then(
+           instruments => instruments.forEach(
+               instrument => midiInstruments.push(instrument)
+           )
+       );
+ 
+     
+       /**
+        * Object representing a mapping between an encoding file type and its unique internal code.
+        * @constant {Object.<string, number>}
+        */
+       const EncodingType = {
+           WAV: 1
+       };
+ 
+ 
+ 
+       /**
+        * Object representing a mapping between an effect type and its unique internal code.
+        * @constant {Object.<string, number>}
+        */
+       const EffectType = {
+           Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
+           Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
+           Panning: 31, Equalization: 32,                                                   // Spectral Effects
+           Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
+           LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
+       };
+ 
+       const EffectsPreset = {
+           'Under Water': ['LowPassFilter', {
+               ['cutoffFrequency']: 500,
+               ['resonance']: 12,
+           }],
+           'Telephone': ['HighPassFilter', {
+               ['cutoffFrequency'] : 1800,
+               ['resonance']: 10,
+           }],
+           'Cave': ['Echo', {
+               ['feedback'] : 0.5,
+               ['intensity'] : 0.4,
+           }],
+           'Fan Blade': ['Tremolo', {
+               ['tremeloFrequency'] : 18,
+           }],
+       };
+ 
+       /**
+        * Creates a list of all available MIDI devices
+        * @param {[String]} devices - available MIDI device.
+        */
+       function returnMidiDevice(devices) {
+           midiDevices = devices;
+           console.log(devices);
+       }
+ 
+       /**
+        * Creates a list of all available audio-input devices
+        * @param {[String]} devices - available audio-input devices.
+        */
+       function returnAudioDevice(devices) {
+           audioDevices = devices;
+           console.log(devices);
+       }
+ 
+       /**
+        * Runs when the audio API can't return a list of available devices.
+        */
+       function fail() {
+           console.log('something went wrong');
+       }
+ 
+       /**
+        * Connects a MIDI device to the WebAudioAPI
+        * @param {String} trackName - Name of the Track 
+        * @param {String} device - Name of the MIDI device being connected.
+        */
+       function midiConnect(trackName, device) {
+           if (device != "") {
+               audioAPI.connectMidiDeviceToTrack(trackName, device).then(() => {
+                   console.log('Connected to MIDI device!');
+               });
+               // audioAPI.registerMidiDeviceCallback(device, midiCallback);
+               currentDeviceType = 'midi';
+           }
+       }
+ 
+       /**
+        * Connects and audio input device to NetsBlox
+        * @param {String} trackName - Name of the Track 
+        * @param {String} device - Name of the audio device being connected.
+        */
+       function audioConnect(trackName,device) {
+           if (device != "") {
+               audioAPI.connectAudioInputDeviceToTrack(trackName, device).then(() => {
+                   console.log('Connected to audio device!');
+               });
+               currentDeviceType = 'audio';
+           }
+       }
+ 
+       /**
+        * Connects an instrument sample to the WebAudioAPI
+        * @param {String} trackName - Name of the Track 
+        * @param {String} instrument - Name of instrument being loaded.
+        */
+       function changeInsturment(trackName,instrument) {
+           audioAPI.updateInstrument(trackName, instrument).then(() => {
+               console.log('Instrument loading complete!');
+           });
+       }
+ 
+       /**
+        * Exports an AudioClip as an audio file.
+        * @async
+        * @param {AudioClip} clip - the clip being exported.
+        * @param {String} format - the format of the file being created.
+        */
+       async function exportClip(clip, format) {
+           const wavLink = document.getElementById("wav-link");
+           const blob = await clip.getEncodedData(EncodingType[format]);
+           wavLink.href = URL.createObjectURL(blob, { type: "audio/wav" });
+           wavLink.click();
+       }
+ 
+       /**
+        * Converts an AudioClip k to a Snap! Sound.
+        * @asyn
+        * @param {AudioClip} clip - The clip being rendered.
+        * @returns A Snap! Sound.
+        */
+       async function clipToSnap(clip) {
+           const blob = await clip.getEncodedData(EncodingType['WAV']);
+           const audio = new Audio(URL.createObjectURL(blob, { type: "audio/wav" }));
+           return new Sound(audio, 'netsblox-sound');
+       }
+ 
+       /**
+        * Disconnects all audio and midi devices from NetsBlox
+        * @param {String} trackName - name of the Track 
+        * @async
+        */
+       async function disconnectDevices(trackName) {
+           console.log('device disconnected');
+           if (audioDevices.length > 0)
+               await audioAPI.disconnectAudioInputDeviceFromTrack(trackName);
+           if (midiDevices.length > 0)
+               await audioAPI.disconnectMidiDeviceFromTrack(trackName);
+       }
+ 
+       function base64toArrayBuffer(base64){
+           var binaryString = window.atob(base64.replace("data:audio/mpeg;base64,", ""));
+           var bytes = new Uint8Array(binaryString.length);
+           for (var i = 0; i < binaryString.length; i++) {
+               bytes[i] = binaryString.charCodeAt(i);
+           }
+           return bytes.buffer;
+       }
+ 
+       async function synchronize(){
+           let currentStart = syncStart++;
+           await wait(.005);
+           do {
+               currentStart++;
+               await wait(.005);
+           } while (currentStart != syncStart);
+           audioAPI.start();
+       }
+ 
+       async function playAudio(binaryString, trackName){
+           await synchronize();  
+           const buffer = base64toArrayBuffer(binaryString.audio.src);
+           audioAPI.start();
+           return audioAPI.playClip(trackName, buffer, audioAPI.getCurrentTime(),0);
+       }
+ 
+       async function playAudioForDuration(binaryString, trackName, dur){
+           await synchronize();
+           const buffer = base64toArrayBuffer(binaryString.audio.src);
+           audioAPI.start();
+           return audioAPI.playClip(trackName, buffer,audioAPI.getCurrentTime(),  dur);
+       }
+ 
+       async function setTrackPanning(trackName, level){
+           const effectOptions = { ["leftToRightRatio"]:Number(level)};
+           // await audioAPI.applyTrackEffect(trackName,"Panning",availableEffects["Panning"]);
+           await audioAPI.updateTrackEffect(trackName,"Panning",effectOptions);
+       }
+ 
+       async function applyTrackEffect(trackName, effectName){
+         await audioAPI.applyTrackEffect(trackName,effectName,availableEffects[effectName]);
+       
+       }
+ 
+       async function setTrackEffect(trackName, effectName, level){
+           const effectType = availableEffects[effectName];
+           const parameters = audioAPI.getAvailableEffectParameters(effectType);
+           const effectOptions = {[Object.values(parameters).name] : level};
+           console.log(`HERE ARE THE PARAMETERS ${trackName}:`, effectOptions);
+           // await audioAPI.updateTrackEffect(trackName,effectName,effectOptions);
+       }
+ 
+       function createTrack(trackName){
+           audioAPI.createTrack(trackName);
+       }
+ 
+       function stopAudio(){
+           audioAPI.stop();
+           audioAPI.clearAllTracks();
+       }
+ 
+       async function masterVolume(percent){
+           const effectOptions = { ["intensity"]:Number(percent)};
+           await audioAPI.updateMasterEffect(trackName,"Volume",effectOptions);
+       }
+       async function trackVolume(trackName, percent){
+           const effectOptions = { ["intensity"]:Number(percent)};
+           await audioAPI.updateTrackEffect(trackName,"Volume",effectOptions);
+       }
+       function  beatsPerMinute(bpm){
+           return audioAPI.updateBeatsPerMinute(bpm);
+       }
+       async function addFxPreset(track, effect) {
+           const effectName = EffectsPreset[effect][0];
+           await audioAPI.applyTrackEffect(track, effectName, EffectType[effectName]);
+           const effectOptions = EffectsPreset[effect][1];
+           await audioAPI.updateTrackEffect(track, effectName, effectOptions);
+       }
+ 
+       async function wait(duration) {
+           return new Promise(resolve => {
+               setTimeout(resolve, duration * 1000);
+           })
+       }
+       // ----------------------------------------------------------------------
+       class MusicApp extends Extension {
+           constructor(ide) {
+               super('MusicApp');
+               this.ide = ide;
+               const oldStopAllActiveSounds = StageMorph.prototype.runStopScripts;
+               StageMorph.prototype.runStopScripts = function(){
+                   oldStopAllActiveSounds.call(this);
+                   stopAudio();
+               };
+ 
+           }
+ 
+ 
+           onOpenRole() {
+               for (var i =0; i <this.ide.sprites.contents.length; i++){
+                  createTrack(this.ide.sprites.contents[i].id);
                }
-               return res;
-            }
-            return [
+           }
+ 
+           onNewSprite(sprite){
+               createTrack(sprite.id);
+           }
+ 
+           getMenu() { return {}; }
+ 
+           getCategories() {
+               return [
+                   new Extension.Category('music', new Color(148,0,211)),
+               ];
+           }
+ 
+           getPalette() {
+               const blocks = [
+                   new Extension.Palette.Block('playAudioClip'),
+                   new Extension.Palette.Block('playAudioClipforDuration'),
+                   new Extension.Palette.Block('stopClips'),
+                   new Extension.Palette.Block('masterVolume'),
+                   new Extension.Palette.Block('trackVolume'),
+                   new Extension.Palette.Block('setGlobalBPM'),
+                   new Extension.Palette.Block('setTrackPanning'),
+                   new Extension.Palette.Block('applyTrackEffect'),
+                   new Extension.Palette.Block('setTrackEffect'),
+                   new Extension.Palette.Block('presetEffect'),
+                   new Extension.Palette.Block('setInputDevice'),
+                   new Extension.Palette.Block('setInstrument'),
+                   new Extension.Palette.Block('startRecording'),
+                   new Extension.Palette.Block('recordForDuration'),
+                   new Extension.Palette.Block('stopRecording'),
+                   new Extension.Palette.Block('exportAudio'),
+                   new Extension.Palette.Block('playNote'),
+                   new Extension.Palette.Block('getLastRecordedClip'),
+               ];
+               return [
+                   new Extension.PaletteCategory('music', blocks, SpriteMorph),
+                   new Extension.PaletteCategory('music', blocks, StageMorph),
+               ];
+           }
+ 
+           getBlocks() {
+               function block(name, type, category, spec, defaults, action) {
+                   return new Extension.Block(name, type, category, spec, defaults, action)
+               }
+               return [
+                   block('playAudioClip', 'command', 'music', 'play audio clip %s', ['clip'], function (audioBuffer){
+                       this.runAsyncFn(async () =>{
+                           const trackName = this.receiver.id;
+                           const duration = await playAudio(audioBuffer, trackName);
+                           await wait(duration-.02);
+                       },{ args: [], timeout: I32_MAX });
+                   }),
+                   block('playAudioClipforDuration', 'command', 'music', 'play audio clip for duration %n %s', ['1', 'clip'], function (dur,audioBuffer){
+                       this.runAsyncFn(async () =>{
+                           const trackName = this.receiver.id;
+                           const duration = await playAudioForDuration(audioBuffer, trackName, dur);
+                           await wait(duration-Math.max(.02,0));
+                       },{ args: [], timeout: I32_MAX });
+                   }),
+                   block('playNote', 'command', 'music', 'play note %midiNotes for %noteDurations', ['', ''], function (note,noteDuration){
+                       this.runAsyncFn(async () =>{
+                           const trackName = this.receiver.id;
+                           const blockduration = await audioAPI.playNote(trackName,availableMidiNotes[note], audioAPI.getCurrentTime(), availableNoteDurations[noteDuration]);
+                           await wait(blockduration);
+                       },{ args: [], timeout: I32_MAX });
+                   }),
+                   block('stopClips', 'command', 'music', 'stop all clips', [], function (){
+                       stopAudio();
+                       this.doStopAll();
+                   }),
+                   block('masterVolume', 'command', 'music', 'master volume %n %', ['80'], function (percent){
+                       masterVolume(percent * 0.01);
+                   }),
+                   block('trackVolume', 'command', 'music', 'track volume %n %', ['50'], function (percent){
+                       const trackName = this.receiver.id;
+                       trackVolume(trackName,percent* 0.01);
+                   }),
+                   block('setGlobalBPM', 'command', 'music','set global BPM %n', ['120'], function (bpm){
+                       beatsPerMinute(bpm);
+                   }),
+                   block('setTrackPanning', 'command', 'music','set track panning %n', ['0.5'], function (level){
+                       this.runAsyncFn(async () =>{
+                           const trackName = this.receiver.id;
+                           await setTrackPanning(trackName, level);
+                     
+                       },{ args: [], timeout: I32_MAX });
+                   }),
+                   block('applyTrackEffect', 'command', 'music','apply track %effects effect', [], function (effectName){
+                       this.runAsyncFn(async () =>{
+                           const trackName = this.receiver.id;
+                           await applyTrackEffect(trackName, effectName);
+                       },{ args: [], timeout: I32_MAX });
+                   }),
+                   block('setTrackEffect', 'command', 'music','set track %effects effect to %n', ['','0'], function (effectName, level){
+                       this.runAsyncFn(async () =>{
+                           const trackName = this.receiver.id;
+                           await setTrackEffect(trackName, effectName, level);
+                       },{ args: [], timeout: I32_MAX });
+                   }),
+                   block('presetEffect', 'command', 'music', 'preset effects %fxPreset %onOff', ['', 'on'], function (effect, status) {
+                       const trackName = this.receiver.id;
+                       if (effect != '') {
+                           if (status == 'on') {
+                               this.runAsyncFn(async () => {
+                                   await addFxPreset(trackName, effect);
+                               });
+                           } else {
+                               const effectName = EffectsPreset[effect][0];
+                               this.runAsyncFn(async () => {
+                                   await audioAPI.removeTrackEffect(trackName, effectName);
+                               });
+                           }
+                       } else {
+                           throw Error('must select an effect');
+                       }         
+                   }),
+                   block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
+                       const trackName = this.receiver.id;
+ 
+                       if (device === '') 
+                           this.runAsyncFn(async () => {
+                               disconnectDevices(trackName);
+                           }, { args: [], timeout: I32_MAX });
+                       else if (midiDevices.indexOf(device) != -1)
+                           midiConnect(trackName, device);
+                       else if (audioDevices.indexOf(device != -1))
+                           audioConnect(trackName, device);
+                       else
+                           throw Error('device not found');
+ 
+                       if (midiInstruments.length > 0)
+                           audioAPI.updateInstrument(trackName, midiInstruments[0]).then(() => {
+                               console.log('default instrument set');
+                           });
+                       else
+                           console.log('no default instruments');
+                   }),
+                   block('startRecording', 'command', 'music', 'start recording', [], function () {
+                       const trackName = this.receiver.id;
+                       switch (currentDeviceType) {
+                           case 'midi':
+                               lastRecordedClip = audioAPI.recordMidiClip(
+                                   trackName, audioAPI.getCurrentTime()
+                               );
+                               break;
+                           case 'audio':
+                               lastRecordedClip = audioAPI.recordAudioClip(
+                                   trackName, audioAPI.getCurrentTime()
+                               );
+                               break;
+                       }
+                       recordingInProgress = true;
+                   }),
+                   block('recordForDuration', 'command', 'music', 'record for %n seconds', [0], function (time) {
+                       const trackName = this.receiver.id;
+                       switch (currentDeviceType) {
+                           case 'midi':
+                               lastRecordedClip = audioAPI.recordMidiClip(
+                                   trackName, audioAPI.getCurrentTime(), time
+                               );
+                               break;
+                           case 'audio':
+                               lastRecordedClip = audioAPI.recordAudioClip(
+                                   trackName, audioAPI.getCurrentTime(), time
+                               );
+                               break;
+                       }
+                       recordingInProgress = true;
+                   }),
+                   block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', [''], function(instrument) {
+                       const trackName = this.receiver.id;
+                       changeInsturment(trackName,instrument);
+                   }),
+                   block('stopRecording', 'command', 'music', 'stop recording', [], function() {
+                       this.runAsyncFn(async () => {
+                           await lastRecordedClip.finalize();
+                       }, { args: [], timeout: I32_MAX });
+                       recordingInProgress = false;
+                   }),
+                   block('exportAudio', 'command', 'music', 'bounce %s as %fileFormats', ['clip'], function (clip, format) {
+                       this.runAsyncFn(async () => {
+                           await exportClip(clip, format);
+                       }, { args: [], timeout: I32_MAX });
+                   }),
+                   block('getLastRecordedClip', 'reporter', 'music', 'get last recorded clip', [], function () {
+                       if (recordingInProgress)
+                           throw Error('recording in progress');
+                       else if (lastRecordedClip == null)
+                           throw Error('no clip found');
+                       else
+                           return this.runAsyncFn(async () => {
+                               return await clipToSnap(lastRecordedClip);
+                           }, { args: [], timeout: I32_MAX });
+                   }),
+               ];
+           }
+           getLabelParts() { 
+               function identityMap(s) {
+                   const res = {};
+                   for (const x of s) res[x] = x;
+                   return res;
+               }
+               function unionMaps(maps) {
+                   const res = {};
+                   for (const map of maps) {
+                       for (const key in map) res[key] = map[key];
+                   }
+                   return res;
+               }
+               return [
                new Extension.LabelPart('bpmNotes', () => new InputSlotMorph(
-                  null, //text
-                  false, // numeric
-                  unionMaps([
-                     identityMap(['Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'Thirtysecondth']),
-                  ]),
-                  true,
+                   null, //text
+                   false, // numeric
+                   unionMaps([
+                       identityMap([ 'Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'Thirtysecondth']),
+                   ]),
+                   true,
                )),
                new Extension.LabelPart('enabled', () => new InputSlotMorph(
-                  null, //text
-                  false, //numeric
-                  unionMaps([
-                     identityMap(['Enabled', 'Disabled']),
-                  ]),
-                  true,
+                   null, //text
+                   false, //numeric
+                   unionMaps([
+                       identityMap(['Enabled', 'Disabled']),
+                   ]),
+                   true,
                )),
                new Extension.LabelPart('effects', () => new InputSlotMorph(
-                  null, //text
-                  false, //numeric
-                  identityMap(Object.keys(availableEffects)),
-                  true, //readonly (no arbitrary text)
+                   null, //text
+                   false, //numeric
+                   identityMap(Object.keys(availableEffects)),
+                   true, //readonly (no arbitrary text)
                )),
                new Extension.LabelPart('midiNotes', () => new InputSlotMorph(
-                  null, //text
-                  false, //numeric
-                  identityMap(Object.keys(availableMidiNotes)),
-                  true, //readonly (no arbitrary text)
+                   null, //text
+                   false, //numeric
+                   identityMap(Object.keys(availableMidiNotes)),
+                   true, //readonly (no arbitrary text)
                )),
                new Extension.LabelPart('noteDurations', () => new InputSlotMorph(
-                  null, //text
-                  false, //numeric
-                  identityMap(Object.keys(availableNoteDurations)),
-                  true, //readonly (no arbitrary text)
+                   null, //text
+                   false, //numeric
+                   identityMap(Object.keys(availableNoteDurations)),
+                   true, //readonly (no arbitrary text)
                )),
                new Extension.LabelPart('fxPreset', () => new InputSlotMorph(
-                  null, // text
-                  false, //numeric
-                  identityMap(['Under Water', 'Telephone', 'Cave', 'Fan Blade']),
-                  true, // readonly (no arbitrary text)
+                   null, // text
+                   false, //numeric
+                   identityMap(['Under Water', 'Telephone', 'Cave', 'Fan Blade']),
+                   true, // readonly (no arbitrary text)
                )),
                new Extension.LabelPart('onOff', () => new InputSlotMorph(
-                  null, // text
-                  false, //numeric
-                  identityMap(['on', 'off']),
-                  true, // readonly (no arbitrary text)
+                   null, // text
+                   false, //numeric
+                   identityMap(['on', 'off']),
+                   true, // readonly (no arbitrary text)
                )),
                new Extension.LabelPart('webMidiInstrument', () => new InputSlotMorph(
-                  null, // text
-                  false, //numeric
-                  identityMap(midiInstruments),
-                  true, // readonly (no arbitrary text)
+                   null, // text
+                   false, //numeric
+                   identityMap(midiInstruments),
+                   true, // readonly (no arbitrary text)
                )),
                new Extension.LabelPart('fileFormats', () => new InputSlotMorph(
-                  null, // text
-                  false, //numeric
-                  identityMap(['WAV']),
-                  true, // readonly (no arbitrary text)
+                   null, // text
+                   false, //numeric
+                   identityMap(['WAV']),
+                   true, // readonly (no arbitrary text)
                )),
                new Extension.LabelPart('inputDevice', () => new InputSlotMorph(
-                  null, // text
-                  false, //numeric
-                  identityMap(midiDevices.concat(audioDevices)),
-                  true, // readonly (no arbitrary text)
+                   null, // text
+                   false, //numeric
+                   identityMap(midiDevices.concat(audioDevices)),
+                   true, // readonly (no arbitrary text)
                )),
-            ];
-         }
-
-      }
-      var element = document.createElement('link');
+           ];           
+       }
+ 
+       }
+       var element = document.createElement('link');
       element.setAttribute('rel', 'stylesheet');
       element.setAttribute('type', 'text/css');
       element.setAttribute('href', 'https://gsteinltu.github.io/PseudoMorphic/style.css');
       document.head.appendChild(element);
-
+ 
       var scriptElement = document.createElement('script');
-
+ 
       scriptElement.onload = () => {
          var element = createDialog('MusicApp');
          // const canvas = document.createElement('canvas');
          // canvas.id = 'roboscape-canvas';
          // element.querySelector('content').appendChild(canvas);
-         element.querySelector('content').innerHTML =
-            '<div id="waveform"></div><script type="module">import WaveSurfer from \'https://unpkg.com/wavesurfer.js@beta\' const wavesurfer = WaveSurfer.create({container: \'#waveform\', waveColor: \'violet\', progressColor: \'purple\'});      wavesurfer.once(\'interaction\', () => {wavesurfer.play()})</script>';
-         setupDialog(element);
+           element.querySelector('content').innerHTML = 
+                       '<div id="waveform"></div><script type="module">import WaveSurfer from \'https://unpkg.com/wavesurfer.js@beta\' const wavesurfer = WaveSurfer.create({container: \'#waveform\', waveColor: \'violet\', progressColor: \'purple\'});      wavesurfer.once(\'interaction\', () => {wavesurfer.play()})</script>';
+           setupDialog(element);
          window.externalVariables['musicAppDialog'] = element;
       };
       scriptElement.setAttribute('src', 'https://gsteinltu.github.io/PseudoMorphic/script.js');
       document.head.appendChild(scriptElement);
-
-      NetsBloxExtensions.register(MusicApp);
+ 
+       NetsBloxExtensions.register(MusicApp);
    })();
-
-})();
+ 
+ })();
+ 
