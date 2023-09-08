@@ -1,0 +1,8 @@
+[
+    <% for (let i = 0; i < extensions.length; ++i) { ext = extensions[i]; %>
+    {
+        "name": "<%= ext.name %>",
+        "url": "<%= ext.scriptUrl %>"
+    }<% if (i !== extensions.length - 1) { %>,<% } %>
+    <% } %>
+]
