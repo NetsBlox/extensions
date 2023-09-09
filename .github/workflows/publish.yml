@@ -1,0 +1,22 @@
+name: Publish
+
+on:
+  push:
+    branches: ["master"]
+permissions:
+  pages: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm i && node build.js
+      - uses: actions/upload-pages-artifact@v1
+        with:
+          path: build
+      - uses: actions/deploy-pages@v2
