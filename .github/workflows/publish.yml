@@ -3,6 +3,8 @@ name: Publish
 on:
   push:
     branches: ["master"]
+  pull_request:
+
 permissions:
   pages: write
   id-token: write
@@ -19,4 +21,6 @@ jobs:
       - uses: actions/upload-pages-artifact@v1
         with:
           path: build
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       - uses: actions/deploy-pages@v2
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
