@@ -4649,10 +4649,16 @@
                      throw Error('recording in progress');
                   else if (lastRecordedClip == null)
                      throw Error('no clip found');
-                  else
+                  else {
                      return this.runAsyncFn(async () => {
-                        return await clipToSnap(lastRecordedClip);
+                        let temp = await clipToSnap(lastRecordedClip);
+                        temp.audioBuffer = await lastRecordedClip.getEncodedData(EncodingType['WAV']);
+                        return temp;
                      }, { args: [], timeout: I32_MAX });
+                  }
+                  // return this.runAsyncFn(async () => {
+                  //     return await clipToSnap(lastRecordedClip);
+                  // }, { args: [], timeout: I32_MAX });
                }),
             ];
          }
