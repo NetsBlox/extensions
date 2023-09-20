@@ -4451,7 +4451,6 @@
                    stopAudio();
                };
                this.ide.hideCategory("sound");
- 
            }
  
  
@@ -4492,6 +4491,7 @@
                    new Extension.Palette.Block('stopRecording'),
                    //new Extension.Palette.Block('exportAudio'),
                    new Extension.Palette.Block('playNote'),
+                   new Extension.Palette.Block('playNote2'),
                    new Extension.Palette.Block('getLastRecordedClip'),
                ];
                return [
@@ -4526,6 +4526,13 @@
                            await wait(blockduration);
                        },{ args: [], timeout: I32_MAX });
                    }),
+                   block('playNote2', 'command', 'music', 'plays note %n for %n', ['', ''], function (note,noteDuration){
+                     this.runAsyncFn(async () =>{
+                         const trackName = this.receiver.id;
+                         const blockduration = await audioAPI.playNote(trackName,note, audioAPI.getCurrentTime(), noteDuration);
+                         await wait(blockduration);
+                     },{ args: [], timeout: I32_MAX });
+                 }),
                    block('stopClips', 'command', 'music', 'stop all clips', [], function (){
                        stopAudio();
                        this.doStopAll();
@@ -4697,13 +4704,13 @@
                    null, //text
                    false, //numeric
                    identityMap(Object.keys(availableMidiNotes)),
-                   true, //readonly (no arbitrary text)
+                   false, //readonly (no arbitrary text)
                )),
                new Extension.LabelPart('noteDurations', () => new InputSlotMorph(
                    null, //text
                    false, //numeric
                    identityMap(Object.keys(availableNoteDurations)),
-                   true, //readonly (no arbitrary text)
+                   false, //readonly (no arbitrary text)
                )),
                new Extension.LabelPart('fxPreset', () => new InputSlotMorph(
                    null, // text
