@@ -92,7 +92,7 @@
     * @constant {Object.<string, number>}
     */
    const EffectType = {
-      Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
+      Reverb: 11, Delay: 12, Echo: 13, PitchShift: 14, Doppler: 15,                    // Time-Based Effects
       Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
       Panning: 31, Equalization: 32,                                                   // Spectral Effects
       Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
@@ -397,14 +397,16 @@
       /** @type {number} */
       #upperCutoffFrequency;
 
+      // Parameter limits
+      static minFrequency = 1;
+      static maxFrequency = 22050;
+
       /**
        * Constructs a new {@link BandPassFilter} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
          this.#filterNode = new BiquadFilterNode(audioContext, { type: 'bandpass' });
-         this.#lowerCutoffFrequency = 1.0;
-         this.#upperCutoffFrequency = 22050.0;
       }
 
       /**
@@ -416,13 +418,15 @@
        */
       static getParameters() {
          return [
-            { name: 'lowerCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 1 },
-            { name: 'upperCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 22050 }
+            { name: 'lowerCutoffFrequency', type: 'number', validValues: [BandPassFilter.minFrequency, BandPassFilter.maxFrequency], defaultValue: BandPassFilter.minFrequency },
+            { name: 'upperCutoffFrequency', type: 'number', validValues: [BandPassFilter.minFrequency, BandPassFilter.maxFrequency], defaultValue: BandPassFilter.maxFrequency }
          ];
       }
 
       async load() {
-         this.#filterNode.frequency.value = 11025.0;
+         this.#lowerCutoffFrequency = BandPassFilter.minFrequency;
+         this.#upperCutoffFrequency = BandPassFilter.maxFrequency;
+         this.#filterNode.frequency.value = 148.5;
          this.#filterNode.Q.value = 0.0001;
       }
 
@@ -433,8 +437,8 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} lowerCutoffFrequency - Frequency below which audio content will be reduced
-       * @param {number} upperCutoffFrequency - Frequency above which audio content will be reduced
+       * @param {number} lowerCutoffFrequency - Frequency below which audio content will be reduced between [1, 22050]
+       * @param {number} upperCutoffFrequency - Frequency above which audio content will be reduced between [1, 22050]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
@@ -442,22 +446,26 @@
       async update({ lowerCutoffFrequency, upperCutoffFrequency }, updateTime, timeConstant) {
          if ((lowerCutoffFrequency == null) && (upperCutoffFrequency == null))
             throw new WebAudioValueError('Cannot update the BandPassFilter effect without at least one of the following parameters: "lowerCutoffFrequency, upperCutoffFrequency"');
+         if (lowerCutoffFrequency != null) {
+            if (((upperCutoffFrequency != null) && (lowerCutoffFrequency > upperCutoffFrequency)) || (lowerCutoffFrequency > this.#upperCutoffFrequency))
+               throw new WebAudioValueError('Lower cutoff frequency cannot be greater than the upper cutoff frequency');
+         }
+         else if (upperCutoffFrequency < this.#lowerCutoffFrequency)
+            throw new WebAudioValueError('Lower cutoff frequency cannot be greater than the upper cutoff frequency');
+         if ((lowerCutoffFrequency != null) && (lowerCutoffFrequency < BandPassFilter.minFrequency))
+            throw new WebAudioValueError(`Lower cutoff frequency cannot be less than ${BandPassFilter.minFrequency}`);
+         if ((upperCutoffFrequency != null) && (upperCutoffFrequency > BandPassFilter.maxFrequency))
+            throw new WebAudioValueError(`Upper cutoff frequency cannot be greater than ${BandPassFilter.maxFrequency}`);
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
          const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
          if (lowerCutoffFrequency != null)
             this.#lowerCutoffFrequency = lowerCutoffFrequency;
          if (upperCutoffFrequency != null)
             this.#upperCutoffFrequency = upperCutoffFrequency;
-         const centerFrequency = this.#calcCenterFrequency();
+         const centerFrequency = Math.sqrt(this.#upperCutoffFrequency * this.#lowerCutoffFrequency);
          this.#filterNode.frequency.setTargetAtTime(centerFrequency, timeToUpdate, timeConstantTarget);
-         this.#filterNode.Q.setTargetAtTime(centerFrequency / (this.#upperCutoffFrequency - this.#lowerCutoffFrequency), timeToUpdate, timeConstantTarget);
+         this.#filterNode.Q.setTargetAtTime(centerFrequency / (0.0001 + this.#upperCutoffFrequency - this.#lowerCutoffFrequency), timeToUpdate, timeConstantTarget);
          return true;
-      }
-
-      #calcCenterFrequency() {
-         if (this.#upperCutoffFrequency / this.#lowerCutoffFrequency >= 1.1)
-            return Math.sqrt(this.#upperCutoffFrequency * this.#lowerCutoffFrequency);
-         return ((this.#upperCutoffFrequency + this.#lowerCutoffFrequency) / 2);
       }
 
       getInputNode() {
@@ -488,14 +496,16 @@
       /** @type {number} */
       #upperCutoffFrequency;
 
+      // Parameter limits
+      static minFrequency = 1;
+      static maxFrequency = 22050;
+
       /**
        * Constructs a new {@link BandRejectFilter} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
          this.#filterNode = new BiquadFilterNode(audioContext, { type: 'notch' });
-         this.#lowerCutoffFrequency = 1.0;
-         this.#upperCutoffFrequency = 1.0;
       }
 
       /**
@@ -507,13 +517,15 @@
        */
       static getParameters() {
          return [
-            { name: 'lowerCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 1 },
-            { name: 'upperCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 1 }
+            { name: 'lowerCutoffFrequency', type: 'number', validValues: [BandRejectFilter.minFrequency, BandRejectFilter.maxFrequency], defaultValue: 148.5 },
+            { name: 'upperCutoffFrequency', type: 'number', validValues: [BandRejectFilter.minFrequency, BandRejectFilter.maxFrequency], defaultValue: 148.5 }
          ];
       }
 
       async load() {
-         this.#filterNode.frequency.value = 11025.0;
+         this.#lowerCutoffFrequency = 148.5;
+         this.#upperCutoffFrequency = 148.5;
+         this.#filterNode.frequency.value = 148.5;
          this.#filterNode.Q.value = 1000.0;
       }
 
@@ -524,8 +536,8 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} lowerCutoffFrequency - Frequency above which audio content will be reduced
-       * @param {number} upperCutoffFrequency - Frequency below which audio content will be reduced
+       * @param {number} lowerCutoffFrequency - Frequency above which audio content will be reduced between [1, 22050]
+       * @param {number} upperCutoffFrequency - Frequency below which audio content will be reduced between [1, 22050]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
@@ -533,22 +545,31 @@
       async update({ lowerCutoffFrequency, upperCutoffFrequency }, updateTime, timeConstant) {
          if ((lowerCutoffFrequency == null) && (upperCutoffFrequency == null))
             throw new WebAudioValueError('Cannot update the BandRejectFilter effect without at least one of the following parameters: "lowerCutoffFrequency, upperCutoffFrequency"');
+         if (lowerCutoffFrequency != null) {
+            if (lowerCutoffFrequency < 20) {
+               lowerCutoffFrequency = 20;
+               if ((upperCutoffFrequency != null) && (upperCutoffFrequency < 20))
+                  upperCutoffFrequency = 20;
+            }
+            if (((upperCutoffFrequency != null) && (lowerCutoffFrequency > upperCutoffFrequency)) || (lowerCutoffFrequency > this.#upperCutoffFrequency))
+               throw new WebAudioValueError('Lower cutoff frequency cannot be greater than the upper cutoff frequency');
+         }
+         else if (upperCutoffFrequency < this.#lowerCutoffFrequency)
+            throw new WebAudioValueError('Lower cutoff frequency cannot be greater than the upper cutoff frequency');
+         if ((lowerCutoffFrequency != null) && (lowerCutoffFrequency < BandRejectFilter.minFrequency))
+            throw new WebAudioValueError(`Lower cutoff frequency cannot be less than ${BandRejectFilter.minFrequency}`);
+         if ((upperCutoffFrequency != null) && (upperCutoffFrequency > BandRejectFilter.maxFrequency))
+            throw new WebAudioValueError(`Upper cutoff frequency cannot be greater than ${BandRejectFilter.maxFrequency}`);
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
          const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
          if (lowerCutoffFrequency != null)
             this.#lowerCutoffFrequency = lowerCutoffFrequency;
          if (upperCutoffFrequency != null)
             this.#upperCutoffFrequency = upperCutoffFrequency;
-         const centerFrequency = this.#calcCenterFrequency();
+         const centerFrequency = Math.sqrt(this.#upperCutoffFrequency * this.#lowerCutoffFrequency);
          this.#filterNode.frequency.setTargetAtTime(centerFrequency, timeToUpdate, timeConstantTarget);
-         this.#filterNode.Q.setTargetAtTime((this.#upperCutoffFrequency - this.#lowerCutoffFrequency) / centerFrequency, timeToUpdate, timeConstantTarget);
+         this.#filterNode.Q.setTargetAtTime(centerFrequency / (0.0001 + this.#upperCutoffFrequency - this.#lowerCutoffFrequency), timeToUpdate, timeConstantTarget);
          return true;
-      }
-
-      #calcCenterFrequency() {
-         if (this.#upperCutoffFrequency / this.#lowerCutoffFrequency >= 1.1)
-            return Math.sqrt(this.#upperCutoffFrequency * this.#lowerCutoffFrequency);
-         return ((this.#upperCutoffFrequency + this.#lowerCutoffFrequency) / 2);
       }
 
       getInputNode() {
@@ -571,11 +592,66 @@
     */
    class Chorus extends EffectBase {
 
+      // Effect-specific private variables
+      /** @type {GainNode} */
+      #inputNode;
+      /** @type {GainNode} */
+      #outputNode;
+      /** @type {DelayNode} */
+      #wetDelayNode;
+      /** @type {OscillatorNode} */
+      #lfoNode;
+      /** @type {GainNode} */
+      #lfoGainNode;
+      /** @type {DelayNode} */
+      #delayLeft;
+      /** @type {DelayNode} */
+      #delayRight;
+      /** @type {GainNode} */
+      #feedbackLeft;
+      /** @type {GainNode} */
+      #feedbackRight;
+
+      // Parameter limits
+      static minRate = 0;
+      static maxRate = 10;
+      static minDelay = 0.0001;
+      static maxDelay = 0.1;
+      static minFeedback = 0;
+      static maxFeedback = 0.95;
+      static minIntensity = 0;
+      static maxIntensity = 1;
+
       /**
        * Constructs a new {@link Chorus} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
+
+         this.#inputNode = new GainNode(audioContext);
+         this.#outputNode = new GainNode(audioContext);
+         const splitter = new ChannelSplitterNode(audioContext, { numberOfOutputs: 2 });
+         this.#lfoNode = new OscillatorNode(audioContext);
+         this.#delayLeft = new DelayNode(audioContext, { maxDelayTime: 1 });
+         this.#delayRight = new DelayNode(audioContext, { maxDelayTime: 1 });
+         this.#wetDelayNode = new DelayNode(audioContext, { maxDelayTime: 1 });
+         this.#lfoGainNode = new GainNode(audioContext);
+         this.#feedbackLeft = new GainNode(audioContext);
+         this.#feedbackRight = new GainNode(audioContext);
+         const merger = new ChannelMergerNode(audioContext, { numberOfInputs: 2 });
+
+         this.#lfoNode.connect(this.#lfoGainNode);
+         this.#lfoGainNode.connect(this.#delayLeft.delayTime);
+         this.#lfoGainNode.connect(this.#delayRight.delayTime);
+
+         this.#inputNode.connect(this.#outputNode);
+         this.#inputNode.connect(this.#wetDelayNode);
+         this.#wetDelayNode.connect(splitter);
+         splitter.connect(this.#delayLeft, 0);
+         splitter.connect(this.#delayRight, 1);
+         this.#delayLeft.connect(this.#feedbackLeft).connect(this.#delayRight).connect(merger, 0, 1);
+         this.#delayRight.connect(this.#feedbackRight).connect(this.#delayLeft).connect(merger, 0, 0);
+         merger.connect(this.#outputNode);
       }
 
       /**
@@ -587,16 +663,24 @@
        */
       static getParameters() {
          return [
-            { name: 'rate', type: 'number', validValues: [0, 2], defaultValue: 0 },
-            { name: 'shape', type: 'string', validValues: ['sine', 'triangle'], defaultValue: 'sine' },
-            { name: 'delayOffset', type: 'number', validValues: [0, 0.05], defaultValue: 0 },
-            { name: 'variableFeedback', type: 'number', validValues: [0, 1], defaultValue: 0 },
-            { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
+            { name: 'rate', type: 'number', validValues: [Chorus.minRate, Chorus.maxRate], defaultValue: 0.8 },
+            { name: 'shape', type: 'string', validValues: ['sine', 'square', 'sawtooth', 'triangle'], defaultValue: 'sine' },
+            { name: 'delay', type: 'number', validValues: [Chorus.minDelay, Chorus.maxDelay], defaultValue: 0.03 },
+            { name: 'feedback', type: 'number', validValues: [Chorus.minFeedback, Chorus.maxFeedback], defaultValue: 0 },
+            { name: 'intensity', type: 'number', validValues: [Chorus.minIntensity, Chorus.maxIntensity], defaultValue: 0 },
          ];
       }
 
       async load() {
-         return;
+         this.#inputNode.gain.value = 0.5;
+         this.#outputNode.gain.value = 1;
+         this.#lfoGainNode.gain.value = 0;
+         this.#wetDelayNode.delayTime.value = 0.03;
+         this.#delayLeft.delayTime.value = this.#delayRight.delayTime.value = 0.01;
+         this.#feedbackLeft.gain.value = this.#feedbackRight.gain.value = 0;
+         this.#lfoNode.frequency.value = 0.8;
+         this.#lfoNode.type = 'sine';
+         this.#lfoNode.start();
       }
 
       /**
@@ -606,28 +690,69 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} rate - Frequency at which an oscillator modulates the delayed chorus signal
-       * @param {string} shape - Waveform shape used to modulate the delayed chorus signal
-       * @param {number} delayOffset - Number of seconds delay between the original signal and the chorus signal
-       * @param {number} variableFeedback - Percentage of processed signal to be fed back into the chorus circuit
-       * @param {number} intensity - Ratio of chorus-to-original sound as a percentage between [0.0, 1.0]
+       * @param {number} rate - Frequency at which an oscillator modulates the delayed chorus signal in Hertz between [0, 10]
+       * @param {string} shape - Waveform shape used to modulate the delayed chorus signal from ['sine', 'square', 'sawtooth', 'triangle']
+       * @param {number} delay - Number of seconds delay between the original signal and the modulated chorus signal between [0.0001, 0.1]
+       * @param {number} feedback - Percentage of processed signal to be fed back into the chorus circuit between [0, 0.95]
+       * @param {number} intensity - Amount of modulation to apply as a percentage between [0, 1]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ rate, shape, delayOffset, variableFeedback, intensity }, updateTime, timeConstant) {
-         if ((rate == null) && (shape == null) && (delayOffset == null) && (variableFeedback == null) && (intensity == null))
-            throw new WebAudioValueError('Cannot update the Chorus effect without at least one of the following parameters: "rate, shape, delayOffset, variableFeedback, intensity"');
-         (updateTime == null) ? this.audioContext.currentTime : updateTime;
-         return false;
+      async update({ rate, shape, delay, feedback, intensity }, updateTime, timeConstant) {
+         if ((rate == null) && (shape == null) && (delay == null) && (feedback == null) && (intensity == null))
+            throw new WebAudioValueError('Cannot update the Chorus effect without at least one of the following parameters: "rate, shape, delay, feedback, intensity"');
+         if (rate != null) {
+            if (rate < Chorus.minRate)
+               throw new WebAudioValueError(`Rate value cannot be less than ${Chorus.minRate}`);
+            else if (rate > Chorus.maxRate)
+               throw new WebAudioValueError(`Rate value cannot be greater than ${Chorus.maxRate}`);
+         }
+         if (shape != null) {
+            if (!['sine', 'square', 'sawtooth', 'triangle'].includes(shape))
+               throw new WebAudioValueError('Shape value must be one of: ["sine", "square", "sawtooth", "triangle"]');
+         }
+         if (delay != null) {
+            if (delay < Chorus.minDelay)
+               throw new WebAudioValueError(`Delay value cannot be less than ${Chorus.minDelay}`);
+            else if (delay > Chorus.maxDelay)
+               throw new WebAudioValueError(`Delay value cannot be greater than ${Chorus.maxDelay}`);
+         }
+         if (feedback != null) {
+            if (feedback < Chorus.minFeedback)
+               throw new WebAudioValueError(`Feedback value cannot be less than ${Chorus.minFeedback}`);
+            else if (feedback > Chorus.maxFeedback)
+               throw new WebAudioValueError(`Feedback value cannot be greater than ${Chorus.maxFeedback}`);
+         }
+         if (intensity != null) {
+            if (intensity < Chorus.minIntensity)
+               throw new WebAudioValueError(`Intensity value cannot be less than ${Chorus.minIntensity}`);
+            else if (intensity > Chorus.maxIntensity)
+               throw new WebAudioValueError(`Intensity value cannot be greater than ${Chorus.maxIntensity}`);
+         }
+         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+         const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+         if (rate != null)
+            this.#lfoNode.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
+         if (shape != null)
+            this.#lfoNode.type = shape;
+         if (delay != null)
+            this.#wetDelayNode.delayTime.setTargetAtTime(delay, timeToUpdate, timeConstantTarget);
+         if (feedback != null) {
+            this.#feedbackLeft.gain.setTargetAtTime(feedback, timeToUpdate, timeConstantTarget);
+            this.#feedbackRight.gain.setTargetAtTime(feedback, timeToUpdate, timeConstantTarget);
+         }
+         if (intensity != null)
+            this.#lfoGainNode.gain.setTargetAtTime(0.001 * intensity, timeToUpdate, timeConstantTarget);
+         return true;
       }
 
       getInputNode() {
-         return;
+         return this.#inputNode;
       }
 
       getOutputNode() {
-         return;
+         return this.#outputNode;
       }
    }
 
@@ -646,6 +771,16 @@
       /** @type {DynamicsCompressorNode} */
       #compressorNode;
 
+      // Parameter limits
+      static minThreshold = -100;
+      static maxThreshold = 0;
+      static minAttack = 0;
+      static maxAttack = 1;
+      static minRelease = 0;
+      static maxRelease = 1;
+      static minIntensity = 0;
+      static maxIntensity = 1;
+
       /**
        * Constructs a new {@link Compression} effect object.
        */
@@ -663,10 +798,10 @@
        */
       static getParameters() {
          return [
-            { name: 'threshold', type: 'number', validValues: [-100, 0], defaultValue: -24 },
-            { name: 'attack', type: 'number', validValues: [0, 1], defaultValue: 0.003 },
-            { name: 'release', type: 'number', validValues: [0, 1], defaultValue: 0.24 },
-            { name: 'intensityPercent', type: 'number', validValues: [0, 1], defaultValue: 0 }
+            { name: 'threshold', type: 'number', validValues: [Compression.minThreshold, Compression.maxThreshold], defaultValue: -24 },
+            { name: 'attack', type: 'number', validValues: [Compression.minAttack, Compression.maxAttack], defaultValue: 0.003 },
+            { name: 'release', type: 'number', validValues: [Compression.minRelease, Compression.maxRelease], defaultValue: 0.25 },
+            { name: 'intensity', type: 'number', validValues: [Compression.minIntensity, Compression.maxIntensity], defaultValue: 0 }
          ];
       }
 
@@ -684,10 +819,10 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} threshold - Decibel loudness of the input signal above which the compressor kicks in between [-100.0, 0.0]
-       * @param {number} attack - Number of seconds required to reduce signal gain by 10 dB between [0.0, 1.0]
-       * @param {number} release - Number of seconds required to increase signal gain by 10 dB between [0.0, 1.0]
-       * @param {number} intensity - Amount of compression applied as a percentage between [0.0, 1.0]
+       * @param {number} threshold - Decibel loudness of the input signal above which the compressor kicks in between [-100, 0]
+       * @param {number} attack - Number of seconds required to reduce signal gain by 10 dB between [0, 1]
+       * @param {number} release - Number of seconds required to increase signal gain by 10 dB between [0, 1]
+       * @param {number} intensity - Amount of compression applied as a percentage between [0, 1]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
@@ -695,6 +830,30 @@
       async update({ threshold, attack, release, intensity }, updateTime, timeConstant) {
          if ((threshold == null) && (attack == null) && (release == null) && (intensity == null))
             throw new WebAudioValueError('Cannot update the Compression effect without at least one of the following parameters: "threshold, attack, release, intensity"');
+         if (threshold != null) {
+            if (threshold < Compression.minThreshold)
+               throw new WebAudioValueError(`Threshold value cannot be less than ${Compression.minThreshold}`);
+            else if (threshold > Compression.maxThreshold)
+               throw new WebAudioValueError(`Threshold value cannot be greater than ${Compression.maxThreshold}`);
+         }
+         if (attack != null) {
+            if (attack < Compression.minAttack)
+               throw new WebAudioValueError(`Attack value cannot be less than ${Compression.minAttack}`);
+            else if (attack > Compression.maxAttack)
+               throw new WebAudioValueError(`Attack value cannot be greater than ${Compression.maxAttack}`);
+         }
+         if (release != null) {
+            if (release < Compression.minRelease)
+               throw new WebAudioValueError(`Release value cannot be less than ${Compression.minRelease}`);
+            else if (release > Compression.maxRelease)
+               throw new WebAudioValueError(`Release value cannot be greater than ${Compression.maxRelease}`);
+         }
+         if (intensity != null) {
+            if (intensity < Compression.minIntensity)
+               throw new WebAudioValueError(`Intensity value cannot be less than ${Compression.minIntensity}`);
+            else if (intensity > Compression.maxIntensity)
+               throw new WebAudioValueError(`Intensity value cannot be greater than ${Compression.maxIntensity}`);
+         }
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
          const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
          if (threshold != null)
@@ -730,15 +889,32 @@
    class Delay extends EffectBase {
 
       // Effect-specific private variables
+      /** @type {GainNode} */
+      #inputNode;
+      /** @type {GainNode} */
+      #outputNode;
       /** @type {DelayNode} */
       #delayNode;
+      /** @type {GainNode} */
+      #gainNode;
+
+      // Parameter limits
+      static minDelay = 0;
+      static maxDelay = 1;
+      static minAttenuation = 0;
+      static maxAttenuation = 1;
 
       /**
        * Constructs a new {@link Delay} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
-         this.#delayNode = new DelayNode(audioContext);
+         this.#inputNode = new GainNode(audioContext);
+         this.#outputNode = new GainNode(audioContext);
+         this.#delayNode = new DelayNode(audioContext, { maxDelayTime: 1 });
+         this.#gainNode = new GainNode(audioContext);
+         this.#inputNode.connect(this.#outputNode);
+         this.#inputNode.connect(this.#delayNode).connect(this.#gainNode).connect(this.#outputNode);
       }
 
       /**
@@ -749,11 +925,16 @@
        * @see {@link EffectParameter}
        */
       static getParameters() {
-         return [];
+         return [
+            { name: 'delay', type: 'number', validValues: [Delay.minDelay, Delay.maxDelay], defaultValue: Delay.minDelay },
+            { name: 'attenuation', type: 'number', validValues: [Delay.minAttenuation, Delay.maxAttenuation], defaultValue: Delay.minAttenuation }
+         ];
       }
 
       async load() {
-         return;
+         this.#inputNode.gain.value = this.#outputNode.gain.value = 1;
+         this.#delayNode.delayTime.value = Delay.minDelay;
+         this.#gainNode.gain.value = 1.0 - Delay.minAttenuation;
       }
 
       /**
@@ -763,28 +944,42 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} feedback - Number of echoes and the resonance between each echo
-       * @param {number} time - Number of seconds between the original signal and its echo
-       * @param {number} cutoffFrequencyLower - Frequency below which to block acoustic content
-       * @param {number} cutoffFrequencyUpper - Frequency above which to block acoustic content
-       * @param {number} intensity - Ratio of delayed-to-original sound as a percentage between [0.0, 1.0]
+       * @param {number} delay - Number of seconds to delay outputting the audio signal between [0, 1]
+       * @param {number} attenuation - Amount to attenuate the delayed signal as a percentage between [0, 1]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ feedback, time, cutoffFrequencyLower, cutoffFrequencyUpper, intensity }, updateTime, timeConstant) {
-         if ((feedback == null) && (time == null) && (cutoffFrequencyLower == null) && (cutoffFrequencyUpper == null) && (intensity == null))
-            throw new WebAudioValueError('Cannot update the Delay effect without at least one of the following parameters: "feedback, time, cutoffFrequencyLower, cutoffFrequencyUpper, intensity"');
-         (updateTime == null) ? this.audioContext.currentTime : updateTime;
-         return false;
+      async update({ delay, attenuation }, updateTime, timeConstant) {
+         if ((delay == null) && (attenuation == null))
+            throw new WebAudioValueError('Cannot update the Delay effect without at least one of the following parameters: "delay, attenuation"');
+         if (delay != null) {
+            if (delay < Delay.minDelay)
+               throw new WebAudioValueError(`Delay value cannot be less than ${Delay.minDelay}`);
+            else if (delay > Delay.maxDelay)
+               throw new WebAudioValueError(`Delay value cannot be greater than ${Delay.maxDelay}`);
+         }
+         if (attenuation != null) {
+            if (attenuation < Delay.minAttenuation)
+               throw new WebAudioValueError(`Attenuation value cannot be less than ${Delay.minAttenuation}`);
+            else if (attenuation > Delay.maxAttenuation)
+               throw new WebAudioValueError(`Attenuation value cannot be greater than ${Delay.maxAttenuation}`);
+         }
+         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+         const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+         if (delay != null)
+            this.#delayNode.delayTime.setTargetAtTime(delay, timeToUpdate, timeConstantTarget);
+         if (attenuation != null)
+            this.#gainNode.gain.setTargetAtTime(1.0 - attenuation, timeToUpdate, timeConstantTarget);
+         return true;
       }
 
       getInputNode() {
-         return;
+         return this.#inputNode;
       }
 
       getOutputNode() {
-         return;
+         return this.#outputNode;
       }
    }
 
@@ -799,11 +994,29 @@
     */
    class Distortion extends EffectBase {
 
+      // Effect-specific private variables
+      /** @type {GainNode} */
+      #outputNode;
+      /** @type {BiquadFilterNode} */
+      #preBandpassNode;
+      /** @type {WaveShaperNode} */
+      #distortionNode;
+
+      // Parameter limits
+      static minTone = 0;
+      static maxTone = 22050;
+      static minIntensity = 0;
+      static maxIntensity = 1;
+
       /**
        * Constructs a new {@link Distortion} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
+         this.#outputNode = new GainNode(audioContext);
+         this.#preBandpassNode = new BiquadFilterNode(audioContext, { type: 'lowpass' });
+         this.#distortionNode = new WaveShaperNode(audioContext);
+         this.#preBandpassNode.connect(this.#distortionNode).connect(this.#outputNode);
       }
 
       /**
@@ -814,11 +1027,22 @@
        * @see {@link EffectParameter}
        */
       static getParameters() {
-         return [];
+         return [
+            { name: 'tone', type: 'number', validValues: [Distortion.minTone, Distortion.maxTone], defaultValue: 3000 },
+            { name: 'intensity', type: 'number', validValues: [Distortion.minIntensity, Distortion.maxIntensity], defaultValue: 0.5 }
+         ];
       }
 
       async load() {
-         return;
+         const driveValue = 0.5, n = 22050, deg = Math.PI / 180;
+         const k = driveValue * 100, curve = new Float32Array(n);
+         this.#preBandpassNode.frequency.value = 3000;
+         for (let i = 0; i < n; ++i) {
+            const x = i * 2 / n - 1;
+            curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+         }
+         this.#distortionNode.curve = curve;
+         this.#outputNode.gain.value = driveValue;
       }
 
       /**
@@ -828,26 +1052,372 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} drive - Gain level for the distorted signal
-       * @param {boolean} tone - Whether to smooth distortion by adding tasty tone to it
-       * @param {number} intensity - Ratio of distorted-to-original sound as a percentage between [0.0, 1.0]
+       * @param {number} tone - Low-pass cutoff frequency in Hz for filtering before distortion between [0, 22050]
+       * @param {number} intensity - Ratio of distorted-to-original sound as a percentage between [0, 1]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ drive, tone, intensity }, updateTime, timeConstant) {
-         if ((drive == null) && (tone == null) && (intensity == null))
-            throw new WebAudioValueError('Cannot update the Distortion effect without at least one of the following parameters: "drive, tone, intensity"');
-         (updateTime == null) ? this.audioContext.currentTime : updateTime;
-         return false;
+      async update({ tone, intensity }, updateTime, timeConstant) {
+         if ((tone == null) && (intensity == null))
+            throw new WebAudioValueError('Cannot update the Distortion effect without at least one of the following parameters: "tone, intensity"');
+         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+         const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+         if (tone != null)
+            this.#preBandpassNode.frequency.setTargetAtTime(tone, timeToUpdate, timeConstantTarget);
+         if (intensity != null) {
+            const n = 22050, deg = Math.PI / 180;
+            const k = intensity * 100, curve = new Float32Array(n);
+            for (let i = 0; i < n; ++i) {
+               const x = i * 2 / n - 1;
+               curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+            }
+            this.#distortionNode.curve = curve;
+            const gainOffset = (intensity < 0.5) ? (Math.exp(2.3 * (0.5 - intensity)) - 0.5) : (0.5 + (0.2 * (0.5 - intensity)));
+            this.#outputNode.gain.setTargetAtTime(gainOffset, timeToUpdate, timeConstantTarget);
+         }
+         return true;
       }
 
       getInputNode() {
-         return;
+         return this.#preBandpassNode;
       }
 
       getOutputNode() {
-         return;
+         return this.#outputNode;
+      }
+   }
+
+   /**
+    * Class representing a Pitch Shift effect.
+    * 
+    * A Pitch Shift performs a permanent shift in frequency between an incoming and
+    * outgoing audio signal.
+    * 
+    * @extends EffectBase
+    */
+   class PitchShift extends EffectBase {
+
+      // Effect-specific private variables
+      /** @type {GainNode} */
+      #inputNode; #outputNode;
+      /** @type {GainNode} */
+      #modGain1Node; #modGain2Node;
+      /** @type {AudioBuffer} */
+      #shiftDownBuffer; #shiftUpBuffer;
+      /** @type {GainNode} */
+      #mod1GainNode; #mod2GainNode; #mod3GainNode; #mod4GainNode;
+      /** @type {AudioBufferSourceNode} */
+      #mod1Node; #mod2Node; #mod3Node; #mod4Node;
+      /** @type {AudioBufferSourceNode} */
+      #fade1Node; #fade2Node;
+
+      // Parameter limits
+      static bufferTime = 0.250;
+      static delayTime = 0.250;
+      static fadeTime = 0.125;
+      static minShift = -1200;
+      static maxShift = 700;
+
+      /**
+       * Constructs a new {@link PitchShift} effect object.
+       */
+      constructor(audioContext) {
+         super(audioContext);
+
+         // Required audio nodes
+         this.#inputNode = new GainNode(audioContext);
+         this.#outputNode = new GainNode(audioContext);
+         this.#mod1GainNode = new GainNode(audioContext, { gain: 1 });
+         this.#mod2GainNode = new GainNode(audioContext, { gain: 1 });
+         this.#mod3GainNode = new GainNode(audioContext, { gain: 0 });
+         this.#mod4GainNode = new GainNode(audioContext, { gain: 0 });
+         this.#modGain1Node = new GainNode(audioContext, { gain: 1 });
+         this.#modGain2Node = new GainNode(audioContext, { gain: 1 });
+         const delay1 = new DelayNode(audioContext, { maxDelayTime: 1 });
+         const delay2 = new DelayNode(audioContext, { maxDelayTime: 1 });
+
+         // Delay modulation
+         const length1 = PitchShift.bufferTime * audioContext.sampleRate;
+         const length = length1 + ((PitchShift.bufferTime - 2 * PitchShift.fadeTime) * audioContext.sampleRate);
+         this.#shiftDownBuffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+         {
+            const p = this.#shiftDownBuffer.getChannelData(0);
+            for (let i = 0; i < length1; ++i)
+               p[i] = i / length1;
+            for (let i = length1; i < length; ++i)
+               p[i] = 0;
+         }
+         this.#shiftUpBuffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+         {
+            const p = this.#shiftUpBuffer.getChannelData(0);
+            for (let i = 0; i < length1; ++i)
+               p[i] = (length1 - i) / length;
+            for (let i = length1; i < length; ++i)
+               p[i] = 0;
+         }
+         this.#mod1Node = new AudioBufferSourceNode(audioContext, { buffer: this.#shiftDownBuffer, loop: true });
+         this.#mod2Node = new AudioBufferSourceNode(audioContext, { buffer: this.#shiftDownBuffer, loop: true });
+         this.#mod3Node = new AudioBufferSourceNode(audioContext, { buffer: this.#shiftUpBuffer, loop: true });
+         this.#mod4Node = new AudioBufferSourceNode(audioContext, { buffer: this.#shiftUpBuffer, loop: true });
+
+         // Delay amount for changing pitch
+         this.#mod1Node.connect(this.#mod1GainNode);
+         this.#mod2Node.connect(this.#mod2GainNode);
+         this.#mod3Node.connect(this.#mod3GainNode);
+         this.#mod4Node.connect(this.#mod4GainNode);
+         this.#mod1GainNode.connect(this.#modGain1Node);
+         this.#mod2GainNode.connect(this.#modGain2Node);
+         this.#mod3GainNode.connect(this.#modGain1Node);
+         this.#mod4GainNode.connect(this.#modGain2Node);
+         this.#modGain1Node.connect(delay1.delayTime);
+         this.#modGain2Node.connect(delay2.delayTime);
+
+         // Crossfading
+         const fadeBuffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+         {
+            const p = fadeBuffer.getChannelData(0), fadeLength = PitchShift.fadeTime * audioContext.sampleRate;
+            const fadeIndex1 = fadeLength, fadeIndex2 = length1 - fadeLength;
+            for (let i = 0; i < length1; ++i)
+               p[i] = (i < fadeIndex1) ? Math.sqrt(i / fadeLength) :
+                  ((i >= fadeIndex2) ? Math.sqrt(1 - (i - fadeIndex2) / fadeLength) : 1);
+            for (let i = length1; i < length; ++i)
+               p[i] = 0;
+         }
+         this.#fade1Node = new AudioBufferSourceNode(audioContext, { buffer: fadeBuffer, loop: true });
+         this.#fade2Node = new AudioBufferSourceNode(audioContext, { buffer: fadeBuffer, loop: true });
+         const mix1 = new GainNode(audioContext, { gain: 0 });
+         const mix2 = new GainNode(audioContext, { gain: 0 });
+         this.#fade1Node.connect(mix1.gain);
+         this.#fade2Node.connect(mix2.gain);
+
+         // Connect processing graph
+         this.#inputNode.connect(delay1);
+         this.#inputNode.connect(delay2);
+         delay1.connect(mix1);
+         delay2.connect(mix2);
+         mix1.connect(this.#outputNode);
+         mix2.connect(this.#outputNode);
+      }
+
+      /**
+       * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+       * of the {@link EffectBase#update update()} function for this {@link Effect}.
+       * 
+       * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+       * @see {@link EffectParameter}
+       */
+      static getParameters() {
+         return [
+            { name: 'shift', type: 'number', validValues: [PitchShift.minShift, PitchShift.maxShift], defaultValue: 0 }
+         ];
+      }
+
+      async load() {
+         const t = this.audioContext.currentTime + 0.050;
+         const t2 = t + PitchShift.bufferTime - PitchShift.fadeTime;
+         this.#modGain1Node.gain.value = 0;
+         this.#modGain2Node.gain.value = 0;
+         this.#mod1Node.start(t);
+         this.#mod2Node.start(t2);
+         this.#mod3Node.start(t);
+         this.#mod4Node.start(t2);
+         this.#fade1Node.start(t);
+         this.#fade2Node.start(t2);
+      }
+
+      // Private update function for internal use only by Doppler effect
+      async updatePrivate(shift, updateTime, timeWeights, duration) {
+         const finalGain = 0.5 * PitchShift.delayTime * Math.abs(shift) / 1200;
+         for (let i = 0; i < timeWeights.length; ++i)
+            timeWeights[i] *= finalGain;
+         this.#mod1GainNode.gain.cancelScheduledValues(updateTime);
+         this.#mod2GainNode.gain.cancelScheduledValues(updateTime);
+         this.#mod3GainNode.gain.cancelScheduledValues(updateTime);
+         this.#mod4GainNode.gain.cancelScheduledValues(updateTime);
+         if (shift > 0) {
+            this.#mod1GainNode.gain.setTargetAtTime(0, updateTime, 0.01);
+            this.#mod2GainNode.gain.setTargetAtTime(0, updateTime, 0.01);
+            this.#mod3GainNode.gain.setTargetAtTime(1, updateTime, 0.01);
+            this.#mod4GainNode.gain.setTargetAtTime(1, updateTime, 0.01);
+         } else {
+            this.#mod1GainNode.gain.setTargetAtTime(1, updateTime, 0.01);
+            this.#mod2GainNode.gain.setTargetAtTime(1, updateTime, 0.01);
+            this.#mod3GainNode.gain.setTargetAtTime(0, updateTime, 0.01);
+            this.#mod4GainNode.gain.setTargetAtTime(0, updateTime, 0.01);
+         }
+         this.#modGain1Node.gain.cancelScheduledValues(updateTime);
+         this.#modGain2Node.gain.cancelScheduledValues(updateTime);
+         this.#modGain1Node.gain.setValueCurveAtTime(timeWeights, updateTime, duration);
+         this.#modGain2Node.gain.setValueCurveAtTime(timeWeights, updateTime, duration);
+         return true;
+      }
+
+      /* eslint no-empty-pattern: "off" */
+      /**
+       * Updates the {@link PitchShift} effect according to the specified parameters at the
+       * specified time.
+       * 
+       * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+       * changes to take effect.
+       * 
+       * @param {number} shift - Frequency shift in cents between [-1200, 1200]
+       * @param {number} [updateTime] - Global API time at which to update the effect
+       * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
+       * @returns {Promise<boolean>} Whether the effect update was successfully applied
+       */
+      async update({ shift }, updateTime, timeConstant) {
+         if (shift == null)
+            throw new WebAudioValueError('Cannot update the PitchShift effect without at least one of the following parameters: "shift"');
+         else if (shift < PitchShift.minShift)
+            throw new WebAudioValueError(`Shift value cannot be less than ${PitchShift.minShift}`);
+         else if (shift > PitchShift.maxShift)
+            throw new WebAudioValueError(`Shift value cannot be greater than ${PitchShift.maxShift}`);
+         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+         const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+         this.#mod1GainNode.gain.cancelScheduledValues(timeToUpdate);
+         this.#mod2GainNode.gain.cancelScheduledValues(timeToUpdate);
+         this.#mod3GainNode.gain.cancelScheduledValues(timeToUpdate);
+         this.#mod4GainNode.gain.cancelScheduledValues(timeToUpdate);
+         if (shift > 0) {
+            this.#mod1GainNode.gain.setTargetAtTime(0, timeToUpdate, 0.01);
+            this.#mod2GainNode.gain.setTargetAtTime(0, timeToUpdate, 0.01);
+            this.#mod3GainNode.gain.setTargetAtTime(1, timeToUpdate, 0.01);
+            this.#mod4GainNode.gain.setTargetAtTime(1, timeToUpdate, 0.01);
+         } else {
+            this.#mod1GainNode.gain.setTargetAtTime(1, timeToUpdate, 0.01);
+            this.#mod2GainNode.gain.setTargetAtTime(1, timeToUpdate, 0.01);
+            this.#mod3GainNode.gain.setTargetAtTime(0, timeToUpdate, 0.01);
+            this.#mod4GainNode.gain.setTargetAtTime(0, timeToUpdate, 0.01);
+         }
+         this.#modGain1Node.gain.cancelScheduledValues(timeToUpdate);
+         this.#modGain2Node.gain.cancelScheduledValues(timeToUpdate);
+         this.#modGain1Node.gain.setTargetAtTime(0.5 * PitchShift.delayTime * Math.abs(shift) / 1200, timeToUpdate, timeConstantTarget);
+         this.#modGain2Node.gain.setTargetAtTime(0.5 * PitchShift.delayTime * Math.abs(shift) / 1200, timeToUpdate, timeConstantTarget);
+         return true;
+      }
+
+      getInputNode() {
+         return this.#inputNode;
+      }
+
+      getOutputNode() {
+         return this.#outputNode;
+      }
+   }
+
+   /**
+    * Class representing a Doppler effect.
+    * 
+    * A Doppler effect performs a linear change in frequency over a specified period of time.
+    * 
+    * @extends EffectBase
+    */
+   class Doppler extends EffectBase {
+
+      // Effect-specific private variables
+      /** @type {PitchShift} */
+      #pitchShifter;
+
+      // Parameter limits
+      static minDistance = 0;
+      static maxDistance = 1000;
+      static minDuration = 0;
+      static maxDuration = 60;
+
+      /**
+       * Constructs a new {@link Doppler} effect object.
+       */
+      constructor(audioContext) {
+         super(audioContext);
+         this.#pitchShifter = new PitchShift(audioContext);
+      }
+
+      /**
+       * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+       * of the {@link EffectBase#update update()} function for this {@link Effect}.
+       * 
+       * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+       * @see {@link EffectParameter}
+       */
+      static getParameters() {
+         return [
+            { name: 'initDistance', type: 'number', validValues: [Doppler.minDistance, Doppler.maxDistance], defaultValue: 100 },
+            { name: 'finalDistance', type: 'number', validValues: [Doppler.minDistance, Doppler.maxDistance], defaultValue: 100 },
+            { name: 'missDistance', type: 'number', validValues: [Doppler.minDistance, Doppler.maxDistance], defaultValue: 14 },
+            { name: 'duration', type: 'number', validValues: [Doppler.minDuration, Doppler.maxDuration], defaultValue: 10 }
+         ];
+      }
+
+      async load() {
+         await this.#pitchShifter.load();
+      }
+
+      /* eslint no-empty-pattern: "off" */
+      /**
+       * Updates the {@link Doppler} effect according to the specified parameters at the
+       * specified time.
+       * 
+       * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+       * changes to take effect.
+       * 
+       * @param {number} initDistance - Starting distance in meters between an audio source and an observer
+       * @param {number} finalDistance - Final distance in meters between an audio source and an observer
+       * @param {number} missDistance - Distance in meters by which the audio source misses the observer
+       * @param {number} duration - Duration in seconds required for the audio source to travel from its starting to final location
+       * @param {number} [updateTime] - Global API time at which to update the effect
+       * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
+       * @returns {Promise<boolean>} Whether the effect update was successfully applied
+       */
+      async update({ initDistance, finalDistance, missDistance, duration }, updateTime) {
+         if ((initDistance == null) || (finalDistance == null) || (missDistance == null) || (duration == null))
+            throw new WebAudioValueError('Cannot update the Doppler effect without all of the following parameters: "initDistance, finalDistance, missDistance, duration"');
+         else if (initDistance < Doppler.minDistance)
+            throw new WebAudioValueError(`Distance value cannot be less than ${Doppler.minDistance}`);
+         else if (initDistance > Doppler.maxDistance)
+            throw new WebAudioValueError(`Distance value cannot be greater than ${Doppler.maxDistance}`);
+         else if (finalDistance < Doppler.minDistance)
+            throw new WebAudioValueError(`Distance value cannot be less than ${Doppler.minDistance}`);
+         else if (finalDistance > Doppler.maxDistance)
+            throw new WebAudioValueError(`Distance value cannot be greater than ${Doppler.maxDistance}`);
+         else if (missDistance < Doppler.minDistance)
+            throw new WebAudioValueError(`Distance value cannot be less than ${Doppler.minDistance}`);
+         else if (missDistance > Doppler.maxDistance)
+            throw new WebAudioValueError(`Distance value cannot be greater than ${Doppler.maxDistance}`);
+         else if (duration < Doppler.minDuration)
+            throw new WebAudioValueError(`Duration value cannot be less than ${Doppler.minDuration}`);
+         else if (duration > Doppler.maxDuration)
+            throw new WebAudioValueError(`Duration value cannot be greater than ${Doppler.maxDuration}`);
+         else if (initDistance < missDistance)
+            throw new WebAudioValueError('Initial distance cannot be less than the miss distance');
+         else if (finalDistance < missDistance)
+            throw new WebAudioValueError('Final distance cannot be less than the miss distance');
+         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+         const approachingDistance = Math.sqrt(initDistance ** 2 - missDistance ** 2);
+         const departingDistance = Math.sqrt(finalDistance ** 2 - missDistance ** 2);
+         const totalDistance = approachingDistance + departingDistance;
+         const speedMetersPerCentisecond = totalDistance / (100 * duration);
+         const approachingDuration = duration * (approachingDistance / totalDistance);
+         const departingDuration = duration * (departingDistance / totalDistance);
+         const approachingWeights = new Float32Array(approachingDuration * 100);
+         const departingWeights = new Float32Array(departingDuration * 100);
+         for (let i = 0; i < approachingWeights.length; ++i)
+            approachingWeights[i] = Math.cos(Math.atan2(missDistance, approachingDistance - (i * speedMetersPerCentisecond)));
+         for (let i = 0; i < departingWeights.length; ++i)
+            departingWeights[i] = Math.cos(Math.atan2(missDistance, i * speedMetersPerCentisecond));
+         const approachingFrequency = 1200 * Math.log2(343.0 / (343.0 - (100 * speedMetersPerCentisecond)));
+         const departingFrequency = 1200 * Math.log2(343.0 / (343.0 + (100 * speedMetersPerCentisecond)));
+         this.#pitchShifter.updatePrivate(approachingFrequency, timeToUpdate, approachingWeights, approachingDuration);
+         this.#pitchShifter.updatePrivate(departingFrequency, timeToUpdate + approachingDuration, departingWeights, departingDuration);
+         return true;
+      }
+
+      getInputNode() {
+         return this.#pitchShifter.getInputNode();
+      }
+
+      getOutputNode() {
+         return this.#pitchShifter.getOutputNode();
       }
    }
 
@@ -862,36 +1432,33 @@
     */
    class Echo extends EffectBase {
 
+      // Effect-specific private variables
+      /** @type {GainNode} */
+      #inputNode;
       /** @type {DelayNode} */
-      #delay;
+      #delayNode;
       /** @type {GainNode} */
-      #gain;
+      #feedbackNode;
       /** @type {GainNode} */
-      #destination;
+      #outputNode;
 
-      #echo = {
-         feedback: 0.2,
-         intensity: 0.2,
-         maxDuration: 1,
-      };
+      // Parameter limits
+      static minEchoTime = 0;
+      static maxEchoTime = 1;
+      static minFeedback = 0;
+      static maxFeedback = 0.95;
 
       /**
        * Constructs a new {@link Echo} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
-
-         this.#delay = new DelayNode(audioContext);
-         this.#delay.delayTime.value = this.#echo.feedback * this.#echo.maxDuration;
-
-         this.#gain = new GainNode(audioContext);
-         this.#gain.gain.value = this.#echo.intensity;
-
-         this.#destination = new GainNode(audioContext);
-         this.#destination.gain.value = 1;
-
-         this.#gain.connect(this.#delay);
-         this.#delay.connect(this.#gain).connect(this.#destination);
+         this.#inputNode = new GainNode(audioContext);
+         this.#outputNode = new GainNode(audioContext);
+         this.#delayNode = new DelayNode(audioContext, { maxDelayTime: Echo.maxEchoTime });
+         this.#feedbackNode = new GainNode(audioContext);
+         this.#inputNode.connect(this.#outputNode);
+         this.#inputNode.connect(this.#delayNode).connect(this.#feedbackNode).connect(this.#delayNode).connect(this.#outputNode);
       }
 
       /**
@@ -903,13 +1470,15 @@
        */
       static getParameters() {
          return [
-            { name: 'feedback', type: 'number', validValues: [0, 1], defaultValue: 0.2 },
-            { name: 'intensity', type: 'number', validValues: [0, 1], defaultValue: 0.2 },
+            { name: 'echoTime', type: 'number', validValues: [Echo.minEchoTime, Echo.maxEchoTime], defaultValue: Echo.minEchoTime },
+            { name: 'intensity', type: 'number', validValues: [Echo.minFeedback, Echo.maxFeedback], defaultValue: Echo.minFeedback },
          ];
       }
 
       async load() {
-         return;
+         this.#inputNode.gain.value = this.#outputNode.gain.value = 1;
+         this.#delayNode.delayTime.value = Echo.minEchoTime;
+         this.#feedbackNode.gain.value = Echo.minFeedback;
       }
 
       /**
@@ -919,34 +1488,42 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} feedback - Amount of reflection fed back into the original sound
-       * @param {number} intensity - Ratio of echoed-to-original sound as a percentage between [0.0, 1.0]
+       * @param {number} echoTime - Number of seconds between the original audio and its first echo between [0, 1]
+       * @param {number} intensity - Percentage of the original audio that will be present in each consecutive echo between [0, 0.95]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ feedback, intensity }, updateTime, timeConstant) {
-         if ((feedback == null) && (intensity == null))
-            throw new WebAudioValueError('Cannot update the Echo effect without at least one of the following parameters: "feedback, intensity"');
-         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
-         const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
-         if (feedback != null) {
-            this.#echo.feedback = feedback;
-            this.#delay.delayTime.setTargetAtTime(this.#echo.feedback * this.#echo.maxDuration, timeToUpdate, timeConstantTarget);
+      async update({ echoTime, intensity }, updateTime, timeConstant) {
+         if ((echoTime == null) && (intensity == null))
+            throw new WebAudioValueError('Cannot update the Echo effect without at least one of the following parameters: "echoTime, intensity"');
+         if (echoTime != null) {
+            if (echoTime < Echo.minEchoTime)
+               throw new WebAudioValueError(`EchoTime value cannot be less than ${Echo.minEchoTime}`);
+            else if (echoTime > Echo.maxEchoTime)
+               throw new WebAudioValueError(`EchoTime value cannot be greater than ${Echo.maxEchoTime}`);
          }
          if (intensity != null) {
-            this.#echo.intensity = intensity;
-            this.#gain.gain.setTargetAtTime(this.#echo.intensity, timeToUpdate, timeConstantTarget);
+            if (intensity < Echo.minFeedback)
+               throw new WebAudioValueError(`Intensity value cannot be less than ${Echo.minFeedback}`);
+            else if (intensity > Echo.maxFeedback)
+               throw new WebAudioValueError(`Intensity value cannot be greater than ${Echo.maxFeedback}`);
          }
+         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+         const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+         if (echoTime != null)
+            this.#delayNode.delayTime.setTargetAtTime(echoTime, timeToUpdate, timeConstantTarget);
+         if (intensity != null)
+            this.#feedbackNode.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);
          return true;
       }
 
       getInputNode() {
-         return this.#delay;
+         return this.#inputNode;
       }
 
       getOutputNode() {
-         return this.#destination;
+         return this.#outputNode;
       }
    }
 
@@ -961,11 +1538,25 @@
     */
    class Equalization extends EffectBase {
 
+      // Effect-specific private variables
+      /** @type {BiquadFilterNode[]} */
+      #equalizerNodes;
+
+      // Parameter limits
+      static minGain = -40;
+      static maxGain = 40;
+      static minCutoff = 1000;
+      static maxCutoff = 22050;
+
       /**
        * Constructs a new {@link Equalization} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
+         this.#equalizerNodes = [
+            new BiquadFilterNode(audioContext, { type: 'lowshelf', frequency: audioContext.sampleRate / 4, gain: 0 }),
+            new BiquadFilterNode(audioContext, { type: 'highshelf', frequency: audioContext.sampleRate / 4, gain: 0 })
+         ];
       }
 
       /**
@@ -976,11 +1567,14 @@
        * @see {@link EffectParameter}
        */
       static getParameters() {
-         return [];
+         return [
+            { name: 'frequencyBandUpperCutoffs', type: 'Array<number>', validValues: [Equalization.minCutoff, Equalization.maxCutoff], defaultValue: 0 },
+            { name: 'frequencyBandGains', type: 'Array<number>', validValues: [Equalization.minGain, Equalization.maxGain], defaultValue: 0 },
+         ];
       }
 
       async load() {
-         return;
+         this.#equalizerNodes[0].connect(this.#equalizerNodes[1]);
       }
 
       /**
@@ -990,25 +1584,74 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number[]} frequencyBandUpperCutoffs - Upper frequency cutoffs for each band in the equalizer
-       * @param {number[]} frequencyBandVolumes - Volumes for each frequency band in the equalizer
+       * @param {number[]} frequencyBandUpperCutoffs - Upper frequency cutoffs in Hz for each band in the equalizer between [0, 22050]
+       * @param {number[]} frequencyBandGains - Gains in dB for each frequency band in the equalizer between [-40, 40]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ frequencyBandUpperCutoffs, frequencyBandVolumes }, updateTime, timeConstant) {
-         if ((frequencyBandUpperCutoffs == null) && (frequencyBandVolumes == null))
-            throw new WebAudioValueError('Cannot update the Equalization effect without at least one of the following parameters: "frequencyBandUpperCutoffs, frequencyBandVolumes"');
-         (updateTime == null) ? this.audioContext.currentTime : updateTime;
-         return false;
+      async update({ frequencyBandUpperCutoffs, frequencyBandGains }, updateTime, timeConstant) {
+         if ((frequencyBandUpperCutoffs == null) || (frequencyBandGains == null))
+            throw new WebAudioValueError('Cannot update the Equalization effect without both of the following parameters: "frequencyBandUpperCutoffs, frequencyBandGains"');
+         if (frequencyBandUpperCutoffs.length != frequencyBandGains.length)
+            throw new WebAudioValueError('Frequency cutoff array and frequency gain array must have the same size');
+         for (const cutoff of frequencyBandUpperCutoffs) {
+            if (cutoff < Equalization.minCutoff)
+               throw new WebAudioValueError(`Frequency upper cutoff value cannot be less than ${Equalization.minCutoff}`);
+            else if (cutoff > Equalization.maxCutoff)
+               throw new WebAudioValueError(`Frequency upper cutoff value cannot be greater than ${Equalization.maxCutoff}`);
+         }
+         for (const gain of frequencyBandGains) {
+            if (gain < Equalization.minGain)
+               throw new WebAudioValueError(`Gain value cannot be less than ${Equalization.minGain}`);
+            else if (gain > Equalization.maxGain)
+               throw new WebAudioValueError(`Gain value cannot be greater than ${Equalization.maxGain}`);
+         }
+         for (let i = 1; i < frequencyBandUpperCutoffs.length; ++i) {
+            if (frequencyBandUpperCutoffs[i] <= frequencyBandUpperCutoffs[i - 1])
+               throw new WebAudioValueError('Frequency band upper cutoffs must be monotonically increasing within the array');
+         }
+         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+         const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+
+         // Ensure the correct number of equalization bands are present
+         if (frequencyBandUpperCutoffs.length < this.#equalizerNodes.length) {
+            this.#equalizerNodes[0].connect(this.#equalizerNodes[this.#equalizerNodes.length - frequencyBandUpperCutoffs.length + 1]);
+            for (const removedNode of this.#equalizerNodes.splice(1, this.#equalizerNodes.length - frequencyBandUpperCutoffs.length))
+               removedNode.disconnect();
+         }
+         else if (frequencyBandUpperCutoffs.length > this.#equalizerNodes.length) {
+            const lastNode = this.#equalizerNodes.splice(-1, 1)[0];
+            this.#equalizerNodes[this.#equalizerNodes.length - 1].disconnect();
+            while ((this.#equalizerNodes.length + 1) < frequencyBandUpperCutoffs.length) {
+               const newNode = new BiquadFilterNode(this.audioContext, { type: 'peaking' });
+               this.#equalizerNodes[this.#equalizerNodes.length - 1].connect(newNode);
+               this.#equalizerNodes.push(newNode);
+            }
+            this.#equalizerNodes[this.#equalizerNodes.length - 1].connect(lastNode);
+            this.#equalizerNodes.push(lastNode);
+         }
+
+         // Update the parameters for each equalization band
+         this.#equalizerNodes[0].frequency.setTargetAtTime(frequencyBandUpperCutoffs[0], timeToUpdate, timeConstantTarget);
+         this.#equalizerNodes[0].gain.setTargetAtTime(frequencyBandGains[0], timeToUpdate, timeConstantTarget);
+         this.#equalizerNodes[this.#equalizerNodes.length - 1].frequency.setTargetAtTime(frequencyBandUpperCutoffs[frequencyBandUpperCutoffs.length - 2], timeToUpdate, timeConstantTarget);
+         this.#equalizerNodes[this.#equalizerNodes.length - 1].gain.setTargetAtTime(frequencyBandGains[frequencyBandGains.length - 1], timeToUpdate, timeConstantTarget);
+         for (let i = 1; i < this.#equalizerNodes.length - 1; ++i) {
+            const centerFrequency = 0.5 * (frequencyBandUpperCutoffs[i] + frequencyBandUpperCutoffs[i - 1]);
+            this.#equalizerNodes[i].frequency.setTargetAtTime(centerFrequency, timeToUpdate, timeConstantTarget);
+            this.#equalizerNodes[i].Q.setTargetAtTime(centerFrequency / (frequencyBandUpperCutoffs[i] - frequencyBandUpperCutoffs[i - 1]), timeToUpdate, timeConstantTarget);
+            this.#equalizerNodes[i].gain.setTargetAtTime(frequencyBandGains[i], timeToUpdate, timeConstantTarget);
+         }
+         return true;
       }
 
       getInputNode() {
-         return;
+         return this.#equalizerNodes[0];
       }
 
       getOutputNode() {
-         return;
+         return this.#equalizerNodes[this.#equalizerNodes.length - 1];
       }
    }
 
@@ -1022,44 +1665,46 @@
     */
    class Flanger extends EffectBase {
 
+      // Effect-specific private variables
       /** @type {GainNode} */
-      #destination;
+      #inputNode;
       /** @type {GainNode} */
-      #dry;
-      /** @type {GainNode} */
-      #wet;
+      #outputNode;
       /** @type {DelayNode} */
       #delayNode;
       /** @type {OscillatorNode} */
-      #lfo;
+      #lfoNode;
       /** @type {GainNode} */
-      #feedback;
+      #lfoGainNode;
+      /** @type {GainNode} */
+      #feedbackNode;
+
+      // Parameter limits
+      static minRate = 0;
+      static maxRate = 10;
+      static minDelay = 0.0001;
+      static maxDelay = 0.01;
+      static minFeedback = 0;
+      static maxFeedback = 0.95;
+      static minIntensity = 0;
+      static maxIntensity = 1;
 
       /**
        * Constructs a new {@link Flanger} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
-         this.#destination = new GainNode(audioContext);
-         this.#dry = new GainNode(audioContext);
-         this.#wet = new GainNode(audioContext);
-         this.#delayNode = new DelayNode(audioContext);
-         this.#lfo = new OscillatorNode(audioContext, { frequency: 0 });
-         this.#feedback = new GainNode(audioContext);
 
-         this.#dry.gain.value = 1;
-         this.#wet.gain.value = 0.2;
-         this.#feedback.gain.value = 0;
-         this.#delayNode.delayTime.value = 0;
-         this.#lfo.type = 'sine';
-         this.#lfo.start();
+         this.#inputNode = new GainNode(audioContext);
+         this.#outputNode = new GainNode(audioContext);
+         this.#delayNode = new DelayNode(audioContext, { maxDelayTime: 1 });
+         this.#lfoNode = new OscillatorNode(audioContext);
+         this.#lfoGainNode = new GainNode(audioContext);
+         this.#feedbackNode = new GainNode(audioContext);
 
-         this.#dry.connect(this.#wet);
-         this.#dry.connect(this.#destination);
-         this.#wet.connect(this.#delayNode).connect(this.#destination);
-         this.#delayNode.connect(this.#feedback);
-         this.#lfo.connect(this.#delayNode);
-         this.#feedback.connect(this.#wet);
+         this.#lfoNode.connect(this.#lfoGainNode).connect(this.#delayNode.delayTime);
+         this.#inputNode.connect(this.#outputNode);
+         this.#inputNode.connect(this.#delayNode).connect(this.#feedbackNode).connect(this.#delayNode).connect(this.#outputNode);
       }
 
       /**
@@ -1071,16 +1716,23 @@
        */
       static getParameters() {
          return [
-            { name: 'rate', type: 'number', validValues: [0, 2], defaultValue: 0 },
-            { name: 'shape', type: 'string', validValues: ['sine', 'triangle'], defaultValue: 'sine' },
-            { name: 'delayOffset', type: 'number', validValues: [0, 0.015], defaultValue: 0 },
-            { name: 'variableFeedback', type: 'number', validValues: [0, 1], defaultValue: 0 },
-            { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
+            { name: 'rate', type: 'number', validValues: [Flanger.minRate, Flanger.maxRate], defaultValue: 0.8 },
+            { name: 'shape', type: 'string', validValues: ['sine', 'square', 'sawtooth', 'triangle'], defaultValue: 'sine' },
+            { name: 'delay', type: 'number', validValues: [Flanger.minDelay, Flanger.maxDelay], defaultValue: 0.0075 },
+            { name: 'feedback', type: 'number', validValues: [Flanger.minFeedback, Flanger.maxFeedback], defaultValue: 0 },
+            { name: 'intensity', type: 'number', validValues: [Flanger.minIntensity, Flanger.maxIntensity], defaultValue: 0 }
          ];
       }
 
       async load() {
-         return;
+         this.#inputNode.gain.value = 0.5;
+         this.#outputNode.gain.value = 1;
+         this.#lfoGainNode.gain.value = 0;
+         this.#delayNode.delayTime.value = 0.0075;
+         this.#feedbackNode.gain.value = 0;
+         this.#lfoNode.frequency.value = 0.8;
+         this.#lfoNode.type = 'sine';
+         this.#lfoNode.start();
       }
 
       /**
@@ -1090,41 +1742,67 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} rate - Frequency at which an oscillator modulates the delayed flanger signal
-       * @param {string} shape - Waveform shape used to modulate the delayed flanger signal
-       * @param {number} delayOffset - Number of seconds of delay between the original signal and the flanger signal
-       * @param {number} variableFeedback - Percentage of processed signal to be fed back into the flanger circuit
-       * @param {number} intensity - Ratio of flangered-to-original sound as a percentage between [0.0, 1.0]
+       * @param {number} rate - Frequency at which an oscillator modulates the delayed flanger signal in Hertz between [0, 10]
+       * @param {string} shape - Waveform shape used to modulate the delayed flanger signal from ['sine', 'square', 'sawtooth', 'triangle']
+       * @param {number} delay - Number of seconds delay between the original signal and the modulated flanger signal between [0.0001, 0.01]
+       * @param {number} feedback - Percentage of processed signal to be fed back into the flanger circuit between [0, 0.95]
+       * @param {number} intensity - Ratio of flangered-to-original sound as a percentage between [0, 1]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ rate, shape, delayOffset, variableFeedback, intensity }, updateTime, timeConstant) {
-         if ((rate == null) && (shape == null) && (delayOffset == null) && (variableFeedback == null) && (intensity == null))
-            throw new WebAudioValueError('Cannot update the Flanger effect without at least one of the following parameters: "rate, shape, delayOffset, variableFeedback, intensity"');
-         if ((shape != 'sine') && (shape != 'triangle'))
-            throw new WebAudioValueError('Flanger effect "shape" parameter must take one of the following values: "sine, "triangle"');
+      async update({ rate, shape, delay, feedback, intensity }, updateTime, timeConstant) {
+         if ((rate == null) && (shape == null) && (delay == null) && (feedback == null) && (intensity == null))
+            throw new WebAudioValueError('Cannot update the Flanger effect without at least one of the following parameters: "rate, shape, delay, feedback, intensity"');
+         if (rate != null) {
+            if (rate < Flanger.minRate)
+               throw new WebAudioValueError(`Rate value cannot be less than ${Flanger.minRate}`);
+            else if (rate > Flanger.maxRate)
+               throw new WebAudioValueError(`Rate value cannot be greater than ${Flanger.maxRate}`);
+         }
+         if (shape != null) {
+            if (!['sine', 'square', 'sawtooth', 'triangle'].includes(shape))
+               throw new WebAudioValueError('Shape value must be one of: ["sine", "square", "sawtooth", "triangle"]');
+         }
+         if (delay != null) {
+            if (delay < Flanger.minDelay)
+               throw new WebAudioValueError(`Delay value cannot be less than ${Flanger.minDelay}`);
+            else if (delay > Flanger.maxDelay)
+               throw new WebAudioValueError(`Delay value cannot be greater than ${Flanger.maxDelay}`);
+         }
+         if (feedback != null) {
+            if (feedback < Flanger.minFeedback)
+               throw new WebAudioValueError(`Feedback value cannot be less than ${Flanger.minFeedback}`);
+            else if (feedback > Flanger.maxFeedback)
+               throw new WebAudioValueError(`Feedback value cannot be greater than ${Flanger.maxFeedback}`);
+         }
+         if (intensity != null) {
+            if (intensity < Flanger.minIntensity)
+               throw new WebAudioValueError(`Intensity value cannot be less than ${Flanger.minIntensity}`);
+            else if (intensity > Flanger.maxIntensity)
+               throw new WebAudioValueError(`Intensity value cannot be greater than ${Flanger.maxIntensity}`);
+         }
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
          const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
          if (rate != null)
-            this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
+            this.#lfoNode.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
          if (shape != null)
-            this.#lfo.type = shape;
-         if (delayOffset != null)
-            this.#delayNode.delayTime.setTargetAtTime(delayOffset * 1, timeToUpdate, timeConstantTarget);
-         if (variableFeedback != null)
-            this.#feedback.gain.setTargetAtTime(variableFeedback, timeToUpdate, timeConstantTarget);
+            this.#lfoNode.type = shape;
+         if (delay != null)
+            this.#delayNode.delayTime.setTargetAtTime(delay, timeToUpdate, timeConstantTarget);
+         if (feedback != null)
+            this.#feedbackNode.gain.setTargetAtTime(feedback, timeToUpdate, timeConstantTarget);
          if (intensity != null)
-            this.#wet.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);
-         return false;
+            this.#lfoGainNode.gain.setTargetAtTime(this.#delayNode.delayTime.value * intensity, timeToUpdate, timeConstantTarget);
+         return true;
       }
 
       getInputNode() {
-         return this.#dry;
+         return this.#inputNode;
       }
 
       getOutputNode() {
-         return this.#destination;
+         return this.#outputNode;
       }
    }
 
@@ -1141,6 +1819,12 @@
       // Effect-specific private variables
       /** @type {BiquadFilterNode} */
       #filterNode;
+
+      // Parameter limits
+      static minFrequency = 0;
+      static maxFrequency = 22050;
+      static minResonance = 0.0001;
+      static maxResonance = 1000;
 
       /**
        * Constructs a new {@link HighPassFilter} effect object.
@@ -1159,14 +1843,14 @@
        */
       static getParameters() {
          return [
-            { name: 'cutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 },
-            { name: 'resonance', type: 'number', validValues: [0, 1000], defaultValue: 0 }
+            { name: 'cutoffFrequency', type: 'number', validValues: [HighPassFilter.minFrequency, HighPassFilter.maxFrequency], defaultValue: HighPassFilter.minFrequency },
+            { name: 'resonance', type: 'number', validValues: [HighPassFilter.minResonance, HighPassFilter.maxResonance], defaultValue: HighPassFilter.minResonance }
          ];
       }
 
       async load() {
-         this.#filterNode.frequency.value = 0.0;
-         this.#filterNode.Q.value = 0.0001;
+         this.#filterNode.frequency.value = HighPassFilter.minFrequency;
+         this.#filterNode.Q.value = HighPassFilter.minResonance;
       }
 
       /**
@@ -1176,8 +1860,8 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} cutoffFrequency - Frequency below which audio content will be reduced
-       * @param {number} resonance - Amount of frequency exaggeration around the cutoff as a value between [0.0, 1000.0]
+       * @param {number} cutoffFrequency - Frequency below which audio content will be reduced between [0, 22050]
+       * @param {number} resonance - Amount of frequency exaggeration around the cutoff as a value between [0.0001, 1000.0]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
@@ -1185,12 +1869,24 @@
       async update({ cutoffFrequency, resonance }, updateTime, timeConstant) {
          if ((cutoffFrequency == null) && (resonance == null))
             throw new WebAudioValueError('Cannot update the HighPassFilter effect without at least one of the following parameters: "cutoffFrequency, resonance"');
+         if (cutoffFrequency != null) {
+            if (cutoffFrequency < HighPassFilter.minFrequency)
+               throw new WebAudioValueError(`Cutoff frequency cannot be less than ${HighPassFilter.minFrequency}`);
+            else if (cutoffFrequency > HighPassFilter.maxFrequency)
+               throw new WebAudioValueError(`Cutoff frequency cannot be greater than ${HighPassFilter.maxFrequency}`);
+         }
+         if (resonance != null) {
+            if (resonance < HighPassFilter.minResonance)
+               throw new WebAudioValueError(`Resonance exaggeration cannot be less than ${HighPassFilter.minResonance}`);
+            else if (resonance > HighPassFilter.maxResonance)
+               throw new WebAudioValueError(`Resonance exaggeration cannot be greater than ${HighPassFilter.maxResonance}`);
+         }
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
          const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
          if (cutoffFrequency != null)
             this.#filterNode.frequency.setTargetAtTime(cutoffFrequency, timeToUpdate, timeConstantTarget);
          if (resonance != null)
-            this.#filterNode.Q.setTargetAtTime(Math.max(resonance, 0.0001), timeToUpdate, timeConstantTarget);
+            this.#filterNode.Q.setTargetAtTime(resonance, timeToUpdate, timeConstantTarget);
          return true;
       }
 
@@ -1217,6 +1913,12 @@
       /** @type {BiquadFilterNode} */
       #filterNode;
 
+      // Parameter limits
+      static minFrequency = 0;
+      static maxFrequency = 22050;
+      static minResonance = 0.0001;
+      static maxResonance = 1000;
+
       /**
        * Constructs a new {@link LowPassFilter} effect object.
        */
@@ -1234,14 +1936,14 @@
        */
       static getParameters() {
          return [
-            { name: 'cutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 22050 },
-            { name: 'resonance', type: 'number', validValues: [0, 1000], defaultValue: 0 }
+            { name: 'cutoffFrequency', type: 'number', validValues: [LowPassFilter.minFrequency, LowPassFilter.maxFrequency], defaultValue: LowPassFilter.maxFrequency },
+            { name: 'resonance', type: 'number', validValues: [LowPassFilter.minResonance, LowPassFilter.maxResonance], defaultValue: LowPassFilter.minResonance }
          ];
       }
 
       async load() {
-         this.#filterNode.frequency.value = 22050.0;
-         this.#filterNode.Q.value = 0.0001;
+         this.#filterNode.frequency.value = LowPassFilter.maxFrequency;
+         this.#filterNode.Q.value = LowPassFilter.minResonance;
       }
 
       /**
@@ -1251,8 +1953,8 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} cutoffFrequency - Frequency above which audio content will be reduced
-       * @param {number} resonance - Amount of frequency exaggeration around the cutoff as a value between [0.0, 1000.0]
+       * @param {number} cutoffFrequency - Frequency above which audio content will be reduced between [0, 22050]
+       * @param {number} resonance - Amount of frequency exaggeration around the cutoff as a value between [0.0001, 1000.0]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
@@ -1260,12 +1962,24 @@
       async update({ cutoffFrequency, resonance }, updateTime, timeConstant) {
          if ((cutoffFrequency == null) && (resonance == null))
             throw new WebAudioValueError('Cannot update the LowPassFilter effect without at least one of the following parameters: "cutoffFrequency, resonance"');
+         if (cutoffFrequency != null) {
+            if (cutoffFrequency < LowPassFilter.minFrequency)
+               throw new WebAudioValueError(`Cutoff frequency cannot be less than ${LowPassFilter.minFrequency}`);
+            else if (cutoffFrequency > LowPassFilter.maxFrequency)
+               throw new WebAudioValueError(`Cutoff frequency cannot be greater than ${LowPassFilter.maxFrequency}`);
+         }
+         if (resonance != null) {
+            if (resonance < LowPassFilter.minResonance)
+               throw new WebAudioValueError(`Resonance exaggeration cannot be less than ${LowPassFilter.minResonance}`);
+            else if (resonance > LowPassFilter.maxResonance)
+               throw new WebAudioValueError(`Resonance exaggeration cannot be greater than ${LowPassFilter.maxResonance}`);
+         }
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
          const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
          if (cutoffFrequency != null)
             this.#filterNode.frequency.setTargetAtTime(cutoffFrequency, timeToUpdate, timeConstantTarget);
          if (resonance != null)
-            this.#filterNode.Q.setTargetAtTime(Math.max(resonance, 0.0001), timeToUpdate, timeConstantTarget);
+            this.#filterNode.Q.setTargetAtTime(resonance, timeToUpdate, timeConstantTarget);
          return true;
       }
 
@@ -1293,6 +2007,10 @@
       /** @type {StereoPannerNode} */
       #panningNode;
 
+      // Parameter limits
+      static panningLeft = 0;
+      static panningRight = 1;
+
       /**
        * Constructs a new {@link Panning} effect object.
        */
@@ -1310,7 +2028,7 @@
        */
       static getParameters() {
          return [
-            { name: 'leftToRightRatio', type: 'number', validValues: [0, 1], defaultValue: 0.5 }
+            { name: 'leftToRightRatio', type: 'number', validValues: [Panning.panningLeft, Panning.panningRight], defaultValue: 0.5 * (Panning.panningRight - Panning.panningLeft) }
          ];
       }
 
@@ -1334,10 +2052,13 @@
       async update({ leftToRightRatio }, updateTime, timeConstant) {
          if (leftToRightRatio == null)
             throw new WebAudioValueError('Cannot update the Panning effect without at least one of the following parameters: "leftToRightRatio"');
+         if (leftToRightRatio < Panning.panningLeft)
+            throw new WebAudioValueError(`Left-to-right-ratio value cannot be less than ${Panning.panningLeft}`);
+         else if (leftToRightRatio > Panning.panningRight)
+            throw new WebAudioValueError(`Left-to-right-ratio value cannot be greater than ${Panning.panningRight}`);
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
          const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
-         const panningValue = 2.0 * (leftToRightRatio - 0.5);
-         this.#panningNode.pan.setTargetAtTime(panningValue, timeToUpdate, timeConstantTarget);
+         this.#panningNode.pan.setTargetAtTime(2.0 * (leftToRightRatio - 0.5), timeToUpdate, timeConstantTarget);
          return true;
       }
 
@@ -1363,11 +2084,51 @@
     */
    class Phaser extends EffectBase {
 
+      // Effect-specific private variables
+      /** @type {GainNode} */
+      #inputNode;
+      /** @type {GainNode} */
+      #outputNode;
+      /** @type {BiquadFilterNode[]} */
+      #filterNodes = [];
+      /** @type {OscillatorNode} */
+      #lfoNode;
+      /** @type {GainNode} */
+      #lfoGainNode;
+      /** @type {GainNode} */
+      #feedbackNode;
+
+
+      // Parameter limits
+      static numPoles = 9;
+      static minRate = 0;
+      static maxRate = 10;
+      static minFrequency = 1;
+      static maxFrequency = 22050;
+      static minFeedback = 0;
+      static maxFeedback = 0.95;
+      static minIntensity = 0;
+      static maxIntensity = 1;
+
       /**
        * Constructs a new {@link Phaser} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
+
+         this.#inputNode = new GainNode(audioContext);
+         this.#outputNode = new GainNode(audioContext);
+         for (let i = 0; i < Phaser.numPoles; ++i)
+            this.#filterNodes.push(new BiquadFilterNode(audioContext, { type: 'allpass', Q: 0.1 }));
+         this.#lfoNode = new OscillatorNode(audioContext);
+         this.#lfoGainNode = new GainNode(audioContext);
+         this.#feedbackNode = new GainNode(audioContext);
+
+         this.#outputNode.connect(this.#feedbackNode).connect(this.#inputNode);
+         for (let i = 0; i < Phaser.numPoles; ++i) {
+            this.#lfoNode.connect(this.#lfoGainNode).connect(this.#filterNodes[i].detune);
+            this.#inputNode.connect(this.#filterNodes[i]).connect(this.#outputNode);
+         }
       }
 
       /**
@@ -1378,11 +2139,25 @@
        * @see {@link EffectParameter}
        */
       static getParameters() {
-         return [];
+         return [
+            { name: 'rate', type: 'number', validValues: [Phaser.minRate, Phaser.maxRate], defaultValue: 8 },
+            { name: 'shape', type: 'string', validValues: ['sine', 'square', 'sawtooth', 'triangle'], defaultValue: 'sine' },
+            { name: 'frequency', type: 'number', validValues: [Phaser.minFrequency, Phaser.maxFrequency], defaultValue: 1500 },
+            { name: 'feedback', type: 'number', validValues: [Phaser.minFeedback, Phaser.maxFeedback], defaultValue: 0 },
+            { name: 'intensity', type: 'number', validValues: [Phaser.minIntensity, Phaser.maxIntensity], defaultValue: 0 }
+         ];
       }
 
       async load() {
-         return;
+         this.#inputNode.gain.value = 0.5;
+         this.#outputNode.gain.value = 0.2;
+         this.#lfoGainNode.gain.value = 0;
+         for (let i = 0; i < Phaser.numPoles; ++i)
+            this.#filterNodes[i].frequency.value = 1500 + ((22050 - 1500) / (1 + Phaser.numPoles)) * i;
+         this.#feedbackNode.gain.value = 0;
+         this.#lfoNode.frequency.value = 8;
+         this.#lfoNode.type = 'sine';
+         this.#lfoNode.start();
       }
 
       /**
@@ -1392,28 +2167,68 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} speed - Speed at which the cuts in the bandpass filters are modulated
-       * @param {number} feedback - Percentage of phased signal that will be fed back into the phased audio circuit
-       * @param {number} widthLower - Lowest frequency through which the bandpass filters will sweep
-       * @param {number} widthUpper - Highest frequency through which the bandpass filters will sweep
-       * @param {number} intensity - Ratio of phased-to-original sound as a percentage between [0.0, 1.0]
+       * @param {number} rate - Frequency at which an oscillator modulates the phaser signal in Hertz between [0, 10]
+       * @param {string} shape - Waveform shape used to modulate the phaser signal from ['sine', 'square', 'sawtooth', 'triangle']
+       * @param {number} frequency - Starting frequency of the all-pass filter between [1, 22050]
+       * @param {number} feedback - Percentage of processed signal to be fed back into the phaser circuit between [0, 0.95]
+       * @param {number} intensity - Ratio of processed-to-original sound as a percentage between [0, 1]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ speed, feedback, widthLower, widthUpper, intensity }, updateTime, timeConstant) {
-         if ((speed == null) && (feedback == null) && (widthLower == null) && (widthUpper == null) && (intensity == null))
-            throw new WebAudioValueError('Cannot update the Phaser effect without at least one of the following parameters: "speed, feedback, widthLower, widthUpper, intensity"');
-         (updateTime == null) ? this.audioContext.currentTime : updateTime;
-         return false;
+      async update({ rate, shape, frequency, feedback, intensity }, updateTime, timeConstant) {
+         if ((rate == null) && (shape == null) && (frequency == null) && (feedback == null) && (intensity == null))
+            throw new WebAudioValueError('Cannot update the Phaser effect without at least one of the following parameters: "rate, shape, frequency, feedback, intensity"');
+         if (rate != null) {
+            if (rate < Phaser.minRate)
+               throw new WebAudioValueError(`Rate value cannot be less than ${Phaser.minRate}`);
+            else if (rate > Phaser.maxRate)
+               throw new WebAudioValueError(`Rate value cannot be greater than ${Phaser.maxRate}`);
+         }
+         if (shape != null) {
+            if (!['sine', 'square', 'sawtooth', 'triangle'].includes(shape))
+               throw new WebAudioValueError('Shape value must be one of: ["sine", "square", "sawtooth", "triangle"]');
+         }
+         if (frequency != null) {
+            if (frequency < Phaser.minFrequency)
+               throw new WebAudioValueError(`Frequency value cannot be less than ${Phaser.minFrequency}`);
+            else if (frequency > Phaser.maxFrequency)
+               throw new WebAudioValueError(`Frequency value cannot be greater than ${Phaser.maxFrequency}`);
+         }
+         if (feedback != null) {
+            if (feedback < Phaser.minFeedback)
+               throw new WebAudioValueError(`Feedback value cannot be less than ${Phaser.minFeedback}`);
+            else if (feedback > Phaser.maxFeedback)
+               throw new WebAudioValueError(`Feedback value cannot be greater than ${Phaser.maxFeedback}`);
+         }
+         if (intensity != null) {
+            if (intensity < Phaser.minIntensity)
+               throw new WebAudioValueError(`Intensity value cannot be less than ${Phaser.minIntensity}`);
+            else if (intensity > Phaser.maxIntensity)
+               throw new WebAudioValueError(`Intensity value cannot be greater than ${Phaser.maxIntensity}`);
+         }
+         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+         const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+         if (rate != null)
+            this.#lfoNode.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
+         if (shape != null)
+            this.#lfoNode.type = shape;
+         if (frequency != null)
+            for (let i = 0; i < Phaser.numPoles; ++i)
+               this.#filterNodes[i].frequency.setTargetAtTime(frequency + ((22050 - frequency) / (1 + Phaser.numPoles)) * i, timeToUpdate, timeConstantTarget);
+         if (feedback != null)
+            this.#feedbackNode.gain.setTargetAtTime(feedback, timeToUpdate, timeConstantTarget);
+         if (intensity != null)
+            this.#lfoGainNode.gain.setTargetAtTime(1000 * intensity, timeToUpdate, timeConstantTarget);
+         return true;
       }
 
       getInputNode() {
-         return;
+         return this.#inputNode;
       }
 
       getOutputNode() {
-         return;
+         return this.#outputNode;
       }
    }
 
@@ -1429,11 +2244,49 @@
     */
    class Reverb extends EffectBase {
 
+      // Effect-specific private variables
+      /** @type {ConvolverNode} */
+      #convolutionNode;
+      /** @type {GainNode} */
+      #inputNode; #outputNode;
+      /** @type {GainNode} */
+      #dryGainNode; #wetGainNode;
+      /** @type {number} */
+      #relativeRoomSize; #decay;
+
+      // Parameter limits
+      static minDecay = 0;
+      static maxDecay = 1;
+      static minIntensity = 0;
+      static maxIntensity = 1;
+      static minRoomSize = 0.1;
+      static maxRoomSize = 1;
+
       /**
        * Constructs a new {@link Reverb} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
+         this.#convolutionNode = new ConvolverNode(audioContext);
+         this.#dryGainNode = new GainNode(audioContext);
+         this.#wetGainNode = new GainNode(audioContext);
+         this.#inputNode = new GainNode(audioContext, { gain: 1 });
+         this.#outputNode = new GainNode(audioContext, { gain: 1 });
+         this.#inputNode.connect(this.#dryGainNode).connect(this.#outputNode);
+         this.#inputNode.connect(this.#convolutionNode).connect(this.#wetGainNode).connect(this.#outputNode);
+      }
+
+      // Private function to generate an impulse response on-the-fly
+      impulseResponse(duration, decay) {
+         const sampleRate = this.audioContext.sampleRate;
+         const length = sampleRate * 10 * duration;
+         const impulse = this.audioContext.createBuffer(2, length, sampleRate);
+         const impulseL = impulse.getChannelData(0), impulseR = impulse.getChannelData(1);
+         for (let i = 0; i < length; ++i) {
+            impulseL[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 10 * decay);
+            impulseR[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 10 * decay);
+         }
+         return impulse;
       }
 
       /**
@@ -1444,11 +2297,19 @@
        * @see {@link EffectParameter}
        */
       static getParameters() {
-         return [];
+         return [
+            { name: 'decay', type: 'number', validValues: [Reverb.minDecay, Reverb.maxDecay], defaultValue: 0.3 },
+            { name: 'roomSize', type: 'number', validValues: [Reverb.minRoomSize, Reverb.maxRoomSize], defaultValue: 0.1 },
+            { name: 'intensity', type: 'number', validValues: [Reverb.minIntensity, Reverb.maxIntensity], defaultValue: 0 }
+         ];
       }
 
       async load() {
-         return;
+         this.#decay = 0.3;
+         this.#relativeRoomSize = 0.1;
+         this.#dryGainNode.gain.value = 1;
+         this.#wetGainNode.gain.value = 0;
+         this.#convolutionNode.buffer = this.impulseResponse(this.#relativeRoomSize, this.#decay);
       }
 
       /**
@@ -1458,28 +2319,54 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} preDelay - Number of seconds before the first reflection occurs
        * @param {number} decay - Number of seconds before reflections start to decay
-       * @param {number} highCutoffFrequency - Frequency above which to block acoustic reverb content
-       * @param {number} lowCutoffFrequency - Frequency below which to block acoustic reverb content
+       * @param {number} roomSize - Number of seconds before the first reflection occurs
        * @param {number} intensity - Ratio of reverbed-to-original sound as a percentage between [0.0, 1.0]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity }, updateTime, timeConstant) {
-         if ((preDelay == null) && (decay == null) && (highCutoffFrequency == null) && (lowCutoffFrequency == null) && (intensity == null))
-            throw new WebAudioValueError('Cannot update the Reverb effect without at least one of the following parameters: "preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity"');
-         (updateTime == null) ? this.audioContext.currentTime : updateTime;
-         return false;
+      async update({ decay, roomSize, intensity }, updateTime, timeConstant) {
+         if ((decay == null) && (roomSize == null) && (intensity == null))
+            throw new WebAudioValueError('Cannot update the Reverb effect without at least one of the following parameters: "decay, roomSize, intensity"');
+         if (decay != null) {
+            if (decay < Reverb.minDecay)
+               throw new WebAudioValueError(`Rate value cannot be less than ${Reverb.minDecay}`);
+            else if (decay > Reverb.maxDecay)
+               throw new WebAudioValueError(`Rate value cannot be greater than ${Reverb.maxDecay}`);
+         }
+         if (roomSize != null) {
+            if (roomSize < Reverb.minRoomSize)
+               throw new WebAudioValueError(`Intensity value cannot be less than ${Reverb.minRoomSize}`);
+            else if (roomSize > Reverb.maxRoomSize)
+               throw new WebAudioValueError(`Intensity value cannot be greater than ${Reverb.maxRoomSize}`);
+         }
+         if (intensity != null) {
+            if (intensity < Reverb.minIntensity)
+               throw new WebAudioValueError(`Rate value cannot be less than ${Reverb.minIntensity}`);
+            else if (intensity > Reverb.maxIntensity)
+               throw new WebAudioValueError(`Rate value cannot be greater than ${Reverb.maxIntensity}`);
+         }
+         const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+         const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+         if (decay != null)
+            this.#decay = decay;
+         if (roomSize != null)
+            this.#relativeRoomSize = Math.max(roomSize, 0.01);
+         if (intensity != null) {
+            this.#wetGainNode.gain.setTargetAtTime(2.5 * intensity, timeToUpdate, timeConstantTarget);
+            this.#dryGainNode.gain.setTargetAtTime(1 - intensity, timeToUpdate, timeConstantTarget);
+         }
+         this.#convolutionNode.buffer = this.impulseResponse(this.#relativeRoomSize, this.#decay);
+         return true;
       }
 
       getInputNode() {
-         return;
+         return this.#inputNode;
       }
 
       getOutputNode() {
-         return;
+         return this.#outputNode;
       }
    }
 
@@ -1495,21 +2382,29 @@
     */
    class Tremolo extends EffectBase {
 
+      // Effect-specific private variables
       /** @type {OscillatorNode} */
-      #lfo;
+      #lfoNode;
       /** @type {GainNode} */
-      #gain;
+      #normalizationNode;
+      /** @type {GainNode} */
+      #depthNode;
+
+      // Parameter limits
+      static minRate = 0;
+      static maxRate = 20;
+      static minIntensity = 0;
+      static maxIntensity = 1;
 
       /**
        * Constructs a new {@link Tremolo} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
-         this.#lfo = audioContext.createOscillator();
-         this.#gain = audioContext.createGain();
-         this.#lfo.frequency.value = 0;
-         this.#lfo.connect(this.#gain.gain);
-         this.#lfo.start();
+         this.#normalizationNode = new GainNode(audioContext);
+         this.#depthNode = new GainNode(audioContext);
+         this.#lfoNode = new OscillatorNode(audioContext);
+         this.#lfoNode.connect(this.#depthNode).connect(this.#normalizationNode.gain);
       }
 
       /**
@@ -1521,12 +2416,17 @@
        */
       static getParameters() {
          return [
-            { name: 'rate', type: 'number', validValues: [0, 20], defaultValue: 0 },
+            { name: 'rate', type: 'number', validValues: [Tremolo.minRate, Tremolo.maxRate], defaultValue: 10 },
+            { name: 'intensity', type: 'number', validValues: [Tremolo.minIntensity, Tremolo.maxIntensity], defaultValue: 0 }
          ];
       }
 
       async load() {
-         return;
+         this.#lfoNode.type = 'sine';
+         this.#lfoNode.frequency.value = 10;
+         this.#normalizationNode.gain.value = 1;
+         this.#depthNode.gain.value = 0;
+         this.#lfoNode.start();
       }
 
       /**
@@ -1536,26 +2436,44 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} rate - Frequency at which an oscillator modulates the tremolo signal
+       * @param {number} rate - Frequency at which an oscillator modulates the tremolo signal in Hz between [0, 40]
+       * @param {number} intensity - Intensity of the effect as a percentage between [0, 1]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ rate }, updateTime, timeConstant) {
-         if (rate == null)
-            throw new WebAudioValueError('Cannot update the Tremolo effect without at least one of the following parameters: "rate"');
+      async update({ rate, intensity }, updateTime, timeConstant) {
+         if ((rate == null) && (intensity == null))
+            throw new WebAudioValueError('Cannot update the Tremolo effect without at least one of the following parameters: "rate, intensity"');
+         if (rate != null) {
+            if (rate < Tremolo.minRate)
+               throw new WebAudioValueError(`Rate value cannot be less than ${Tremolo.minRate}`);
+            else if (rate > Tremolo.maxRate)
+               throw new WebAudioValueError(`Rate value cannot be greater than ${Tremolo.maxRate}`);
+         }
+         if (intensity != null) {
+            if (intensity < Tremolo.minIntensity)
+               throw new WebAudioValueError(`Intensity value cannot be less than ${Tremolo.minIntensity}`);
+            else if (intensity > Tremolo.maxIntensity)
+               throw new WebAudioValueError(`Intensity value cannot be greater than ${Tremolo.maxIntensity}`);
+         }
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
          const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
-         this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
+         if (rate != null)
+            this.#lfoNode.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
+         if (intensity != null) {
+            this.#depthNode.gain.setTargetAtTime(0.5 * intensity, timeToUpdate, timeConstantTarget);
+            this.#normalizationNode.gain.setTargetAtTime(1.0 - (0.5 * intensity), timeToUpdate, timeConstantTarget);
+         }
          return true;
       }
 
       getInputNode() {
-         return this.#gain;
+         return this.#normalizationNode;
       }
 
       getOutputNode() {
-         return this.#gain;
+         return this.#normalizationNode;
       }
    }
 
@@ -1570,23 +2488,29 @@
     */
    class Vibrato extends EffectBase {
 
-      /** @type {DelayNode} */
-      #delay;
+      // Effect-specific private variables
       /** @type {OscillatorNode} */
-      #lfo;
+      #lfoNode;
+      /** @type {DelayNode} */
+      #delayNode;
       /** @type {GainNode} */
-      #gain;
+      #gainNode;
+
+      // Parameter limits
+      static minRate = 0;
+      static maxRate = 10;
+      static minIntensity = 0;
+      static maxIntensity = 1;
 
       /**
        * Constructs a new {@link Vibrato} effect object.
        */
       constructor(audioContext) {
          super(audioContext);
-         this.#delay = new DelayNode(audioContext, { delayTime: 1, maxDelayTime: 10 });
-         this.#lfo = new OscillatorNode(audioContext, { frequency: 5 });
-         this.#gain = new GainNode(audioContext, { gain: 0 });
-         this.#lfo.connect(this.#gain).connect(this.#delay.delayTime);
-         this.#lfo.start();
+         this.#lfoNode = new OscillatorNode(audioContext);
+         this.#delayNode = new DelayNode(audioContext, { maxDelayTime: 1 });
+         this.#gainNode = new GainNode(audioContext);
+         this.#lfoNode.connect(this.#gainNode).connect(this.#delayNode.delayTime);
       }
 
       /**
@@ -1598,13 +2522,17 @@
        */
       static getParameters() {
          return [
-            { name: 'rate', type: 'number', validValues: [0, 8], defaultValue: 5 },
-            { name: 'depth', type: 'number', validValues: [0, 0.1], defaultValue: 0 },
+            { name: 'rate', type: 'number', validValues: [Vibrato.minRate, Vibrato.maxRate], defaultValue: 8 },
+            { name: 'intensity', type: 'number', validValues: [Vibrato.minIntensity, Vibrato.maxIntensity], defaultValue: 0 }
          ];
       }
 
       async load() {
-         return;
+         this.#gainNode.gain.value = 0;
+         this.#delayNode.delayTime.value = 0.01;
+         this.#lfoNode.frequency.value = 8;
+         this.#lfoNode.type = 'sine';
+         this.#lfoNode.start();
       }
 
       /**
@@ -1614,32 +2542,42 @@
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
-       * @param {number} rate - Frequency at which an oscillator modulates the audio signal
-       * @param {number} depth - Amount of pitch variation as a percentage between [0.0, 1.0]
+       * @param {number} rate - Frequency at which an oscillator modulates the vibrato signal in Hz between [0, 10]
+       * @param {number} intensity - Intensity of the effect as a percentage between [0, 1]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        */
-      async update({ rate, depth }, updateTime, timeConstant) {
-         if ((rate == null) && (depth == null))
-            throw new WebAudioValueError('Cannot update the Vibrato effect without at least one of the following parameters: "rate, depth"');
+      async update({ rate, intensity }, updateTime, timeConstant) {
+         if ((rate == null) && (intensity == null))
+            throw new WebAudioValueError('Cannot update the Vibrato effect without at least one of the following parameters: "rate, intensity"');
+         if (rate != null) {
+            if (rate < Vibrato.minRate)
+               throw new WebAudioValueError(`Rate value cannot be less than ${Vibrato.minRate}`);
+            else if (rate > Vibrato.maxRate)
+               throw new WebAudioValueError(`Rate value cannot be greater than ${Vibrato.maxRate}`);
+         }
+         if (intensity != null) {
+            if (intensity < Vibrato.minIntensity)
+               throw new WebAudioValueError(`Intensity value cannot be less than ${Vibrato.minIntensity}`);
+            else if (intensity > Vibrato.maxIntensity)
+               throw new WebAudioValueError(`Intensity value cannot be greater than ${Vibrato.maxIntensity}`);
+         }
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
          const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
          if (rate != null)
-            this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
-         if (depth != null) {
-            const gainValue = (depth / (2.0 * Math.PI * (rate != null) ? rate : this.#lfo.frequency.value));
-            this.#gain.gain.setTargetAtTime(gainValue, timeToUpdate, timeConstantTarget);
-         }
+            this.#lfoNode.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
+         if (intensity != null)
+            this.#gainNode.gain.setTargetAtTime(0.001 * intensity, timeToUpdate, timeConstantTarget);
          return true;
       }
 
       getInputNode() {
-         return this.#delay;
+         return this.#delayNode;
       }
 
       getOutputNode() {
-         return this.#delay;
+         return this.#delayNode;
       }
    }
 
@@ -1655,6 +2593,10 @@
       // Effect-specific private variables
       /** @type {GainNode} */
       #volumeNode;
+
+      // Parameter limits
+      static minVolume = 0;
+      static maxVolume = 1;
 
       /**
        * Constructs a new {@link Volume} effect object.
@@ -1673,12 +2615,12 @@
        */
       static getParameters() {
          return [
-            { name: 'intensity', type: 'number', validValues: [0, 1], defaultValue: 1 }
+            { name: 'intensity', type: 'number', validValues: [Volume.minVolume, Volume.maxVolume], defaultValue: Volume.maxVolume }
          ];
       }
 
       async load() {
-         this.#volumeNode.gain.value = 1.0;
+         this.#volumeNode.gain.value = Volume.maxVolume;
       }
 
       /* eslint no-empty-pattern: "off" */
@@ -1697,6 +2639,10 @@
       async update({ intensity }, updateTime, timeConstant) {
          if (intensity == null)
             throw new WebAudioValueError('Cannot update the Volume effect without at least one of the following parameters: "intensity"');
+         if (intensity < Volume.minVolume)
+            throw new WebAudioValueError(`Intensity value cannot be less than ${Volume.minVolume}`);
+         else if (intensity > Volume.maxVolume)
+            throw new WebAudioValueError(`Intensity value cannot be greater than ${Volume.maxVolume}`);
          const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
          const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
          this.#volumeNode.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);
@@ -1719,11 +2665,11 @@
 
 
    const EffectClasses = {
-      [EffectType.Reverb]: Reverb, [EffectType.Delay]: Delay, [EffectType.Echo]: Echo, [EffectType.Chorus]: Chorus,
+      [EffectType.Reverb]: Reverb, [EffectType.Delay]: Delay, [EffectType.Echo]: Echo, [EffectType.Chorus]: Chorus, [EffectType.Doppler]: Doppler,
       [EffectType.Tremolo]: Tremolo, [EffectType.Vibrato]: Vibrato, [EffectType.Flanger]: Flanger, [EffectType.Phaser]: Phaser,
       [EffectType.Panning]: Panning, [EffectType.Equalization]: Equalization, [EffectType.Volume]: Volume, [EffectType.Compression]: Compression,
       [EffectType.Distortion]: Distortion, [EffectType.LowPassFilter]: LowPassFilter, [EffectType.HighPassFilter]: HighPassFilter,
-      [EffectType.BandPassFilter]: BandPassFilter, [EffectType.BandRejectFilter]: BandRejectFilter
+      [EffectType.BandPassFilter]: BandPassFilter, [EffectType.BandRejectFilter]: BandRejectFilter, [EffectType.PitchShift]: PitchShift
    };
 
 
@@ -1934,7 +2880,7 @@
        */
       async function applyEffect(effectName, effectType) {
          const existingEffect = await this.removeEffect(effectName);
-         const newEffect = existingEffect ? existingEffect : await loadEffect(audioContext, effectName, effectType);
+         const newEffect = existingEffect || await loadEffect(audioContext, effectName, effectType);
          newEffect.output.connect(trackAudioSink);
          if (effects.length) {
             const previousEffect = effects.slice(-1)[0];
@@ -2354,7 +3300,7 @@
          recorder.ondataavailable = (event) => {
             if (!audioData) {
                audioData = event.data;
-               recordedDuration = duration ? duration : (audioContext.currentTime - startTime);
+               recordedDuration = duration || (audioContext.currentTime - startTime);
                finalize();
             }
          };
@@ -2370,9 +3316,9 @@
          };
 
          /**
-          * Returns an {@link ArrayBuffer} containing all of the recorded audio data.
+          * Returns a {@link Blob} containing all of the recorded audio data.
           * 
-          * @returns {ArrayBuffer} Buffer containing all recorded audio data
+          * @returns {Blob} Buffer containing all recorded audio data
           * @memberof AudioClip
           * @instance
           */
@@ -2470,6 +3416,170 @@
 
          // Returns an object containing functions and attributes within the AudioClip namespace
          return { clipType: 'audio', getRawData, getDuration, finalize, getEncodedData, notifyWhenComplete };
+      }
+
+      /**
+       * Schedules an audio recording to be executed on the cumulative output of the current track
+       * for some duration of time.
+       * 
+       * If the `duration` parameter is not specified or is set to `null`, the audio recording will
+       * continue until manually stopped by the {@link AudioRecording#finalize finalize()} function
+       * on the returned {@link AudioRecording} object.
+       * 
+       * Note that the recorded audio **will** include **all** effects that exist on the track.
+       * 
+       * @param {number} startTime - Global API time at which to start recording the audio output
+       * @param {number} [duration] - Number of seconds for which to continue recording the audio output
+       * @returns {AudioRecording} Reference to an {@link AudioRecording} object representing the audio recording
+       * @memberof Track
+       * @instance
+       * @see {@link AudioRecording}
+       */
+      function recordOutput(startTime, duration) {
+
+         /**
+          * Object containing all data needed to render a full audio recording.
+          * @namespace AudioRecording
+          * @global
+          */
+
+         // Audio recording-local variable definitions
+         let recorderDestination = audioContext.createMediaStreamDestination();
+         let recorder = new MediaRecorder(recorderDestination.stream), isRecording = true;
+         let audioData = null, recordedDuration = null, completionCallback = null;
+
+         // Private audio data handling functions
+         function startRecording() {
+            if (startTime >= (audioContext.currentTime + 0.001))
+               setTimeout(startRecording, 1);
+            else {
+               startTime = audioContext.currentTime;
+               recorder.start(duration ? (1000 * duration) : undefined);
+            }
+         }
+
+         recorder.ondataavailable = (event) => {
+            if (!audioData) {
+               audioData = event.data;
+               recordedDuration = duration || (audioContext.currentTime - startTime);
+               finalize();
+            }
+            isRecording = false;
+         };
+
+         recorder.onstop = async () => {
+            trackAudioSink.disconnect(recorderDestination);
+            if (completionCallback)
+               completionCallback(this);
+            completionCallback = null;
+            recorderDestination = null;
+            recorder = null;
+         };
+
+         /**
+          * Returns a {@link Blob} containing all of the recorded audio data.
+          * 
+          * @returns {Blob} Buffer containing all recorded audio data
+          * @memberof AudioRecording
+          * @instance
+          */
+         function getRawData() {
+            if (!recordedDuration)
+               throw new WebAudioRecordingError('Cannot retrieve raw data from this audio recording because recording has not yet completed');
+            return audioData;
+         }
+
+         /**
+          * Returns the total duration of the audio recording in seconds.
+          * 
+          * @returns {number} Duration of the audio recording in seconds
+          * @memberof AudioRecording
+          * @instance
+          */
+         function getDuration() {
+            if (!recordedDuration)
+               throw new WebAudioRecordingError('Cannot retrieve duration of this audio recording because recording has not yet completed');
+            return recordedDuration;
+         }
+
+         /**
+          * Stops recording any future audio data within the {@link AudioRecording}, finalizes the
+          * internal storage of all recorded data, and calls the user-completion notification
+          * callback, if registered.
+          * 
+          * Note that this function is called automatically if the original call to
+          * {@link Track#recordOutput recordOutput()} specified a concrete duration for the
+          * recording. If no duration was specified, then this function **must** be called in order
+          * to stop recording. An {@link AudioRecording} is unable to be used or played back until
+          * this function has been called.
+          * 
+          * @memberof AudioRecording
+          * @instance
+          */
+         async function finalize() {
+            if (duration) {
+               while ((startTime + duration) > audioContext.currentTime)
+                  await new Promise(r => setTimeout(r, 10));
+            }
+            if (recorder.state != 'inactive') {
+               recorder.stop();
+               while (isRecording)
+                  await new Promise(r => setTimeout(r, 1));
+            }
+         }
+
+         /**
+          * Allows a user to register a callback for notification when all audio recording activities
+          * have been completed for this {@link AudioRecording}. This corresponds to the time when the
+          * {@link AudioRecording#finalize finalize()} function gets called, either manually or
+          * automatically.
+          * 
+          * A user-defined notification callback will be called with a single parameter which is a
+          * reference to this {@link AudioRecording}.
+          * 
+          * @param {RecordCompleteCallback} notificationCallback - Callback to fire when this recording has completed
+          * @memberof AudioRecording
+          * @instance
+          */
+         function notifyWhenComplete(notificationCallback) {
+            if (!recordedDuration)
+               completionCallback = notificationCallback;
+            else
+               notificationCallback(this);
+         }
+
+         /**
+          * Encodes this {@link AudioRecording} into a {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+          * containing raw audio data according to the {@link module:Constants.EncodingType EncodingType}
+          * specified in the `encodingType` parameter.
+          * 
+          * @param {number} encodingType - Numeric value corresponding to the desired {@link module:Constants.EncodingType EncodingType}
+          * @returns {Blob} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio data
+          * @memberof AudioRecording
+          * @instance
+          * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+          * @see {@link module:Constants.EncodingType EncodingType}
+          */
+         async function getEncodedData(encodingType) {
+            if (!Object.values(EncodingType).includes(Number(encodingType)))
+               throw new WebAudioTargetError(`An encoder for the target type identifier (${encodingType}) does not exist`);
+            if (!recordedDuration || !(audioData instanceof Blob))
+               throw new WebAudioRecordingError('Cannot render this audio recording because recording has not yet completed');
+            const offlineContext = new OfflineAudioContext(1, 44100 * recordedDuration, 44100);
+            const audioBuffer = await offlineContext.decodeAudioData(await audioData.arrayBuffer());
+            const clipSource = new AudioBufferSourceNode(offlineContext, { buffer: audioBuffer });
+            clipSource.connect(offlineContext.destination);
+            clipSource.start();
+            const renderedData = await offlineContext.startRendering();
+            return getEncoderFor(Number(encodingType)).encode(renderedData);
+         }
+
+         // Begin listening for incoming audio data
+         trackAudioSink.connect(recorderDestination);
+         startRecording();
+
+         // Returns an object containing functions and attributes within the AudioClip namespace
+         return { getRawData, getDuration, finalize, getEncodedData, notifyWhenComplete };
       }
 
       /**
@@ -2587,8 +3697,8 @@
           * @instance
           */
          name,
-         updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync, playNoteAsync,
-         playNote, playClip, playFile, recordMidiClip, recordAudioClip, connectToMidiDevice, disconnectFromMidiDevice,
+         updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync, playNoteAsync, playNote,
+         playClip, playFile, recordMidiClip, recordAudioClip, recordOutput, connectToMidiDevice, disconnectFromMidiDevice,
          connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack, clearTrack, getAnalysisBuffer
       };
    }
@@ -3792,7 +4902,7 @@
          if (!Object.values(EffectType).includes(Number(effectType)))
             throw new WebAudioTargetError(`The target effect type identifier (${effectType}) does not exist`);
          const existingEffect = await this.removeMasterEffect(effectName);
-         const newEffect = existingEffect ? existingEffect : await loadEffect(this.#audioContext, effectName, Number(effectType));
+         const newEffect = existingEffect || await loadEffect(this.#audioContext, effectName, Number(effectType));
          newEffect.output.connect(this.#compressorNode);
          if (this.#effects.length) {
             const previousEffect = this.#effects.slice(-1)[0];
@@ -4183,6 +5293,183 @@
       }
 
       /**
+       * Schedules an audio recording to be executed on the cumulative output of the specified audio
+       * track for some duration of time.
+       * 
+       * If the `trackName` parameter is not specified or is set to `null`, the audio recording will
+       * include the cumulative output of **all** audio tracks and effects.
+       * 
+       * If the `startTime` parameter is not specified or is set to `null`, the audio recording will
+       * begin immediately.
+       * 
+       * If the `duration` parameter is not specified or is set to `null`, the audio recording will
+       * continue until manually stopped by the {@link AudioRecording#finalize finalize()} function
+       * on the returned {@link AudioRecording} object.
+       * 
+       * Note that the recorded audio **will** include **all** existing effects.
+       * 
+       * @param {string} [trackName] - Name of the track from which to record all audio output
+       * @param {number} [startTime] - Global API time at which to start recording the audio output
+       * @param {number} [duration] - Number of seconds for which to continue recording the audio output
+       * @returns {AudioRecording} Reference to an {@link AudioRecording} object representing the audio recording
+       * @see {@link AudioRecording}
+       */
+      recordOutput(trackName, startTime, duration) {
+
+         /**
+          * Object containing all data needed to render a full audio recording.
+          * @namespace AudioRecording
+          * @global
+          */
+
+         // Forward this request to the indicated track, if specified
+         if (trackName) {
+            if (!(trackName in this.#tracks))
+               throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+            return this.#tracks[trackName].recordOutput(startTime, duration);
+         }
+
+         // Audio recording-local variable definitions
+         let recorderDestination = this.#audioContext.createMediaStreamDestination();
+         let recorder = new MediaRecorder(recorderDestination.stream), isRecording = true;
+         let audioData = null, recordedDuration = null, completionCallback = null;
+         const audioContext = this.#audioContext, analysisNode = this.#analysisNode;
+
+         // Private audio data handling functions
+         function startRecording() {
+            if (startTime >= (audioContext.currentTime + 0.001))
+               setTimeout(startRecording, 1);
+            else {
+               startTime = audioContext.currentTime;
+               recorder.start(duration ? (1000 * duration) : undefined);
+            }
+         }
+
+         recorder.ondataavailable = (event) => {
+            if (!audioData) {
+               audioData = event.data;
+               recordedDuration = duration || (audioContext.currentTime - startTime);
+               finalize();
+            }
+            isRecording = false;
+         };
+
+         recorder.onstop = async () => {
+            analysisNode.disconnect(recorderDestination);
+            if (completionCallback)
+               completionCallback(this);
+            completionCallback = null;
+            recorderDestination = null;
+            recorder = null;
+         };
+
+         /**
+          * Returns a {@link Blob} containing all of the recorded audio data.
+          * 
+          * @returns {Blob} Buffer containing all recorded audio data
+          * @memberof AudioRecording
+          * @instance
+          */
+         function getRawData() {
+            if (!recordedDuration)
+               throw new WebAudioRecordingError('Cannot retrieve raw data from this audio recording because recording has not yet completed');
+            return audioData;
+         }
+
+         /**
+          * Returns the total duration of the audio recording in seconds.
+          * 
+          * @returns {number} Duration of the audio recording in seconds
+          * @memberof AudioRecording
+          * @instance
+          */
+         function getDuration() {
+            if (!recordedDuration)
+               throw new WebAudioRecordingError('Cannot retrieve duration of this audio recording because recording has not yet completed');
+            return recordedDuration;
+         }
+
+         /**
+          * Stops recording any future audio data within the {@link AudioRecording}, finalizes the
+          * internal storage of all recorded data, and calls the user-completion notification
+          * callback, if registered.
+          * 
+          * Note that this function is called automatically if the original call to
+          * {@link Track#recordOutput recordOutput()} specified a concrete duration for the
+          * recording. If no duration was specified, then this function **must** be called in order
+          * to stop recording. An {@link AudioRecording} is unable to be used or played back until
+          * this function has been called.
+          * 
+          * @memberof AudioRecording
+          * @instance
+          */
+         async function finalize() {
+            if (duration) {
+               while ((startTime + duration) > audioContext.currentTime)
+                  await new Promise(r => setTimeout(r, 10));
+            }
+            if (recorder.state != 'inactive') {
+               recorder.stop();
+               while (isRecording)
+                  await new Promise(r => setTimeout(r, 1));
+            }
+         }
+
+         /**
+          * Allows a user to register a callback for notification when all audio recording activities
+          * have been completed for this {@link AudioRecording}. This corresponds to the time when the
+          * {@link AudioRecording#finalize finalize()} function gets called, either manually or
+          * automatically.
+          * 
+          * A user-defined notification callback will be called with a single parameter which is a
+          * reference to this {@link AudioRecording}.
+          * 
+          * @param {RecordCompleteCallback} notificationCallback - Callback to fire when this recording has completed
+          * @memberof AudioRecording
+          * @instance
+          */
+         function notifyWhenComplete(notificationCallback) {
+            if (!recordedDuration)
+               completionCallback = notificationCallback;
+            else
+               notificationCallback(this);
+         }
+
+         /**
+          * Encodes this {@link AudioRecording} into a {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+          * containing raw audio data according to the {@link module:Constants.EncodingType EncodingType}
+          * specified in the `encodingType` parameter.
+          * 
+          * @param {number} encodingType - Numeric value corresponding to the desired {@link module:Constants.EncodingType EncodingType}
+          * @returns {Blob} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio data
+          * @memberof AudioRecording
+          * @instance
+          * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+          * @see {@link module:Constants.EncodingType EncodingType}
+          */
+         async function getEncodedData(encodingType) {
+            if (!Object.values(EncodingType).includes(Number(encodingType)))
+               throw new WebAudioTargetError(`An encoder for the target type identifier (${encodingType}) does not exist`);
+            if (!recordedDuration || !(audioData instanceof Blob))
+               throw new WebAudioRecordingError('Cannot render this audio recording because recording has not yet completed');
+            const offlineContext = new OfflineAudioContext(1, 44100 * recordedDuration, 44100);
+            const audioBuffer = await offlineContext.decodeAudioData(await audioData.arrayBuffer());
+            const clipSource = new AudioBufferSourceNode(offlineContext, { buffer: audioBuffer });
+            clipSource.connect(offlineContext.destination);
+            clipSource.start();
+            const renderedData = await offlineContext.startRendering();
+            return getEncoderFor(Number(encodingType)).encode(renderedData);
+         }
+
+         // Begin listening for incoming audio data
+         analysisNode.connect(recorderDestination);
+         startRecording();
+
+         // Returns an object containing functions and attributes within the AudioClip namespace
+         return { getRawData, getDuration, finalize, getEncodedData, notifyWhenComplete };
+      }
+
+      /**
        * Starts the {@link WebAudioAPI} library and allows audio playback to resume.
        */
       async start() {
@@ -4488,6 +5775,8 @@
                new Extension.Palette.Block('presetEffect'),
                new Extension.Palette.Block('setInputDevice'),
                new Extension.Palette.Block('setInstrument'),
+               new Extension.Palette.Block('startRecordingInput'),
+               new Extension.Palette.Block('recordInputForDuration'),
                new Extension.Palette.Block('startRecording'),
                new Extension.Palette.Block('recordForDuration'),
                new Extension.Palette.Block('stopRecording'),
@@ -4597,7 +5886,7 @@
                   else
                      console.log('no default instruments');
                }),
-               block('startRecording', 'command', 'music', 'start recording', [], function () {
+               block('startRecordingInput', 'command', 'music', 'start recording input', [], function () {
                   const trackName = this.receiver.id;
                   switch (currentDeviceType) {
                      case 'midi':
@@ -4613,7 +5902,7 @@
                   }
                   recordingInProgress = true;
                }),
-               block('recordForDuration', 'command', 'music', 'record for %n seconds', [0], function (time) {
+               block('recordInputForDuration', 'command', 'music', 'record input for %n seconds', [0], function (time) {
                   const trackName = this.receiver.id;
                   switch (currentDeviceType) {
                      case 'midi':
@@ -4627,6 +5916,14 @@
                         );
                         break;
                   }
+                  recordingInProgress = true;
+               }),
+               block('startRecording', 'command', 'music', 'start recording master', [], function () {
+                  lastRecordedClip = audioAPI.recordOutput();
+                  recordingInProgress = true;
+               }),
+               block('recordForDuration', 'command', 'music', 'record master for %n seconds', [0], function (time) {
+                  lastRecordedClip = audioAPI.recordOutput(null, null, time);
                   recordingInProgress = true;
                }),
                block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', [''], function (instrument) {
