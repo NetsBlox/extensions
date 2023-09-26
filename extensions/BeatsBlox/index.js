@@ -5666,14 +5666,22 @@
 
       async function playAudio(binaryString, trackName) {
          await synchronize();
-         const buffer = base64toArrayBuffer(binaryString.audio.src);
+         let buffer;
+         if (binaryString.audio.src.includes('data:'))
+            buffer = base64toArrayBuffer(binaryString.audio.src);
+         else
+            buffer = binaryString.audioBuffer;
          audioAPI.start();
          return audioAPI.playClip(trackName, buffer, audioAPI.getCurrentTime(), 0);
       }
 
       async function playAudioForDuration(binaryString, trackName, dur) {
          await synchronize();
-         const buffer = base64toArrayBuffer(binaryString.audio.src);
+         let buffer;
+         if (binaryString.audio.src.includes('data:'))
+            buffer = base64toArrayBuffer(binaryString.audio.src);
+         else
+            buffer = binaryString.audioBuffer;
          audioAPI.start();
          return audioAPI.playClip(trackName, buffer, audioAPI.getCurrentTime(), dur);
       }
