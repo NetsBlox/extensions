@@ -4389,31 +4389,34 @@
             return audioAPI.playClip(trackName, buffer,audioAPI.getCurrentTime(),  dur);
         }
  
-        async function playChord(trackName, listOfNotes){
-           if(listOfNotes.length == 3){
-               const note1 = listOfNotes[0];
-               const note2 = listOfNotes[1];
-               const note3 = listOfNotes[2];
-               audioAPI.playNote(trackName,note1,audioAPI.getCurrentTime(),4.0);
-               audioAPI.playNote(trackName,note2,audioAPI.getCurrentTime(),4.0);
-               audioAPI.playNote(trackName,note3,audioAPI.getCurrentTime(),4.0);
+        async function playChord(trackName, listOfNotes, noteDuration){
+           for (const note of listOfNotes){
+               audioAPI.playNote(trackName,note,audioAPI.getCurrentTime(), noteDuration);
            }
-           else if(listOfNotes.length == 4){
-               const note1 = listOfNotes[0];
-               const note2 = listOfNotes[1];
-               const note3 = listOfNotes[2];
-               const note4 = listOfNotes[3];
-               audioAPI.playNote(trackName,note1,audioAPI.getCurrentTime(),4.0);
-               audioAPI.playNote(trackName,note2,audioAPI.getCurrentTime(),4.0);
-               audioAPI.playNote(trackName,note3,audioAPI.getCurrentTime(),4.0);
-               audioAPI.playNote(trackName,note4,audioAPI.getCurrentTime(),4.0);
-           }
+           // if(listOfNotes.length == 3){
+           //     const note1 = listOfNotes[0];
+           //     audioAPI.playNote(trackName,note1,audioAPI.getCurrentTime(),4.0);
+           //     const note2 = listOfNotes[1];
+           //     audioAPI.playNote(trackName,note2,audioAPI.getCurrentTime(),4.0);
+           //     const note3 = listOfNotes[2];
+           //     audioAPI.playNote(trackName,note3,audioAPI.getCurrentTime(),4.0);
+           // }
+           // else if(listOfNotes.length == 4){
+           //     const note1 = listOfNotes[0];
+           //     const note2 = listOfNotes[1];
+           //     const note3 = listOfNotes[2];
+           //     const note4 = listOfNotes[3];
+           //     audioAPI.playNote(trackName,note1,audioAPI.getCurrentTime(),4.0);
+           //     audioAPI.playNote(trackName,note2,audioAPI.getCurrentTime(),4.0);
+           //     audioAPI.playNote(trackName,note3,audioAPI.getCurrentTime(),4.0);
+           //     audioAPI.playNote(trackName,note4,audioAPI.getCurrentTime(),4.0);
+           // }
         }
  
-        async function playScale(trackName, listOfNotes){
+        async function playScale(trackName, listOfNotes, noteDuration){
            console.log(listOfNotes);
            for (let i = 0; i < listOfNotes.length; i++){
-               let noteDuration = await audioAPI.playNote(trackName,listOfNotes[i],audioAPI.getCurrentTime(),2.0);
+               let noteDuration = await audioAPI.playNote(trackName,listOfNotes[i],audioAPI.getCurrentTime(),noteDuration);
                console.log(listOfNotes[i]);
                setTimeout(playScale,noteDuration);
            }
@@ -4552,11 +4555,27 @@
                             await wait(duration-Math.max(.02,0));
                         },{ args: [], timeout: I32_MAX });
                     }),
-                    block('playNote', 'command', 'music', 'play note %midiNotes for %noteDurations', ['', ''], function (note,noteDuration){
+                    block('playNote', 'command', 'music', 'play note(s) %s for %noteDurations', ['C3', ''], function (input,noteDuration){
                         this.runAsyncFn(async () =>{
                             const trackName = this.receiver.id;
-                            const blockduration = await audioAPI.playNote(trackName,availableMidiNotes[note], audioAPI.getCurrentTime(), availableNoteDurations[noteDuration]);
-                            await wait(blockduration);
+                            if(input.contents === undefined){
+                               const blockduration = await audioAPI.playNote(trackName,input, audioAPI.getCurrentTime(), availableNoteDurations[noteDuration]);
+                               await wait(blockduration);
+                            }
+                            else {
+                            if(input.contents.length === 1){
+                               const blockDuration = await audioAPI.playNote(trackName,input.contents[0], audioAPI.getCurrentTime(),availableNoteDurations[noteDuration]);
+                               await wait(blockDuration);
+                           }
+                           else if(input.contents.length <= 4 && input.contents.length > 1){
+                               const duration = await playChord(trackName, input.contents, availableNoteDurations[noteDuration]);
+                               await wait(duration);
+                           }
+                           else if(input.contents.length > 5){
+                               const duration = await playScale(trackName, input.contents, availableNoteDurations[noteDuration]);
+                               await wait(duration);
+                           }
+                       }
                         },{ args: [], timeout: I32_MAX });
                     }),
                     block('playMidi', 'command', 'music', 'play midi note(s) %s', [''], function (input){
@@ -4600,7 +4619,7 @@
                        return availableMidiNotes[note];
  
                    }),
-                    block('scales', 'reporter', 'music', 'create a scale root note %n type %scaleTypes', ['', 'Major'], function (rootNote, type){
+                    block('scales', 'reporter', 'music', 'scale root note %n type %scaleTypes', ['', 'Major'], function (rootNote, type){
                        if(type === "Major"){
                            const majorScale = [0,2,4,5,7,9,11,12];
                            majorScale.forEach((element,index) => {
@@ -4621,7 +4640,7 @@
                        }
  
                   }),
-                  block('chords', 'reporter', 'music', 'create a chord root note %n type %chordTypes', ['','Major'], function (rootNote, type){
+                  block('chords', 'reporter', 'music', 'chord root note %n type %chordTypes', ['','Major'], function (rootNote, type){
                    if(type === "Major"){
                        const majorChord = [0,4,7];
                        majorChord.forEach((element,index) => {
@@ -4706,7 +4725,7 @@
                             await applyTrackEffect(trackName, effectName);
                         },{ args: [], timeout: I32_MAX });
                     }),
-                    block('setTrackEffect', 'command', 'music','set track %effects effect to %n', ['','0'], function (effectName, level){
+                    block('setTrackEffect', 'command', 'music','set track %effects effect to %n', ['Volume','50'], function (effectName, level){
                         this.runAsyncFn(async () =>{
                             const trackName = this.receiver.id;
                             await setTrackEffect(trackName, effectName, level);
@@ -4783,7 +4802,7 @@
                         }
                         recordingInProgress = true;
                     }),
-                    block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', [''], function(instrument) {
+                    block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', ['Grand Piano'], function(instrument) {
                         const trackName = this.receiver.id;
                         changeInsturment(trackName,instrument);
                     }),
