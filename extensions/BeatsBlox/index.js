@@ -5686,13 +5686,13 @@
             return audioAPI.playClip(trackName, buffer,audioAPI.getCurrentTime(),  dur);
         }
 
-        async function playChord(trackName, listOfNotes, noteDuration){
+        async function playChord(trackName, listOfNotes, noteDuration, velocity=75){
            for (const note of listOfNotes){
                if(typeof note === "string" && (note in availableMidiNotes)){
-                   audioAPI.playNote(trackName,availableMidiNotes[note], audioAPI.getCurrentTime(), noteDuration);
+                   audioAPI.playNote(trackName,availableMidiNotes[note], audioAPI.getCurrentTime(), noteDuration, velocity);
                }
                else if(typeof note === 'number'){
-                   audioAPI.playNote(trackName,note, audioAPI.getCurrentTime(), noteDuration);
+                   audioAPI.playNote(trackName,note, audioAPI.getCurrentTime(), noteDuration, velocity);
                
                }
                else {
@@ -5784,10 +5784,11 @@
                     new Extension.Palette.Block('stopRecording'),
                     //new Extension.Palette.Block('exportAudio'),
                     new Extension.Palette.Block('playNote'),
+                    new Extension.Palette.Block('playNoteWithIntensity'),
                     new Extension.Palette.Block('scales'),
                     new Extension.Palette.Block('chords'),
-                    new Extension.Palette.Block('midiNote'),
-                    new Extension.Palette.Block('getLastRecordedClip'),
+                    new Extension.Palette.Block('note'),
+                    new Extension.Palette.Block('lastRecordedClip'),
                 ];
                 return [
                     new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -5814,7 +5815,7 @@
                             await wait(duration-Math.max(.02,0));
                         },{ args: [], timeout: I32_MAX });
                     }),
-                    block('playNote', 'command', 'music', 'play note(s) %s for %noteDurations', ['C3', ''], function (input,noteDuration){
+                    block('playNote', 'command', 'music', 'play %noteDurations note(s) %s', ['', 'C3'], function (noteDuration, input){
                        console.log(input);
                         this.runAsyncFn(async () =>{
                             const trackName = this.receiver.id;
@@ -5857,11 +5858,54 @@
                        }
                         },{ args: [], timeout: I32_MAX });
                     }),
+                    block('playNoteWithIntensity', 'command', 'music', 'play %noteDurations note(s) %s amp %n', ['', 'C3', '75'], function (noteDuration, input, velocity){
+                       console.log(input);
+                        this.runAsyncFn(async () =>{
+                            const trackName = this.receiver.id;
+                            if(input.contents === undefined){
+                               if(typeof input === "string" && (input in availableMidiNotes)){
+                                   const blockduration = await audioAPI.playNote(trackName,availableMidiNotes[input], audioAPI.getCurrentTime(), availableNoteDurations[noteDuration], velocity/100);
+                                   await wait(blockduration);
+                               }
+                               else if(typeof input === 'number'){
+                                   const blockduration = await audioAPI.playNote(trackName,input, audioAPI.getCurrentTime(), availableNoteDurations[noteDuration], velocity/100);
+                                   await wait(blockduration);
+                               }
+                               else {
+                                   throw Error('Please insert a valid MIDI note(s) name or value e.g C3 or 60');
+                               }
+                            }
+                            else {
+                            if(input.contents.length === 1){
+                               const note = input.contents[0];
+                               if(typeof note === "string" && (note in availableMidiNotes)){
+                                   const blockduration = await audioAPI.playNote(trackName,availableMidiNotes[note], audioAPI.getCurrentTime(), availableNoteDurations[noteDuration], velocity/100);
+                                   await wait(blockduration);
+                               }
+                               else if(typeof note === 'number'){
+                                   const blockduration = await audioAPI.playNote(trackName,note, audioAPI.getCurrentTime(), availableNoteDurations[noteDuration], velocity/100);
+                                   await wait(blockduration);
+                               }
+                               else {
+                                   throw Error('Please insert a valid MIDI note(s) name or value e.g C3 or 60');
+                               }
+                           }
+                           else if(input.contents.length > 1){
+                               const duration = await playChord(trackName, input.contents, availableNoteDurations[noteDuration], velocity);
+                               await wait(duration);
+                           }
+                           // else if(input.contents.length > 5){
+                           //     const duration = await playScale(trackName, input.contents, availableNoteDurations[noteDuration]);
+                           //     await wait(duration);
+                           // }
+                       }
+                        },{ args: [], timeout: I32_MAX });
+                    }),
                     block('stopClips', 'command', 'music', 'stop all clips', [], function (){
                         stopAudio();
                         this.doStopAll();
                     }),
-                    block('midiNote', 'reporter', 'music', 'midi note %midiNote', [], function (note){
+                    block('note', 'reporter', 'music', 'note %midiNote', [], function (note){
 
                        if(note.includes('s')){
                            const startingNote = note.split('s')[0];
@@ -5880,7 +5924,7 @@
                        return availableMidiNotes[note];
 
                    }),
-                    block('scales', 'reporter', 'music', 'scale root note %n type %scaleTypes', ['', 'Major'], function (rootNote, type){
+                    block('scales', 'reporter', 'music', 'note %n type %scaleTypes scale', ['', 'Major'], function (rootNote, type){
                        if(type === "Major"){
                            const majorScale = [0,2,4,5,7,9,11,12];
                            majorScale.forEach((element,index) => {
@@ -5901,7 +5945,7 @@
                        }
 
                   }),
-                  block('chords', 'reporter', 'music', 'chord root note %n type %chordTypes', ['','Major'], function (rootNote, type){
+                  block('chords', 'reporter', 'music', 'note %n type %chordTypes chord', ['','Major'], function (rootNote, type){
                    if(type === "Major"){
                        const majorChord = [0,4,7];
                        majorChord.forEach((element,index) => {
@@ -5963,10 +6007,10 @@
                        throw Error( 'Please select a valid chord type');
                    }
                }),
-               block('setTrackEffect', 'command', 'music','track %supportedEffects effect to %n', ['Volume','1'], function (effectName, level){
+               block('setTrackEffect', 'command', 'music','track %supportedEffects effect to %n %', ['Volume','50'], function (effectName, level){
                         this.runAsyncFn(async () =>{
                             const trackName = this.receiver.id;
-                            await setTrackEffect(trackName, effectName, level);
+                            await setTrackEffect(trackName, effectName, level/100);
                         },{ args: [], timeout: I32_MAX });
                     }),
                     block('clearTrackEffects', 'command', 'music','clear track effects', [], function (){
@@ -6064,7 +6108,7 @@
                    //         await exportClip(clip, format);
                    //     }, { args: [], timeout: I32_MAX });
                    // }),
-                   block('getLastRecordedClip', 'reporter', 'music', 'get last recorded clip', [], function () {
+                   block('lastRecordedClip', 'reporter', 'music', 'last recorded clip', [], function () {
                        if (recordingInProgress)
                            throw Error('recording in progress');
                        else if (lastRecordedClip == null)
