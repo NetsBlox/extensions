@@ -5858,7 +5858,7 @@
                        }
                         },{ args: [], timeout: I32_MAX });
                     }),
-                    block('playNoteWithIntensity', 'command', 'music', 'play %noteDurations note(s) %s intensity %n', ['', 'C3', '75'], function (noteDuration, input, velocity){
+                    block('playNoteWithIntensity', 'command', 'music', 'play %noteDurations note(s) %s amp %n', ['', 'C3', '75'], function (noteDuration, input, velocity){
                        console.log(input);
                         this.runAsyncFn(async () =>{
                             const trackName = this.receiver.id;
