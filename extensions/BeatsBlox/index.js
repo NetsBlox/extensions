@@ -1,13 +1,13 @@
 (function () {
    'use strict';
-
+ 
    /**
     * Module containing all musical notation constants in the various formats expected by the
     * {@link WebAudioAPI} library.
     * 
     * @module Constants
     */
-
+ 
    /**
     * Object representing a mapping between the notational name of a musical note and its MIDI value.
     * @constant {Object.<string, number>}
@@ -54,7 +54,7 @@
        F9s: 126, E9ss: 126, G9b: 126, G9: 127, F9ss: 127, A9bb: 127, G9s: 128, A9b: 128,
        A9: 129, G9ss: 129, B9bb: 129, A9s: 130, B9b: 130, B9: 131, A9ss: 131
    };
-
+ 
    /**
     * Array containing the frequency (in Hz) of the MIDI value at the corresponding array index.
     * @constant {number[]}
@@ -72,7 +72,7 @@
        4186.01, 4434.92, 4698.64, 4978.03, 5274.04, 5587.65, 5919.91, 6271.93, 6644.88, 7040.00, 7458.62, 7902.13,
        8372.02, 8869.84, 9397.27, 9956.06, 10548.08, 11175.30, 11839.82, 12534.86, 13289.75, 14080.00, 14917.24, 15804.26
    ];
-
+ 
    /**
     * Object representing a mapping between the notational name of a musical duration and its associated beat scaling factor.
     * @constant {Object.<string, number>}
@@ -86,7 +86,7 @@
        ThirtySecond: 32.0, DottedThirtySecond: 64.0 / 3.0, DottedDottedThirtySecond: 128.0 / 7.0,
        SixtyFourth: 64.0, DottedSixtyFourth: 128.0 / 3.0, DottedDottedSixtyFourth: 256.0 / 7.0
    };
-
+ 
    /**
     * Object representing a mapping between an effect type and its unique internal code.
     * @constant {Object.<string, number>}
@@ -98,7 +98,7 @@
        Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
        LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
    };
-
+ 
    /**
     * Object representing a mapping between an acoustic analysis type and its unique internal code.
     * @constant {Object.<string, number>}
@@ -106,7 +106,7 @@
    const AnalysisType = {
        TimeSeries: 1, PowerSpectrum: 2, TotalPower: 3
    };
-
+ 
    /**
     * Object representing a mapping between an encoding file type and its unique internal code.
     * @constant {Object.<string, number>}
@@ -114,13 +114,13 @@
    const EncodingType = {
        WAV: 1
    };
-
+ 
    /**
     * Module containing all MIDI constants and functionality available in the {@link WebAudioAPI} library.
     * 
     * @module Midi
     */
-
+ 
    /**
     * Object representing a mapping between a General MIDI command and its protocol value.
     * @constant {Object.<string, number>}
@@ -129,7 +129,7 @@
        Unknown: 0x00, NoteOff: 0x80, NoteOn: 0x90, Aftertouch: 0xA0, ContinuousController: 0xB0,
        ProgramChange: 0xC0, ChannelPressure: 0xD0, PitchBend: 0xE0, SystemMessage: 0xF0
    };
-
+ 
    /**
     * Returns a value representing the MIDI command in the specified `midiData`.
     * 
@@ -140,7 +140,7 @@
    function getMidiCommand(midiData) {
        return midiData[0] & 0xF0;
    }
-
+ 
    /**
     * Returns the MIDI note corresponding to the `NoteOn` or `NoteOff` command in the specified
     * `midiData` parameter.
@@ -151,7 +151,7 @@
    function getMidiNote(midiData) {
        return midiData[1] & 0x7F;
    }
-
+ 
    /**
     * Returns the note velocity corresponding to the `NoteOn` or `NoteOff` command in the
     * specified `midiData` parameter. This velocity will be in the range from [0.0, 1.0].
@@ -162,55 +162,55 @@
    function getMidiVelocity(midiData) {
        return (midiData[2] & 0x7F) / 127.0;
    }
-
+ 
    /**
     * Module containing all {@link WebAudioAPI} error functionality.
     * 
     * @module Errors
     */
-
+ 
    class WebAudioMidiError extends Error {
        constructor(message) {
            super(message);
            this.name = 'WebAudioMidiError';
        }
    }
-
+ 
    class WebAudioDeviceError extends Error {
        constructor(message) {
            super(message);
            this.name = 'WebAudioDeviceError';
        }
    }
-
+ 
    class WebAudioTargetError extends Error {
        constructor(message) {
            super(message);
            this.name = 'WebAudioTargetError';
        }
    }
-
+ 
    class WebAudioValueError extends Error {
        constructor(message) {
            super(message);
            this.name = 'WebAudioValueError';
        }
    }
-
+ 
    class WebAudioTrackError extends Error {
        constructor(message) {
            super(message);
            this.name = 'WebAudioTrackError';
        }
    }
-
+ 
    class WebAudioRecordingError extends Error {
        constructor(message) {
            super(message);
            this.name = 'WebAudioRecordingError';
        }
    }
-
+ 
    /** Class representing all built-in {@link WebAudioAPI} audio encoders */
    class EncoderBase {
 
@@ -232,7 +232,7 @@
         */
        encode(audioData) { return undefined; }
    }
-
+ 
    /**
     * Class containing all WAV file encoding functionality.
     * @extends EncoderBase
@@ -296,17 +296,17 @@
            return new Blob([view.buffer], { type: 'audio/wav' });
        }
    }
-
+ 
    /**
     * Module containing functionality to create and utilize {@link WebAudioAPI} data encoders.
     * @module Encoder
     */
-
-
+ 
+ 
    const EncoderClasses = {
        [EncodingType.WAV]: WavFileEncoder,
    };
-
+ 
    /**
     * Returns a concrete encoder implementation for the specified file type. The value passed
     * to the `fileType` parameter must be the **numeric value** associated with a certain
@@ -320,7 +320,7 @@
    function getEncoderFor(encodingType) {
        return new EncoderClasses[encodingType]();
    }
-
+ 
    /** Class representing all base-level {@link WebAudioAPI} effects */
    class EffectBase {
 
@@ -377,7 +377,7 @@
         */
        getOutputNode() { return undefined; }
    }
-
+ 
    /**
     * Class representing a Band-Pass Filter effect.
     * 
@@ -476,7 +476,7 @@
            return this.#filterNode;
        }
    }
-
+ 
    /**
     * Class representing a Band-Reject Filter effect.
     * 
@@ -580,7 +580,7 @@
            return this.#filterNode;
        }
    }
-
+ 
    /**
     * Class representing a Chorus effect.
     * 
@@ -755,7 +755,7 @@
            return this.#outputNode;
        }
    }
-
+ 
    /**
     * Class representing a Compression effect.
     * 
@@ -877,7 +877,7 @@
            return this.#compressorNode;
        }
    }
-
+ 
    /**
     * Class representing a Delay effect.
     * 
@@ -982,7 +982,7 @@
            return this.#outputNode;
        }
    }
-
+ 
    /**
     * Class representing a Distortion effect.
     * 
@@ -1420,7 +1420,7 @@
            return this.#pitchShifter.getOutputNode();
        }
    }
-
+ 
    /**
     * Class representing an Echo effect.
     * 
@@ -1526,7 +1526,7 @@
            return this.#outputNode;
        }
    }
-
+ 
    /**
     * Class representing an Equalization effect.
     * 
@@ -1654,7 +1654,7 @@
            return this.#equalizerNodes[this.#equalizerNodes.length - 1];
        }
    }
-
+ 
    /**
     * Class representing a Flanger effect.
     * 
@@ -1805,7 +1805,7 @@
            return this.#outputNode;
        }
    }
-
+ 
    /**
     * Class representing a High-Pass Filter effect.
     * 
@@ -1898,7 +1898,7 @@
            return this.#filterNode;
        }
    }
-
+ 
    /**
     * Class representing a Low-Pass Filter effect.
     * 
@@ -1991,7 +1991,7 @@
            return this.#filterNode;
        }
    }
-
+ 
    /**
     * Class representing a Panning effect.
     * 
@@ -2070,7 +2070,7 @@
            return this.#panningNode;
        }
    }
-
+ 
    /**
     * Class representing a Phaser effect.
     * 
@@ -2231,7 +2231,7 @@
            return this.#outputNode;
        }
    }
-
+ 
    /**
     * Class representing a Reverb effect.
     * 
@@ -2369,7 +2369,7 @@
            return this.#outputNode;
        }
    }
-
+ 
    /**
     * Class representing a Tremolo effect.
     * 
@@ -2476,7 +2476,7 @@
            return this.#normalizationNode;
        }
    }
-
+ 
    /**
     * Class representing a Vibrato effect.
     * 
@@ -2580,7 +2580,7 @@
            return this.#delayNode;
        }
    }
-
+ 
    /**
     * Class representing a Volume effect.
     * 
@@ -2657,13 +2657,13 @@
            return this.#volumeNode;
        }
    }
-
+ 
    /**
     * Module containing functionality to apply and update {@link WebAudioAPI} effects.
     * @module Effect
     */
-
-
+ 
+ 
    const EffectClasses = {
        [EffectType.Reverb]: Reverb, [EffectType.Delay]: Delay, [EffectType.Echo]: Echo, [EffectType.Chorus]: Chorus, [EffectType.Doppler]: Doppler,
        [EffectType.Tremolo]: Tremolo, [EffectType.Vibrato]: Vibrato, [EffectType.Flanger]: Flanger, [EffectType.Phaser]: Phaser,
@@ -2671,8 +2671,8 @@
        [EffectType.Distortion]: Distortion, [EffectType.LowPassFilter]: LowPassFilter, [EffectType.HighPassFilter]: HighPassFilter,
        [EffectType.BandPassFilter]: BandPassFilter, [EffectType.BandRejectFilter]: BandRejectFilter, [EffectType.PitchShift]: PitchShift
    };
-
-
+ 
+ 
    /**
     * Returns a list of effect-specific {@link EffectParameter EffectParameters} for manipulation
     * in the corresponding {@link module:Constants.EffectType EffectType}.
@@ -2688,8 +2688,8 @@
    function getEffectParameters(effectType) {
        return EffectClasses[effectType].getParameters();
    }
-
-
+ 
+ 
    /**
     * Loads a pre-defined {@link Effect} capable of being applied to an individual {@link Track} or
     * to the aggregate output of all tracks.
@@ -2769,13 +2769,13 @@
            update: effect.update.bind(effect)
        };
    }
-
+ 
    /**
     * Module containing functionality to create new {@link WebAudioAPI} tracks.
     * @module Track
     */
-
-
+ 
+ 
    /**
     * Creates a new audio {@link Track} object capable of playing sequential audio.
     * 
@@ -3702,7 +3702,7 @@
            connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack, clearTrack, getAnalysisBuffer
        };
    }
-
+ 
    // DEFLATE is a complex format; to read this code, you should probably check the RFC first:js
    // https://tools.ietf.org/html/rfc1951
    // You may also wish to take a look at the guide I made about this program:
@@ -3712,7 +3712,7 @@
    // However, the vast majority of the codebase has diverged from UZIP.js to increase performance and reduce bundle size.
    // Sometimes 0 will appear where -1 would be more appropriate. This is because using a uint
    // is better for memory in most engines (I *think*).
-
+ 
    // aliases for shorter compressed code (most minifers don't do this)
    let u8 = Uint8Array, u16 = Uint16Array, u32 = Uint32Array;
    // fixed length extra bits
@@ -3872,7 +3872,7 @@
        'invalid zip data'
        // determined by unknown compression method
    ];
-
+ 
    let err = function (ind, msg, nt) {
        let e = new Error(msg || ec[ind]);
        e.code = ind;
@@ -4158,14 +4158,14 @@
        td.decode(et, { stream: true });
        tds = 1;
    }
-   catch (e) { console.log(e); }
-
+   catch (e) {console.log(e);}
+ 
    /**
     * Module containing all instrument-specific {@link WebAudioAPI} functionality.
     * @module Instrument
     */
-
-
+ 
+ 
    /**
     * Loads an existing {@link Instrument} object capable of mapping audio data to musical output.
     * 
@@ -4302,7 +4302,7 @@
        }
        return instrumentInstance;
    }
-
+ 
    /** Class representing all base-level {@link WebAudioAPI} audio analysis functions */
    class AnalysisBase {
 
@@ -4322,7 +4322,7 @@
         */
        static analyze(frequencyContent) { return undefined; }
    }
-
+ 
    /**
     * Class representing an acoustic "power spectrum" analysis algorithm.
     * 
@@ -4353,7 +4353,7 @@
            return frequencyContent;
        }
    }
-
+ 
    /**
     * Class representing an acoustic "total power" analysis algorithm.
     * 
@@ -4385,18 +4385,18 @@
            return frequencyTotal / (frequencyContent.length * 255);
        }
    }
-
+ 
    /**
     * Module containing functionality to create and utilize {@link WebAudioAPI} audio analyzers.
     * @module Analysis
     */
-
-
+ 
+ 
    const AnalysisClasses = {
        [AnalysisType.PowerSpectrum]: PowerSpectrum,
        [AnalysisType.TotalPower]: TotalPower
    };
-
+ 
    /**
     * Returns a concrete analyzer implementation for the specified analysis type. The value passed
     * to the `analysisType` parameter must be the **numeric value** associated with a certain
@@ -4410,9 +4410,9 @@
    function getAnalyzerFor(analysisType) {
        return AnalysisClasses[analysisType];
    }
-
+ 
    var version = "0.3.0";
-
+ 
    /**
     * Required function prototype to use when registering a MIDI device callback.
     * 
@@ -4420,7 +4420,7 @@
     * @param {MIDIMessageEvent} event - Object containing the detected MIDI event
     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/MIDIMessageEvent MIDIMessageEvent}
     */
-
+ 
    /**
     * Required function prototype to use when registering a recording completion callback.
     * 
@@ -4429,7 +4429,7 @@
     * @see {@link AudioClip}
     * @see {@link MidiClip}
     */
-
+ 
    /**
     * Composite object type for holding all tempo-related information.
     * 
@@ -4440,7 +4440,7 @@
     * @property {number} timeSignatureDenominator - Note {@link module:Constants.Duration Duration} corresponding to a measure beat
     * @property {number} measureLengthSeconds - Length (in seconds) of a measure
     */
-
+ 
    /**
     * Composite object type for holding a set of concrete {@link Effect} parameter details.
     * 
@@ -4450,7 +4450,7 @@
     * @property {Array<string|number>} validValues - For "string" types, a listing of all valid values; for "number" types, the min/max values
     * @property {string|number} defaultValue - Default effect value before any updates
     */
-
+ 
    /** Contains all WebAudioAPI top-level functionality. */
    class WebAudioAPI {
 
@@ -5485,10 +5485,10 @@
            setTimeout(async () => { if (!this.#started) await this.#audioContext.suspend(); }, 200);
        }
    }
-
+ 
    // Attach a WebAudioAPI reference to "window" so that it can be accessed from non-module Javascript files
    window.WebAudioAPI = WebAudioAPI;
-
+ 
    (function () {
        const audioAPI = new WebAudioAPI();
        const I32_MAX = 2147483647;
