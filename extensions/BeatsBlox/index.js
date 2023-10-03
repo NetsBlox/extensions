@@ -151,7 +151,7 @@
     function parseNote(note) {
         if (Array.isArray(note)) return note.map((x) => parseNote(x));
         if (note.contents !== undefined) return note.contents.map((x) => parseNote(x));
-        if (typeof(note) === 'number') return number;
+        if (typeof(note) === 'number') return note;
 
         if (typeof(note) !== 'string') throw Error(`expected a note, got ${note}`);
         const match = note.match(NOTE_REGEX);
