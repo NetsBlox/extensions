@@ -5761,6 +5761,7 @@
             constructor(ide) {
                 super('MusicApp');
                 this.ide = ide;
+                appliedEffects = [];
                 const oldStopAllActiveSounds = StageMorph.prototype.runStopScripts;
                 StageMorph.prototype.runStopScripts = function(){
                     oldStopAllActiveSounds.call(this);
