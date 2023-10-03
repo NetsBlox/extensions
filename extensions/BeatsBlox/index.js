@@ -1,6 +1,8 @@
 (function () {
     'use strict';
 
+    const SCHEDULING_WINDOW = 0.02; // seconds
+
     /**
      * Module containing all musical notation constants in the various formats expected by the
      * {@link WebAudioAPI} library.
@@ -129,6 +131,25 @@
         Unknown: 0x00, NoteOff: 0x80, NoteOn: 0x90, Aftertouch: 0xA0, ContinuousController: 0xB0,
         ProgramChange: 0xC0, ChannelPressure: 0xD0, PitchBend: 0xE0, SystemMessage: 0xF0
     };
+
+    const NOTE_REGEX = new RegExp('^([a-g][0-9]+)([bs]*)$', 'i');
+    function parseNote(note) {
+        if (Array.isArray(note)) return note.map((x) => parseNote(x));
+        if (note.contents !== undefined) return note.contents.map((x) => parseNote(x));
+        if (typeof(note) === 'number') return number;
+
+        if (typeof(note) !== 'string') throw Error(`expected a note, got ${note}`);
+        const match = note.match(NOTE_REGEX);
+        if (!match) throw Error(`expected a note, got ${note}`)
+
+        let base = Note[match[1].toUpperCase()];
+        for (const c of match[2]) {
+            if (c === 's') base++;
+            else if (c === 'b') base--;
+            else throw Error('Internal Error');
+        }
+        return base;
+    }
 
     /**
      * Returns a value representing the MIDI command in the specified `midiData`.
@@ -3669,10 +3690,8 @@
          * @instance
          */
         function clearTrack() {
-            for (const source of audioSources)
-                source.stop();
-            for (const source of asyncAudioSources)
-                source.sourceNode.stop();
+            for (const source of audioSources) source.stop();
+            for (const source of asyncAudioSources) source.sourceNode.stop();
         }
 
         /**
@@ -5513,28 +5532,26 @@
             )
         );
 
-       
-         /**
-          * Object representing a mapping between an encoding file type and its unique internal code.
-          * @constant {Object.<string, number>}
-          */
-         const EncodingType = {
-             WAV: 1
-         };
 
+        /**
+         * Object representing a mapping between an encoding file type and its unique internal code.
+         * @constant {Object.<string, number>}
+         */
+        const EncodingType = {
+            WAV: 1,
+        };
 
-
-         /**
-          * Object representing a mapping between an effect type and its unique internal code.
-          * @constant {Object.<string, number>}
-          */
-         const EffectType = {
-             Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
-             Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
-             Panning: 31, Equalization: 32,                                                   // Spectral Effects
-             Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
-             LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
-         };
+        /**
+         * Object representing a mapping between an effect type and its unique internal code.
+         * @constant {Object.<string, number>}
+         */
+        const EffectType = {
+            Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
+            Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
+            Panning: 31, Equalization: 32,                                                   // Spectral Effects
+            Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
+            LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
+        };
 
         const EffectsPreset = {
             'Under Water': ['LowPassFilter', {
@@ -5614,7 +5631,7 @@
          * @param {String} trackName - Name of the Track 
          * @param {String} instrument - Name of instrument being loaded.
          */
-        async function changeInsturment(trackName,instrument) {
+        async function changeInstrument(trackName,instrument) {
             await audioAPI.updateInstrument(trackName, instrument).then(() => {
                 console.log('Instrument loading complete!');
             });
@@ -5622,7 +5639,7 @@
 
         /**
          * Converts an AudioClip k to a Snap! Sound.
-         * @asyn
+         * @async
          * @param {AudioClip} clip - The clip being rendered.
          * @returns A Snap! Sound.
          */
@@ -5639,10 +5656,8 @@
          */
         async function disconnectDevices(trackName) {
             console.log('device disconnected');
-            if (audioDevices.length > 0)
-                await audioAPI.disconnectAudioInputDeviceFromTrack(trackName);
-            if (midiDevices.length > 0)
-               await audioAPI.disconnectMidiDeviceFromTrack(trackName);
+            if (audioDevices.length > 0) await audioAPI.disconnectAudioInputDeviceFromTrack(trackName);
+            if (midiDevices.length > 0) await audioAPI.disconnectMidiDeviceFromTrack(trackName);
         }
 
         /**
@@ -5651,71 +5666,27 @@
          * @returns An Array Buffer
          */
         function base64toArrayBuffer(base64){
-            var binaryString = window.atob(base64.replace("data:audio/mpeg;base64,", ""));
-            var bytes = new Uint8Array(binaryString.length);
-            for (var i = 0; i < binaryString.length; i++) {
+            const binaryString = window.atob(base64.replace("data:audio/mpeg;base64,", ""));
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
                 bytes[i] = binaryString.charCodeAt(i);
             }
             return bytes.buffer;
-         }
-
-        /**
-         * Synchronizes all clips being loaded
-         */
-
-        async function synchronize(){
-            let currentStart = syncStart++;
-            await wait(.005);
-            do {
-                currentStart++;
-                await wait(.005);
-            } while (currentStart != syncStart);
-            audioAPI.start();
         }
 
-        /**
-         * Plays an audio clip
-         * @param {String} binaryString - binary string of audio file
-         * @param {String} trackName - name of track
-         * @returns An Array Buffer
-         */
-        async function playAudio(binaryString, trackName){
-            await synchronize();  
-            let buffer;
-            if (binaryString.audio.src.includes('data:'))
-                 buffer = base64toArrayBuffer(binaryString.audio.src);
-            else 
-                buffer = binaryString.audioBuffer;
-            audioAPI.start();
-            return audioAPI.playClip(trackName, buffer, audioAPI.getCurrentTime(), 0);
+        async function playClip(trackName, clip, startTime, duration = undefined) {
+            const buffer = clip.audioBuffer || base64toArrayBuffer(clip.audio.src);
+            return audioAPI.playClip(trackName, buffer, startTime, duration);
         }
+        async function playChord(trackName, notes, startTime, duration, velocity = undefined) {
+            if (notes.length === 0) return 0;
 
-        async function playAudioForDuration(binaryString, trackName, dur) {
-            await synchronize();
-            let buffer;
-            if (binaryString.audio.src.includes('data:'))
-                buffer = base64toArrayBuffer(binaryString.audio.src);
-            else
-                buffer = binaryString.audioBuffer;
-            audioAPI.start();
-            return audioAPI.playClip(trackName, buffer, audioAPI.getCurrentTime(), dur);
-        }
-
-         async function playChord(trackName, listOfNotes, noteDuration, velocity=.7){
-            for (const note of listOfNotes){
-                if(typeof note === "string" && (note in availableMidiNotes)){
-                    audioAPI.playNote(trackName,availableMidiNotes[note], audioAPI.getCurrentTime(), noteDuration, velocity);
-                }
-                else if(typeof note === 'number'){
-                    audioAPI.playNote(trackName,note, audioAPI.getCurrentTime(), noteDuration, velocity);
-                
-                }
-                else {
-                    throw Error('Please insert a valid MIDI note(s) name or value e.g C3 or 60');
-                }
+            let ret = Infinity;
+            for (const note of notes) {
+                ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, duration, velocity));
             }
+            return ret;
         }
-
 
         async function setTrackEffect(trackName, effectName, level) {
             const effectType = availableEffects[effectName];
@@ -5723,7 +5694,7 @@
                 await audioAPI.applyTrackEffect(trackName, effectName, effectType);
                 appliedEffects.push(effectName);
             }
-        
+
             const parameters = audioAPI.getAvailableEffectParameters(effectType);
             var effectOptions = {};
             for (let i = 0; i < parameters.length; i++) {
@@ -5750,215 +5721,148 @@
             const effectOptions = EffectsPreset[effect][1];
             await audioAPI.updateTrackEffect(track, effectName, effectOptions);
         }
+        function setupTrack(name) {
+            createTrack(name);
+            for(const inst of midiInstruments){
+                changeInstrument(name, inst);
+            }
+            changeInstrument(name, "Synthesizer");
+        }
+        function setupProcess(proc) {
+            if (proc.musicInfo) return;
+            proc.musicInfo = {
+                t: audioAPI.getCurrentTime(),
+            };
+        }
 
         async function wait(duration) {
+            if (duration <= 0) return;
             return new Promise(resolve => {
                 setTimeout(resolve, duration * 1000);
             })
         }
-         // ----------------------------------------------------------------------
-         class MusicApp extends Extension {
+        async function waitUntil(t) {
+            await wait(t - audioAPI.getCurrentTime());
+        }
+
+        class MusicApp extends Extension {
             constructor(ide) {
                 super('MusicApp');
+
                 this.ide = ide;
+
                 appliedEffects = [];
+
                 const oldStopAllActiveSounds = StageMorph.prototype.runStopScripts;
-                StageMorph.prototype.runStopScripts = function(){
+                StageMorph.prototype.runStopScripts = function() {
                     oldStopAllActiveSounds.call(this);
                     stopAudio();
                 };
-                this.ide.hideCategory("sound");
-            }
 
+                ide.hideCategory("sound");
+            }
 
             onOpenRole() {
-                for (var i =0; i <this.ide.sprites.contents.length; i++){
-                    var trackName = this.ide.sprites.contents[i].id;
-                    createTrack(trackName);
-                    for(const inst of midiInstruments){
-                        changeInsturment(trackName, inst);
-                        wait(0.001);
-                    }
-                    changeInsturment(trackName, "Synthesizer");
+                for (const sprite of this.ide.sprites.contents) {
+                    setupTrack(sprite.id);
                 }
-
             }
 
-            onNewSprite(sprite){
-                createTrack(sprite.id);
-                for(const inst of midiInstruments){
-                    changeInsturment(sprite.id, inst);
-                }
-                changeInsturment(sprite.id, "Synthesizer");
+            onNewSprite(sprite) {
+                setupTrack(sprite.id);
             }
 
             getMenu() { return {}; }
 
             getCategories() {
                 return [
-                    new Extension.Category('music', new Color(148,0,211)),
+                    new Extension.Category('music', new Color(148, 0, 211)),
                 ];
             }
 
-             getPalette() {
-                 const blocks = [
-                     new Extension.Palette.Block('playAudioClip'),
-                     new Extension.Palette.Block('playAudioClipforDuration'),
-                     new Extension.Palette.Block('stopClips'),
-                     new Extension.Palette.Block('setTrackEffect'),
-                     new Extension.Palette.Block('clearTrackEffects'),
-                     new Extension.Palette.Block('presetEffect'),
-                     new Extension.Palette.Block('setInputDevice'),
-                     new Extension.Palette.Block('setInstrument'),
-                     new Extension.Palette.Block('startRecordingInput'),
-                     new Extension.Palette.Block('recordInputForDuration'),
-                     new Extension.Palette.Block('stopRecording'),
-                     //new Extension.Palette.Block('exportAudio'),
-                     new Extension.Palette.Block('playNote'),
-                     new Extension.Palette.Block('playNoteWithIntensity'),
-                     new Extension.Palette.Block('scales'),
-                     new Extension.Palette.Block('chords'),
-                     new Extension.Palette.Block('note'),
-                     new Extension.Palette.Block('lastRecordedClip'),
-                 ];
-                 return [
-                     new Extension.PaletteCategory('music', blocks, SpriteMorph),
-                     new Extension.PaletteCategory('music', blocks, StageMorph),
-                 ];
-             }
+            getPalette() {
+                const blocks = [
+                    new Extension.Palette.Block('setInstrument'),
+                    new Extension.Palette.Block('playNote'),
+                    new Extension.Palette.Block('playAudioClip'),
+                    new Extension.Palette.Block('stopClips'),
+                    '-',
+                    new Extension.Palette.Block('presetEffect'),
+                    new Extension.Palette.Block('setTrackEffect'),
+                    new Extension.Palette.Block('clearTrackEffects'),
+                    '-',
+                    new Extension.Palette.Block('setInputDevice'),
+                    new Extension.Palette.Block('startRecordingInput'),
+                    new Extension.Palette.Block('stopRecording'),
+                    new Extension.Palette.Block('lastRecordedClip'),
+                    '-',
+                    new Extension.Palette.Block('note'),
+                    new Extension.Palette.Block('chords'),
+                    new Extension.Palette.Block('scales'),
+                ];
+                return [
+                    new Extension.PaletteCategory('music', blocks, SpriteMorph),
+                    new Extension.PaletteCategory('music', blocks, StageMorph),
+                ];
+            }
 
-             getBlocks() {
-                 function block(name, type, category, spec, defaults, action) {
-                     return new Extension.Block(name, type, category, spec, defaults, action)
-                 }
-                 return [
-                     block('playAudioClip', 'command', 'music', 'play audio clip %s', ['clip'], function (audioBuffer) {
-                         this.runAsyncFn(async () => {
-                             const trackName = this.receiver.id;
-                             const duration = await playAudio(audioBuffer, trackName);
-                             await wait(duration - .02);
-                         }, { args: [], timeout: I32_MAX });
-                     }),
-                     block('playAudioClipforDuration', 'command', 'music', 'play audio clip for duration %n %s', ['1', 'clip'], function (dur, audioBuffer) {
-                         this.runAsyncFn(async () => {
-                             const trackName = this.receiver.id;
-                             const duration = await playAudioForDuration(audioBuffer, trackName, dur);
-                             await wait(duration - Math.max(.02, 0));
-                         }, { args: [], timeout: I32_MAX });
-                     }),
-                     block('playNote', 'command', 'music', 'play %noteDurations note(s) %s', ['', 'C3'], function (noteDuration, input){
-                        if(noteDuration === ''){
-                            throw Error("Please select a valid note duration")
-                        }
-                         this.runAsyncFn(async () =>{
-                             const trackName = this.receiver.id;
-                             if (input.contents === undefined) {
-                                 if (typeof input === "string" && (input in availableMidiNotes)) {
-                                     const blockduration = await audioAPI.playNote(trackName, availableMidiNotes[input], audioAPI.getCurrentTime(), availableNoteDurations[noteDuration]);
-                                     await wait(blockduration);
-                                 }
-                                 else if (typeof input === 'number') {
-                                     const blockduration = await audioAPI.playNote(trackName, input, audioAPI.getCurrentTime(), availableNoteDurations[noteDuration]);
-                                     await wait(blockduration);
-                                 }
-                                 else {
-                                     throw Error('Please insert a valid MIDI note(s) name or value e.g C3 or 60');
-                                 }
-                             }
-                             else {
-                                 if (input.contents.length === 1) {
-                                     const note = input.contents[0];
-                                     if (typeof note === "string" && (note in availableMidiNotes)) {
-                                         const blockduration = await audioAPI.playNote(trackName, availableMidiNotes[note], audioAPI.getCurrentTime(), availableNoteDurations[noteDuration]);
-                                         await wait(blockduration);
-                                     }
-                                     else if (typeof note === 'number') {
-                                         const blockduration = await audioAPI.playNote(trackName, note, audioAPI.getCurrentTime(), availableNoteDurations[noteDuration]);
-                                         await wait(blockduration);
-                                     }
-                                     else {
-                                         throw Error('Please insert a valid MIDI note(s) name or value e.g C3 or 60');
-                                     }
-                                 }
-                                 else if (input.contents.length > 1) {
-                                     const duration = await playChord(trackName, input.contents, availableNoteDurations[noteDuration]);
-                                     await wait(duration);
-                                 }
-                                 // else if(input.contents.length > 5){
-                                 //     const duration = await playScale(trackName, input.contents, availableNoteDurations[noteDuration]);
-                                 //     await wait(duration);
-                                 // }
-                             }
-                         }, { args: [], timeout: I32_MAX });
-                     }),
-                     block('playNoteWithIntensity', 'command', 'music', 'play %noteDurations note(s) %s amp %n', ['', 'C3', '75'], function (noteDuration, input, velocity){
-                        if(parseInt(velocity) > 100){
-                            throw Error('Amp must be a value between 0 and 100');
-                        }
-                        if(noteDuration === ''){
-                            throw Error("Please select a valid note duration")
-                        }
-                         this.runAsyncFn(async () =>{
-                             const trackName = this.receiver.id;
-                             if(input.contents === undefined){
-                                if(typeof input === "string" && (input in availableMidiNotes)){
-                                    const blockduration = await audioAPI.playNote(trackName,availableMidiNotes[input], audioAPI.getCurrentTime(), availableNoteDurations[noteDuration], parseInt(velocity)/100);
-                                    await wait(blockduration);
-                                }
-                                else if(typeof input === 'number'){
-                                    const blockduration = await audioAPI.playNote(trackName,input, audioAPI.getCurrentTime(), availableNoteDurations[noteDuration], parseInt(velocity)/100);
-                                    await wait(blockduration);
-                                }
-                                else {
-                                    throw Error('Please insert a valid MIDI note(s) name or value e.g C3 or 60');
-                                }
-                             }
-                             else {
-                             if(input.contents.length === 1){
-                                const note = input.contents[0];
-                                if(typeof note === "string" && (note in availableMidiNotes)){
-                                    const blockduration = await audioAPI.playNote(trackName,availableMidiNotes[note], audioAPI.getCurrentTime(), availableNoteDurations[noteDuration], parseInt(velocity)/100);
-                                    await wait(blockduration);
-                                }
-                                else if(typeof note === 'number'){
-                                    const blockduration = await audioAPI.playNote(trackName,note, audioAPI.getCurrentTime(), availableNoteDurations[noteDuration], parseInt(velocity)/100);
-                                    await wait(blockduration);
-                                }
-                                else {
-                                    throw Error('Please insert a valid MIDI note(s) name or value e.g C3 or 60');
-                                }
-                            }
-                            else if(input.contents.length > 1){
-                                const duration = await playChord(trackName, input.contents, availableNoteDurations[noteDuration], parseInt(velocity)/100);
-                                await wait(duration);
-                            }
-                        }
-                         },{ args: [], timeout: I32_MAX });
-                     }),
-                     block('stopClips', 'command', 'music', 'stop all clips', [], function (){
-                         stopAudio();
-                         this.doStopAll();
-                     }),
-                     block('note', 'reporter', 'music', 'note %midiNote', [], function (note){
-
-                         if (note.includes('s')) {
-                             const startingNote = note.split('s')[0];
-                             var startingMidiNumber = availableMidiNotes[startingNote];
-                             const reg = new RegExp('s', 'g');
-                             const offsetSharp = (note.match(reg) || []).length;
-                             return startingMidiNumber + offsetSharp;
-                         }
-                         else if (note.includes('b')) {
-                             const startingNote = note.split('b')[0];
-                             var startingMidiNumber = availableMidiNotes[startingNote];
-                             const reg = new RegExp('b', 'g');
-                             const offsetFlat = (note.match(reg) || []).length;
-                             return startingMidiNumber + offsetFlat;
-                         }
-                         return availableMidiNotes[note];
-
+            getBlocks() {
+                function block(name, type, category, spec, defaults, action) {
+                    return new Extension.Block(name, type, category, spec, defaults, action)
+                }
+                return [
+                    block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', ['Synthesizer'], function (instrument) {
+                        const trackName = this.receiver.id;
+                        this.runAsyncFn(async () => {
+                            await changeInstrument(trackName, instrument);
+                        }, { args: [], timeout: I32_MAX });
                     }),
-                     block('scales', 'reporter', 'music', 'note %n type %scaleTypes scale', ['', 'Major'], function (rootNote, type){
+                    block('playNote', 'command', 'music', 'play %noteDurations note(s) %midiNote', ['Quarter', 'C3'], function (noteDuration, notes) {
+                        if (noteDuration === '') throw Error("Please select a valid note duration");
+
+                        notes = parseNote(notes);
+                        if (!Array.isArray(notes)) notes = [notes];
+                        if (notes.length === 0) return;
+
+                        setupProcess(this);
+                        this.runAsyncFn(async () => {
+                            const trackName = this.receiver.id;
+                            const t = await playChord(trackName, notes, this.musicInfo.t, availableNoteDurations[noteDuration]);
+                            this.musicInfo.t += t;
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+                    block('playAudioClip', 'command', 'music', 'play audio clip %s', [null], function (clip) {
+                        setupProcess(this);
+                        this.runAsyncFn(async () => {
+                            const trackName = this.receiver.id;
+                            const t = await playClip(trackName, clip, this.musicInfo.t);
+                            this.musicInfo.t += t;
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+                    block('stopClips', 'command', 'music', 'stop all clips', [], function () {
+                        stopAudio();
+                        this.doStopAll();
+                    }),
+                    block('note', 'reporter', 'music', 'note %midiNote', ['C3'], function (note) {
+                        if (note.includes('s')) {
+                            const startingNote = note.split('s')[0];
+                            var startingMidiNumber = availableMidiNotes[startingNote];
+                            const reg = new RegExp('s', 'g');
+                            const offsetSharp = (note.match(reg) || []).length;
+                            return startingMidiNumber + offsetSharp;
+                        }
+                        else if (note.includes('b')) {
+                            const startingNote = note.split('b')[0];
+                            var startingMidiNumber = availableMidiNotes[startingNote];
+                            const reg = new RegExp('b', 'g');
+                            const offsetFlat = (note.match(reg) || []).length;
+                            return startingMidiNumber + offsetFlat;
+                        }
+                        return availableMidiNotes[note];
+                    }),
+                     block('scales', 'reporter', 'music', 'note %midiNote type %scaleTypes scale', ['C3', 'Major'], function (rootNote, type){
                         if(type === "Major"){
                             const majorScale = [0,2,4,5,7,9,11,12];
                             majorScale.forEach((element,index) => {
@@ -5979,7 +5883,7 @@
                          }
 
                    }),
-                   block('chords', 'reporter', 'music', 'note %n type %chordTypes chord', ['','Major'], function (rootNote, type){
+                   block('chords', 'reporter', 'music', 'note %midiNote type %chordTypes chord', ['C3','Major'], function (rootNote, type){
                     if(type === "Major"){
                         const majorChord = [0,4,7];
                         majorChord.forEach((element,index) => {
@@ -6120,29 +6024,7 @@
                          recordingInProgress = true;
                          while (recordingInProgress = true);
                      }),
-                     block('recordInputForDuration', 'command', 'music', 'record input for %n seconds', [0], function (time) {
-                         const trackName = this.receiver.id;
-                         switch (currentDeviceType) {
-                             case 'midi':
-                                 lastRecordedClip = audioAPI.recordMidiClip(
-                                     trackName, audioAPI.getCurrentTime(), time
-                                 );
-                                 break;
-                             case 'audio':
-                                 lastRecordedClip = audioAPI.recordAudioClip(
-                                     trackName, audioAPI.getCurrentTime(), time
-                                 );
-                                 break;
-                         }
-                         recordingInProgress = true;
-                         while(recordingInProgress = true);
-                     }),
-                     block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', ['Synthesizer'], function (instrument) {
-                         const trackName = this.receiver.id;
-                         this.runAsyncFn(async () => {
-                             await changeInsturment(trackName, instrument);
-                         }, { args: [], timeout: I32_MAX });
-                     }),
+                     
                      block('stopRecording', 'command', 'music', 'stop recording', [], function () {
                          this.runAsyncFn(async () => {
                              await lastRecordedClip.finalize();
@@ -6215,103 +6097,90 @@
                     identityMap(['Volume', 'Delay', 'Reverb', 'Echo', 'Panning']),
                     true, //readonly (no arbitrary text)
                 )),
-                new Extension.LabelPart('midiNotes', () => new InputSlotMorph(
-                    null, //text
-                    false, //numeric
-                    identityMap(Object.keys(availableMidiNotes)),
-                    false, //readonly (no arbitrary text)
-                )),
                 new Extension.LabelPart('midiNote', () => new InputSlotMorph(
                    null, //text
                    false, //numeric
                    {
-                       'C':{
-                           '0': identityMap(['C0','C0s','C0b']),
-                           '1': identityMap(['C1','C1s','C1b']),
-                           '2': identityMap(['C2','C2s','C2b']),
-                           '3': identityMap(['C3','C3s','C3b']),
-                           '4': identityMap(['C4','C4s','C4b']),
-                           '5': identityMap(['C5','C5s','C5b']),
-                           '6': identityMap(['C6','C6s','C6b']),
-                           '7': identityMap(['C7','C7s','C7b']),
-                           '8': identityMap(['C8','C8s','C8b']),
-                           '9': identityMap(['C9','C9s','C9b']),
+                       'C': {
+                           '0': identityMap(['C0bb', 'C0b', 'C0', 'C0s','C0ss']),
+                           '1': identityMap(['C1bb', 'C1b', 'C1', 'C1s','C1ss']),
+                           '2': identityMap(['C2bb', 'C2b', 'C2', 'C2s','C2ss']),
+                           '3': identityMap(['C3bb', 'C3b', 'C3', 'C3s','C3ss']),
+                           '4': identityMap(['C4bb', 'C4b', 'C4', 'C4s','C4ss']),
+                           '5': identityMap(['C5bb', 'C5b', 'C5', 'C5s','C5ss']),
+                           '6': identityMap(['C6bb', 'C6b', 'C6', 'C6s','C6ss']),
+                           '7': identityMap(['C7bb', 'C7b', 'C7', 'C7s','C7ss']),
+                           '8': identityMap(['C8bb', 'C8b', 'C8', 'C8s','C8ss']),
+                           '9': identityMap(['C9bb', 'C9b', 'C9', 'C9s','C9ss']),
+                       }, 'D': {
+                           '0': identityMap(['D0bb', 'D0b', 'D0', 'D0s', 'D0ss']),
+                           '1': identityMap(['D1bb', 'D1b', 'D1', 'D1s', 'D1ss']),
+                           '2': identityMap(['D2bb', 'D2b', 'D2', 'D2s', 'D2ss']),
+                           '3': identityMap(['D3bb', 'D3b', 'D3', 'D3s', 'D3ss']),
+                           '4': identityMap(['D4bb', 'D4b', 'D4', 'D4s', 'D4ss']),
+                           '5': identityMap(['D5bb', 'D5b', 'D5', 'D5s', 'D5ss']),
+                           '6': identityMap(['D6bb', 'D6b', 'D6', 'D6s', 'D6ss']),
+                           '7': identityMap(['D7bb', 'D7b', 'D7', 'D7s', 'D7ss']),
+                           '8': identityMap(['D8bb', 'D8b', 'D8', 'D8s', 'D8ss']),
+                           '9': identityMap(['D9bb', 'D9b', 'D9', 'D9s', 'D9ss']),
+                       }, 'E': {
+                           '0': identityMap(['E0bb', 'E0b', 'E0', 'E0s', 'E0ss']),
+                           '1': identityMap(['E1bb', 'E1b', 'E1', 'E1s', 'E1ss']),
+                           '2': identityMap(['E2bb', 'E2b', 'E2', 'E2s', 'E2ss']),
+                           '3': identityMap(['E3bb', 'E3b', 'E3', 'E3s', 'E3ss']),
+                           '4': identityMap(['E4bb', 'E4b', 'E4', 'E4s', 'E4ss']),
+                           '5': identityMap(['E5bb', 'E5b', 'E5', 'E5s', 'E5ss']),
+                           '6': identityMap(['E6bb', 'E6b', 'E6', 'E6s', 'E6ss']),
+                           '7': identityMap(['E7bb', 'E7b', 'E7', 'E7s', 'E7ss']),
+                           '8': identityMap(['E8bb', 'E8b', 'E8', 'E8s', 'E8ss']),
+                           '9': identityMap(['E9bb', 'E9b', 'E9', 'E9s', 'E9ss']),
+                       }, 'F': {
+                           '0': identityMap(['F0bb', 'F0b', 'F0', 'F0s', 'F0ss']),
+                           '1': identityMap(['F1bb', 'F1b', 'F1', 'F1s', 'F1ss']),
+                           '2': identityMap(['F2bb', 'F2b', 'F2', 'F2s', 'F2ss']),
+                           '3': identityMap(['F3bb', 'F3b', 'F3', 'F3s', 'F3ss']),
+                           '4': identityMap(['F4bb', 'F4b', 'F4', 'F4s', 'F4ss']),
+                           '5': identityMap(['F5bb', 'F5b', 'F5', 'F5s', 'F5ss']),
+                           '6': identityMap(['F6bb', 'F6b', 'F6', 'F6s', 'F6ss']),
+                           '7': identityMap(['F7bb', 'F7b', 'F7', 'F7s', 'F7ss']),
+                           '8': identityMap(['F8bb', 'F8b', 'F8', 'F8s', 'F8ss']),
+                           '9': identityMap(['F9bb', 'F9b', 'F9', 'F9s', 'F9ss']),
+                       }, 'G': {
+                           '0': identityMap(['G0bb', 'G0b', 'G0', 'G0s', 'G0ss']),
+                           '1': identityMap(['G1bb', 'G1b', 'G1', 'G1s', 'G1ss']),
+                           '2': identityMap(['G2bb', 'G2b', 'G2', 'G2s', 'G2ss']),
+                           '3': identityMap(['G3bb', 'G3b', 'G3', 'G3s', 'G3ss']),
+                           '4': identityMap(['G4bb', 'G4b', 'G4', 'G4s', 'G4ss']),
+                           '5': identityMap(['G5bb', 'G5b', 'G5', 'G5s', 'G5ss']),
+                           '6': identityMap(['G6bb', 'G6b', 'G6', 'G6s', 'G6ss']),
+                           '7': identityMap(['G7bb', 'G7b', 'G7', 'G7s', 'G7ss']),
+                           '8': identityMap(['G8bb', 'G8b', 'G8', 'G8s', 'G8ss']),
+                           '9': identityMap(['G9bb', 'G9b', 'G9', 'G9s', 'G9ss']),
+                       }, 'A': {
+                           '0': identityMap(['A0bb', 'A0b', 'A0', 'A0s', 'A0ss']),
+                           '1': identityMap(['A1bb', 'A1b', 'A1', 'A1s', 'A1ss']),
+                           '2': identityMap(['A2bb', 'A2b', 'A2', 'A2s', 'A2ss']),
+                           '3': identityMap(['A3bb', 'A3b', 'A3', 'A3s', 'A3ss']),
+                           '4': identityMap(['A4bb', 'A4b', 'A4', 'A4s', 'A4ss']),
+                           '5': identityMap(['A5bb', 'A5b', 'A5', 'A5s', 'A5ss']),
+                           '6': identityMap(['A6bb', 'A6b', 'A6', 'A6s', 'A6ss']),
+                           '7': identityMap(['A7bb', 'A7b', 'A7', 'A7s', 'A7ss']),
+                           '8': identityMap(['A8bb', 'A8b', 'A8', 'A8s', 'A8ss']),
+                           '9': identityMap(['A9bb', 'A9b', 'A9', 'A9s', 'A9ss']),
+                       }, 'B': {
+                           '0': identityMap(['B0bb', 'B0b', 'B0', 'B0s', 'B0ss']),
+                           '1': identityMap(['B1bb', 'B1b', 'B1', 'B1s', 'B1ss']),
+                           '2': identityMap(['B2bb', 'B2b', 'B2', 'B2s', 'B2ss']),
+                           '3': identityMap(['B3bb', 'B3b', 'B3', 'B3s', 'B3ss']),
+                           '4': identityMap(['B4bb', 'B4b', 'B4', 'B4s', 'B4ss']),
+                           '5': identityMap(['B5bb', 'B5b', 'B5', 'B5s', 'B5ss']),
+                           '6': identityMap(['B6bb', 'B6b', 'B6', 'B6s', 'B6ss']),
+                           '7': identityMap(['B7bb', 'B7b', 'B7', 'B7s', 'B7ss']),
+                           '8': identityMap(['B8bb', 'B8b', 'B8', 'B8s', 'B8ss']),
+                           '9': identityMap(['B9bb', 'B9b', 'B9', 'B9s', 'B9ss']),
                        },
-                       'D':{
-                           '0': identityMap(['D0','D0s','D0b']),
-                           '1': identityMap(['D1','D1s','D1b']),
-                           '2': identityMap(['D2','D2s','D2b']),
-                           '3': identityMap(['D3','D3s','D3b']),
-                           '4': identityMap(['D4','D4s','D4b']),
-                           '5': identityMap(['D5','D5s','D5b']),
-                           '6': identityMap(['D6','D6s','D6b']),
-                           '7': identityMap(['D7','D7s','D7b']),
-                           '8': identityMap(['D8','D8s','D8b']),
-                           '9': identityMap(['D9','D9s','D9b']),
-                       },
-                       'E':{
-                           '0': identityMap(['E0','E0s','E0b']),
-                           '1': identityMap(['E1','E1s','E1b']),
-                           '2': identityMap(['E2','E2s','E2b']),
-                           '3': identityMap(['E3','E3s','E3b']),
-                           '4': identityMap(['E4','E4s','E4b']),
-                           '5': identityMap(['E5','E5s','E5b']),
-                           '6': identityMap(['E6','E6s','E6b']),
-                           '7': identityMap(['E7','E7s','E7b']),
-                           '8': identityMap(['E8','E8s','E8b']),
-                           '9': identityMap(['E9','E9s','E9b']),
-                       },
-                       'F':{
-                           '0': identityMap(['F0','F0s','F0b']),
-                           '1': identityMap(['F1','F1s','F1b']),
-                           '2': identityMap(['F2','F2s','F2b']),
-                           '3': identityMap(['F3','F3s','F3b']),
-                           '4': identityMap(['F4','F4s','F4b']),
-                           '5': identityMap(['F5','F5s','F5b']),
-                           '6': identityMap(['F6','F6s','F6b']),
-                           '7': identityMap(['F7','F7s','F7b']),
-                           '8': identityMap(['F8','F8s','F8b']),
-                           '9': identityMap(['F9','F9s','F9b']),
-                       },
-                       'G':{
-                           '0': identityMap(['G0','G0s','G0b']),
-                           '1': identityMap(['G1','G1s','G1b']),
-                           '2': identityMap(['G2','G2s','G2b']),
-                           '3': identityMap(['G3','G3s','G3b']),
-                           '4': identityMap(['G4','G4s','G4b']),
-                           '5': identityMap(['G5','G5s','G5b']),
-                           '6': identityMap(['G6','G6s','G6b']),
-                           '7': identityMap(['G7','G7s','G7b']),
-                           '8': identityMap(['G8','G8s','G8b']),
-                           '9': identityMap(['G9','G9s','G9b']),
-                       },
-                       'A':{
-                           '0': identityMap(['A0','A0s','A0b']),
-                           '1': identityMap(['A1','A1s','A1b']),
-                           '2': identityMap(['A2','A2s','A2b']),
-                           '3': identityMap(['A3','A3s','A3b']),
-                           '4': identityMap(['A4','A4s','A4b']),
-                           '5': identityMap(['A5','A5s','A5b']),
-                           '6': identityMap(['A6','A6s','A6b']),
-                           '7': identityMap(['A7','A7s','A7b']),
-                           '8': identityMap(['A8','A8s','A8b']),
-                           '9': identityMap(['A9','A9s','A9b']),
-                       },
-                       'B':{
-                           '0': identityMap(['B0','B0s','B0b']),
-                           '1': identityMap(['B1','B1s','B1b']),
-                           '2': identityMap(['B2','B2s','B2b']),
-                           '3': identityMap(['B3','B3s','B3b']),
-                           '4': identityMap(['B4','B4s','B4b']),
-                           '5': identityMap(['B5','B5s','B5b']),
-                           '6': identityMap(['B6','B6s','B6b']),
-                           '7': identityMap(['B7','B7s','B7b']),
-                           '8': identityMap(['B8','B8s','B8b']),
-                           '9': identityMap(['B9','B9s','B9b']),
-                       },
-
                    },
-                   true, //readonly (no arbitrary text)
+                   false, //readonly (no arbitrary text)
                )),
                 new Extension.LabelPart('noteDurations', () => new InputSlotMorph(
                     null, //text
