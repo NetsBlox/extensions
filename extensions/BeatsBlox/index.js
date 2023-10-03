@@ -57,6 +57,21 @@
         A9: 129, G9ss: 129, B9bb: 129, A9s: 130, B9b: 130, B9: 131, A9ss: 131
     };
 
+    const CHORD_PATTERNS = {
+        'Major': [0, 4, 7],
+        'Minor': [0, 3, 7],
+        'Diminished': [0, 3, 6],
+        'Augmented': [0, 4, 8],
+        'Major 7th': [0, 4, 7, 11],
+        'Dominant 7th': [0, 4, 7, 10],
+        'Minor 7th': [0, 3, 7, 10],
+        'Diminished 7th': [0, 3, 6, 9],
+    };
+    const SCALE_PATTERNS = {
+        'Major': [0, 2, 4, 5, 7, 9, 11, 12],
+        'Minor': [0, 2, 3, 5, 7, 8, 10, 12],
+    };
+
     /**
      * Array containing the frequency (in Hz) of the MIDI value at the corresponding array index.
      * @constant {number[]}
@@ -5845,122 +5860,39 @@
                         stopAudio();
                         this.doStopAll();
                     }),
-                    block('note', 'reporter', 'music', 'note %midiNote', ['C3'], function (note) {
-                        if (note.includes('s')) {
-                            const startingNote = note.split('s')[0];
-                            var startingMidiNumber = availableMidiNotes[startingNote];
-                            const reg = new RegExp('s', 'g');
-                            const offsetSharp = (note.match(reg) || []).length;
-                            return startingMidiNumber + offsetSharp;
-                        }
-                        else if (note.includes('b')) {
-                            const startingNote = note.split('b')[0];
-                            var startingMidiNumber = availableMidiNotes[startingNote];
-                            const reg = new RegExp('b', 'g');
-                            const offsetFlat = (note.match(reg) || []).length;
-                            return startingMidiNumber + offsetFlat;
-                        }
-                        return availableMidiNotes[note];
+                    block('note', 'reporter', 'music', 'note %midiNote', ['C3'], parseNote),
+                    block('scales', 'reporter', 'music', 'note %midiNote type %scaleTypes scale', ['C3', 'Major'], function (rootNote, type) {
+                        rootNote = parseNote(rootNote);
+
+                        const pattern = SCALE_PATTERNS[type];
+                        if (!pattern) throw Error(`invalid chord type: '${type}'`);
+
+                        return new List(pattern.map((x) => rootNote + x));
                     }),
-                     block('scales', 'reporter', 'music', 'note %midiNote type %scaleTypes scale', ['C3', 'Major'], function (rootNote, type){
-                        if(type === "Major"){
-                            const majorScale = [0,2,4,5,7,9,11,12];
-                            majorScale.forEach((element,index) => {
-                                majorScale[index] = element + rootNote;
-                            });
+                    block('chords', 'reporter', 'music', 'note %midiNote type %chordTypes chord', ['C3','Major'], function (rootNote, type) {
+                        rootNote = parseNote(rootNote);
 
-                             return new List(majorScale);
-                         }
-                         else if (type === "Minor") {
-                             const minorScale = [0, 2, 3, 5, 7, 8, 10, 12];
-                             minorScale.forEach((element, index) => {
-                                 minorScale[index] = element + rootNote;
-                             });
-                             return new List(minorScale);
-                         }
-                         else {
-                             throw Error('Please select a valid scale type');
-                         }
+                        const pattern = CHORD_PATTERNS[type];
+                        if (!pattern) throw Error(`invalid chord type: '${type}'`);
 
-                   }),
-                   block('chords', 'reporter', 'music', 'note %midiNote type %chordTypes chord', ['C3','Major'], function (rootNote, type){
-                    if(type === "Major"){
-                        const majorChord = [0,4,7];
-                        majorChord.forEach((element,index) => {
-                            majorChord[index] = element + rootNote;
-                        });
-
-                        return new List(majorChord);
-                    }
-                    else if (type === "Minor"){
-                        const minorChord = [0,3,7];
-                        minorChord.forEach((element,index) => {
-                            minorChord[index] = element + rootNote;
-                        });
-                        return new List(minorChord);
-                    }
-                    else if (type === "Diminished"){
-                        const dimChord = [0,3,6];
-                        dimChord.forEach((element,index) => {
-                            dimChord[index] = element + rootNote;
-                        });
-                        return new List(dimChord);
-                    }
-                    else if (type === "Augmented"){
-                        const augChord = [0,4,8];
-                        augChord.forEach((element,index) => {
-                            augChord[index] = element + rootNote;
-                        });
-                        return new List(augChord);
-                    }
-                    else if (type === "Major 7th"){
-                        const major7Chord = [0,4,7,11];
-                        major7Chord.forEach((element,index) => {
-                            major7Chord[index] = element + rootNote;
-                        });
-                        return new List(major7Chord);
-                    }
-                    else if (type === "Dominant 7th"){
-                        const dom7Chord = [0,4,7,10];
-                        dom7Chord.forEach((element,index) => {
-                            dom7Chord[index] = element + rootNote;
-                        });
-                        return new List(dom7Chord);
-                    }
-                    else if (type === "Minor 7th"){
-                        const minor7Chord = [0,3,7,10];
-                        minor7Chord.forEach((element,index) => {
-                            minor7Chord[index] = element + rootNote;
-                        });
-                        return new List(minor7Chord);
-                    }
-                    else if (type === "Diminished 7th"){
-                        const diminished7Chord = [0,3,6,9];
-                        diminished7Chord.forEach((element,index) => {
-                            diminished7Chord[index] = element + rootNote;
-                        });
-                        return new List(diminished7Chord);
-                    }
-                    else {
-                        throw Error( 'Please select a valid chord type');
-                    }
-                }),
-                block('setTrackEffect', 'command', 'music','track %supportedEffects effect to %n %', ['Volume','50'], function (effectName, level){
-                    if(parseInt(level) > 100 || level == ''){
-                        throw Error('Level must be a value between 1 and 100');
-                    }
-                    if(effectName == "Echo" && level > 95){
-                        throw Error("Echo: value cannot be greater than 95")
-                    }
-                    if(effectName == "Reverb" && level < 10){
-                        throw Error("Reverb: value cannot be less than 10")
-                    }
-                         this.runAsyncFn(async () =>{
-                             const trackName = this.receiver.id;
-                             await setTrackEffect(trackName, effectName, parseInt(level)/100);
-                         },{ args: [], timeout: I32_MAX });
-                     }),
-                     block('clearTrackEffects', 'command', 'music', 'clear track effects', [], function () {
+                        return new List(pattern.map((x) => rootNote + x));
+                    }),
+                    block('setTrackEffect', 'command', 'music','track %supportedEffects effect to %n %', ['Volume','50'], function (effectName, level){
+                        if(parseInt(level) > 100 || level == ''){
+                            throw Error('Level must be a value between 1 and 100');
+                        }
+                        if(effectName == "Echo" && level > 95){
+                            throw Error("Echo: value cannot be greater than 95")
+                        }
+                        if(effectName == "Reverb" && level < 10){
+                            throw Error("Reverb: value cannot be less than 10")
+                        }
+                        this.runAsyncFn(async () =>{
+                            const trackName = this.receiver.id;
+                            await setTrackEffect(trackName, effectName, parseInt(level)/100);
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+                    block('clearTrackEffects', 'command', 'music', 'clear track effects', [], function () {
                          this.runAsyncFn(async () => {
                              const trackName = this.receiver.id;
                              for (const effectName in availableEffects) {
