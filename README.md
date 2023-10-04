@@ -4,23 +4,23 @@ This repository contains the NetsBlox Extensions to be hosted on https://extensi
 
 Extensions currently included in this repository:
  
- - [BeatsBlox](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BeatsBlox/index.js%22]#) - BeatsBlox extends Music Functionality within NetsBlox
+ - [BeatsBlox](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BeatsBlox/index.js%22]) - BeatsBlox extends Music Functionality within NetsBlox
  
- - [BetterShare](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BetterShare/index.js%22]#) - WIP - Provides a few utilities that can make sharing projects easier
+ - [BetterShare](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BetterShare/index.js%22]) - WIP - Provides a few utilities that can make sharing projects easier
  
- - [HandGestures](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/HandGestures/index.js%22]#) - Track 3D hand gestures in images/video using MediaPipe!
+ - [HandGestures](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/HandGestures/index.js%22]) - Track 3D hand gestures in images/video using MediaPipe!
  
- - [HideCategories](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/HideCategories/index.js%22]#) - This extension allows you to automatically hide categories and is particularly useful when setting different visible categories for collaborating users.
+ - [HideCategories](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/HideCategories/index.js%22]) - This extension allows you to automatically hide categories and is particularly useful when setting different visible categories for collaborating users.
  
- - [🤖 RoboScape Online](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]#) - Networked robotics simulation in the browser! (WIP)
+ - [🤖 RoboScape Online](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]) - Networked robotics simulation in the browser! (WIP)
  
- - [TimeSync](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/TimeSync/index.js%22]#) - calculate time sync info from the NetsBlox server
+ - [TimeSync](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/TimeSync/index.js%22]) - calculate time sync info from the NetsBlox server
  
- - [TuneScope](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/TuneScope/index.js%22]#) - Music Notation, Instruments, Drums, Tones, Chords, Tracks, from the University of Virginia (Glen Bull)
+ - [TuneScope](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/TuneScope/index.js%22]) - Music Notation, Instruments, Drums, Tones, Chords, Tracks, from the University of Virginia (Glen Bull)
  
- - [WebSerial](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/WebSerial/index.js%22]#) - Provides blocks for connecting to a device, e.g. an Arduino, over WebSerial
+ - [WebSerial](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/WebSerial/index.js%22]) - Provides blocks for connecting to a device, e.g. an Arduino, over WebSerial
  
- - [WhenKeyPressedLogger](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/WhenKeyPressedLogger/index.js%22]#) - Logs 'When [key] key pressed' block activations for Ben
+ - [WhenKeyPressedLogger](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/WhenKeyPressedLogger/index.js%22]) - Logs 'When [key] key pressed' block activations for Ben
  
 
 ## Contributing
