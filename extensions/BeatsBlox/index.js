@@ -5888,8 +5888,8 @@
                         return new List(pattern.map((x) => rootNote + x));
                     }),
                     new Extension.Block('setTrackEffect', 'command', 'music','track %supportedEffects effect to %n %', ['Volume','50'], function (effectName, level){
-                        if(parseInt(level) > 100 || level == ''){
-                            throw Error('Level must be a value between 1 and 100');
+                        if(parseInt(level) > 100 || parseInt(level) < 0 || level == '' ||){
+                            throw Error('Level must be a value between 0 and 100');
                         }
                         if(effectName == "Echo" && level > 95){
                             throw Error("Echo: value cannot be greater than 95")
