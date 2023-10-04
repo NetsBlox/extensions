@@ -5705,10 +5705,9 @@
 
         async function setTrackEffect(trackName, effectName, level) {
             const effectType = availableEffects[effectName];
-            const appliedEffectName = effectName+trackName;
-            if(!appliedEffects.includes(appliedEffectName)){
+            if(!appliedEffects.includes(effectName)){
                 await audioAPI.applyTrackEffect(trackName, effectName, effectType);
-                appliedEffects.push(appliedEffectName);
+                appliedEffects.push(effectName);
             }
 
             const parameters = audioAPI.getAvailableEffectParameters(effectType);
