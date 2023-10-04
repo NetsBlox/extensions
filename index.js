@@ -33,9 +33,9 @@ document.getElementById("loadButton").onclick = () => {
     scriptUrl = scriptUrl.substring(0, scriptUrl.length - 1);
 
     if (!document.getElementById("devMode").checked) {
-        url = `https://editor.netsblox.org/?extensions=[${scriptUrl}]#`;
+        url = `https://editor.netsblox.org/?extensions=[${scriptUrl}]`;
     } else {
-        url = `https://dev.netsblox.org/?extensions=[${scriptUrl}]#`;
+        url = `https://dev.netsblox.org/?extensions=[${scriptUrl}]`;
     }
 
     window.open(url);
@@ -47,14 +47,14 @@ document.getElementById("multiSelect").onchange();
 let search = document.getElementById("search");
 search.oninput = () => {
     let extensions = document.querySelectorAll(".extension");
-    for(let i = 0; i < extensions.length; i++){
+    for (let i = 0; i < extensions.length; i++) {
         let extension = extensions[i];
         let title = extension.querySelector('summary a');
         let desc = extension.querySelector('details p');
 
         let fullText =  title.innerText;
 
-        if(extension.open) {
+        if (extension.open) {
             fullText += desc.innerText;
         }
 
@@ -62,24 +62,24 @@ search.oninput = () => {
         extension.style.display = (search.value == "" || result)? "block" : "none";
 
 
-        if(search.value == "") {
+        if (search.value == "") {
             // Clear highlight when no match
             title.innerHTML = title.innerText;
-            
-            if(extension.open) {
+
+            if (extension.open) {
                 desc.innerHTML = desc.innerText;
             }
         }
 
-        if(result) {
+        if (result) {
             // Apply highlight on match
             let titleMatch = fuzzysort.single(search.value, title.innerText);
-            if(titleMatch) {
+            if (titleMatch) {
                 title.innerHTML = fuzzysort.highlight(titleMatch);
             }
 
             let descMatch = fuzzysort.single(search.value, desc.innerText);
-            if(descMatch) {
+            if (descMatch) {
                 desc.innerHTML = fuzzysort.highlight(descMatch);
             }
         }
@@ -88,7 +88,7 @@ search.oninput = () => {
 
 document.getElementById("showAllDescriptions").onclick = () => {
     let extensions = document.querySelectorAll(".extension");
-    for(let i = 0; i < extensions.length; i++){
+    for (let i = 0; i < extensions.length; i++) {
         extensions[i].open = true;
     }
     search.oninput();
@@ -96,7 +96,7 @@ document.getElementById("showAllDescriptions").onclick = () => {
 
 document.getElementById("hideAllDescriptions").onclick = () => {
     let extensions = document.querySelectorAll(".extension");
-    for(let i = 0; i < extensions.length; i++){
+    for (let i = 0; i < extensions.length; i++) {
         extensions[i].open = false;
     }
     search.oninput();
