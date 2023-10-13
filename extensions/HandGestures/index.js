@@ -39,6 +39,11 @@
     
     setVisionModuleAndTask();
 
+    const cache = {
+        data: null,
+        updateTime: -1
+    }
+
     class VisionHandle {
         constructor() {
 
@@ -47,6 +52,8 @@
 
             this.expiry = 0;
             this.resolve = null;
+
+            this.frameTime = 0;
             
         }
 
@@ -63,7 +70,7 @@
                     delegate: "GPU"
                 },
                 numHands: 2,
-                runningMode: "IMAGE",
+                runningMode: "VIDEO",
                 minHandDetectionConfidence: 0.5,
                 minHandPresenceConfidence: 0.5,
                 minTrackingConfidence: 0.5
@@ -77,12 +84,23 @@
             if(this.resolve !== null) throw Error('VisionHandler is currently in use');
             this.resolve = 'loading...';
 
+            this.frameTime = performance.now();
+            if(cache.data !== null && ((this.frameTime - cache.updateTime) < 10)){
+                console.log("fetched from cache");
+                this.resolve = null;
+                return cache.data;
+            }
+            console.log(`speed: ${this.frameTime-cache.updateTime}`);
+            cache.updateTime = this.frameTime;
+
             this.expiry = +new Date() + 10000;
 
             return await new Promise(async resolve => {
-                const data = await this.handLandmarker.detect(image);
+                cache.data = this.handLandmarker.detectForVideo(image, this.frameTime);
+                console.log("Fetched from api");
                 this.resolve = null;
-                resolve(data);
+                console.log(cache.data);
+                resolve(await cache.data);
             })
         }
 
@@ -131,8 +149,7 @@
     
     async function findHands(image) {
         const handle = getVisionHandle();
-        let handData = await handle.infer(image);
-        return handData;
+        return await handle.infer(image);
     }
 
     async function renderHands(image) {
