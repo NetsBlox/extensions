@@ -3,7 +3,7 @@
 
     async function loadVisionModule() {
         const module = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.6');
-        console.log(module);
+        // console.log(module);
         return module;
     }
 
@@ -11,13 +11,13 @@
         const vision = await VisionModule.FilesetResolver.forVisionTasks( 
             "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.6/wasm"
             );
-            console.log(vision);
+            // console.log(vision);
         return vision;
     }
 
     const Vision = {
-        Module: '',
-        Task: ''
+        Module: null,
+        Task: null
     }; 
 
     function setVisionModuleAndTask() {
@@ -86,21 +86,20 @@
 
             this.frameTime = performance.now();
             if(cache.data !== null && ((this.frameTime - cache.updateTime) < 10)){
-                console.log("fetched from cache");
+                // console.log("fetched from cache");
                 this.resolve = null;
                 return cache.data;
             }
-            console.log(`speed: ${this.frameTime-cache.updateTime}`);
+            // console.log(`speed: ${this.frameTime-cache.updateTime}`);
             cache.updateTime = this.frameTime;
 
             this.expiry = +new Date() + 10000;
 
             return await new Promise(async resolve => {
                 cache.data = this.handLandmarker.detectForVideo(image, this.frameTime);
-                console.log("Fetched from api");
+                // console.log("Fetched from api");
                 this.resolve = null;
-                console.log(cache.data);
-                resolve(await cache.data);
+                resolve(cache.data);
             })
         }
 
@@ -177,7 +176,7 @@
         
         if(option == "Hand World Landmark Coords") landmarkCoords = data.worldLandmarks;
         
-        console.log(landmarkCoords);
+        // console.log(landmarkCoords);
         if(landmarkCoords.length == 0) return landmarkCoords;
 
         const LANDMARKS = ['WRIST','THUMB_cmc','THUMB_mcp','THUMB_ip','THUMB_tip', 
@@ -262,7 +261,7 @@
                         if(res == "HandLandmarker is loading..."){
                             return snapify(res);
                         }
-                        console.log(res);
+                        // console.log(res);
                         return snapify(res);                        
                     }, { args: [], timeout: 10000 });
                 }),            
@@ -279,7 +278,7 @@
                         if(res == "HandLandmarker is loading..." || !res){
                             return snapify(res);
                         }
-                        console.log(res.landmarks);
+                        // console.log(res.landmarks);
                         
                         if(option == 'Hand Landmarks') return snapify(res.landmarks)
                         if(option == 'Hand World Landmarks') return snapify(res.worldLandmarks)
@@ -345,7 +344,7 @@
 
                         const distance = Math.sqrt((coords1[0] - coords2[0])**2 + (coords1[0]- coords2[0])**2)   
 
-                        console.log(`distance is ${distance}`);
+                        // console.log(`distance is ${distance}`);
 
                         return snapify(distance);}, { args: [], timeout: 10000 });
                 }),         
