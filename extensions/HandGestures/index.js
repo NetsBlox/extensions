@@ -41,19 +41,27 @@
 
     const cache = {
         data: null,
-        updateTime: -1
+        updateTime: -1,
+        options: {
+            minDetConf: .5,
+            minPresConf: .5,
+            minTracConf: .5,
+            maxHands: 2
+        }
     }
 
     class VisionHandle {
         constructor() {
 
             this.handLandmarker = 'uninitialized'; 
+            
             this.generateTask();
 
             this.expiry = 0;
             this.resolve = null;
 
             this.frameTime = 0;
+            
             
         }
 
@@ -69,11 +77,11 @@
                     modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
                     delegate: "GPU"
                 },
-                numHands: 2,
+                numHands: cache.options.maxHands,
                 runningMode: "VIDEO",
-                minHandDetectionConfidence: 0.5,
-                minHandPresenceConfidence: 0.5,
-                minTrackingConfidence: 0.5
+                minHandDetectionConfidence: cache.options.minDetConf,
+                minHandPresenceConfidence: cache.options.minPresConf,
+                minTrackingConfidence: cache.options.minTracConf
             })
         }
 
@@ -113,21 +121,28 @@
         }
 
         // This function takes new model parameters and sets them for the current handler
-        setHandleOptions({newDetConf = this.handLandmarker.h.u[1], 
-                         newPresConf = this.handLandmarker.s.u[1],
-                         newTracConf = this.handLandmarker.j.u[3],
-                         newMaxHands = this.handLandmarker.h.u[2]} = {}) {
+        async setHandleOptions({newDetConf = cache.options.minDetConf, 
+                         newPresConf = cache.options.minPresConf,
+                         newTracConf = cache.options.minTracConf,
+                         newMaxHands = cache.options.maxHands} = {}) {
      
+            console.log(cache);
             if(newDetConf < 0 || newDetConf > 1 || newTracConf < 0 || newTracConf > 1 || newMaxHands < 0 || newMaxHands > 4 || newPresConf < 0 || newPresConf > 1)
             {
                 throw Error('Invalid Options Value');
             }
-            this.handLandmarker.setOptions({
-                maxNumHands: newMaxHands,
+            cache.options.minDetConf = newDetConf;
+            cache.options.minPresConf = newPresConf;
+            cache.options.minTracConf = newTracConf;
+            cache.options.maxHands = newMaxHands;
+
+            await this.handLandmarker.setOptions({
                 minHandPresenceConfidence: newPresConf,
-                minDetectionConfidence: newDetConf,
+                minHandDetectionConfidence: newDetConf,
                 minTrackingConfidence: newTracConf,
-            })
+                numHands: newMaxHands
+            });
+            console.log(this.handLandmarker);
         }
     }        
 
@@ -143,6 +158,11 @@
     }
 
     function getAllHandles() {
+        console.log(VISION_HANDLES.length);
+        if(VISION_HANDLES.length == 0){
+            getVisionHandle();
+            throw Error ("Initializing First HandGestureHandler");
+        }
         return VISION_HANDLES;
     }
     
@@ -359,22 +379,22 @@
                         
                         const optionIndex = OPTIONS.indexOf(option);
                         const HANDLES = getAllHandles();
-                        if(optionIndex == 0){
-                            for(const handle in HANDLES)
+
+                        HANDLES.forEach((handle) => {
+                            console.log(handle);
+                            if(optionIndex == 0){
                                 handle.setHandleOptions({newDetConf: newValue});
-                        }
-                        if(optionIndex == 1){
-                            for(const handle in HANDLES)
+                            }
+                            if(optionIndex == 1){
                                 handle.setHandleOptions({newPresConf: newValue});
-                        }
-                        if(optionIndex == 2){
-                            for(const handle in HANDLES)
+                            }
+                            if(optionIndex == 2){
                                 handle.setHandleOptions({newTracConf: newValue});
-                        }
-                        if(optionIndex == 3){
-                            for(const handle in HANDLES)
+                            }
+                            if(optionIndex == 3){
                                 handle.setHandleOptions({newMaxHands: newValue});
-                        }
+                            }
+                    })
                         return snapify(newValue);}, { args: [], timeout: 10000 });
                 }),         
 
