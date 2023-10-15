@@ -238,7 +238,7 @@ async function joinRoom(room, password = '', server = '') {
         leaveRoom();
     }
 
-    socket.emit('joinRoom', { roomID: room, password, username: SnapCloud.username || SnapCloud.clientId, namespace: SnapCloud.username || SnapCloud.clientId });
+    socket.emit('joinRoom', { roomID: room, password, username: getUsername(), namespace: getUsername() });
     lastPassword = password;
 }
 
@@ -469,7 +469,7 @@ setTimeout(() => {
 let roboNotes = {};
 
 const updateRoomsList = async function () {
-    let response = await fetch(apiServer + "rooms/list?user=" + (SnapCloud.username || SnapCloud.clientId));
+    let response = await fetch(apiServer + "rooms/list?user=" + getUsername());
     availableRooms = await response.json();
     availableRooms = availableRooms.sort((room1, room2) => Date.parse(room2.lastInteractionTime) - Date.parse(room1.lastInteractionTime));
 }
