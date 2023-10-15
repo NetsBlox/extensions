@@ -490,7 +490,7 @@ const playNote = function (robot, frequency, duration) {
 };
 
 const getUsername = function () {
-    return SnapCloud.username || SnapCloud.clientId;
+    return world.children[0].cloud.username || CLIENT_ID;
 }
 
 disableRetinaSupport(); // Need to find fix for this
