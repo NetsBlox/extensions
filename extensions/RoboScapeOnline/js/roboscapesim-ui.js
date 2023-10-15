@@ -66,9 +66,9 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     resetButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
-            socket.emit('resetRobot', this.robotsList.getValue(), SnapCloud.username || SnapCloud.clientId);
+            socket.emit('resetRobot', this.robotsList.getValue(), getUsername());
         } else {
-            socket.emit('resetAll', SnapCloud.username || SnapCloud.clientId);
+            socket.emit('resetAll', getUsername());
         }
     }, 'Reset');
 
@@ -116,11 +116,11 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     encryptButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
-            socket.emit('robotButton', this.robotsList.getValue(), true, SnapCloud.username || SnapCloud.clientId);
+            socket.emit('robotButton', this.robotsList.getValue(), true, getUsername());
 
             // Set unpress to happen automatically
             setTimeout(() => {
-                socket.emit('robotButton', this.robotsList.getValue(), false, SnapCloud.username || SnapCloud.clientId);
+                socket.emit('robotButton', this.robotsList.getValue(), false, getUsername());
             }, 250);
         }
     }, 'Encrypt');
@@ -136,9 +136,9 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
     claimButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
             if (claimButton.label.text == 'Claim') {
-                socket.emit('claimRobot', this.robotsList.getValue(), true, SnapCloud.username || SnapCloud.clientId);
+                socket.emit('claimRobot', this.robotsList.getValue(), true, getUsername());
             } else {
-                socket.emit('claimRobot', this.robotsList.getValue(), false, SnapCloud.username || SnapCloud.clientId);
+                socket.emit('claimRobot', this.robotsList.getValue(), false, getUsername());
             }
         }
     }, 'Claim');
@@ -185,7 +185,7 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
             if (bodiesInfo['robot_' + robot].claimedBy != null) {
                 // If this is our robot, allow unclaim
-                if (bodiesInfo['robot_' + robot].claimedBy === (SnapCloud.username || SnapCloud.clientId)) {
+                if (bodiesInfo['robot_' + robot].claimedBy === getUsername()) {
                     claimButton.label.text = 'Unclaim';
                     claimButton.enable();
                     encryptButton.enable();
