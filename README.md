@@ -14,6 +14,8 @@ Extensions currently included in this repository:
  
  - [🤖 RoboScape Online](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]) - Networked robotics simulation in the browser! (WIP)
  
+ - [🤖 RoboScape Online (beta)](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline2/index.js%22]) - Networked robotics simulation in the browser! (WIP)
+ 
  - [TimeSync](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/TimeSync/index.js%22]) - calculate time sync info from the NetsBlox server
  
  - [TuneScope](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/TuneScope/index.js%22]) - Music Notation, Instruments, Drums, Tones, Chords, Tracks, from the University of Virginia (Glen Bull)
