@@ -95,9 +95,9 @@ export interface InitOutput {
   readonly main: () => void;
   readonly new_sim_menu: () => number;
   readonly join_sim_menu: () => number;
-  readonly show_3d_view: () => void;
   readonly robots_in_room: () => number;
   readonly room_id: () => number;
+  readonly show_3d_view: () => void;
   readonly __wbg_sphereoptions_free: (a: number) => void;
   readonly __wbg_get_sphereoptions_slice: (a: number, b: number) => void;
   readonly __wbg_set_sphereoptions_slice: (a: number, b: number, c: number) => void;
@@ -139,9 +139,9 @@ export interface InitOutput {
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_export_2: WebAssembly.Table;
-  readonly _dyn_core__ops__function__Fn_____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h1768c7958a103e54: (a: number, b: number) => void;
-  readonly _dyn_core__ops__function__Fn__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h0f385a016e04d3fc: (a: number, b: number, c: number) => void;
-  readonly _dyn_core__ops__function__FnMut_____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h344701f8c0f27583: (a: number, b: number) => void;
+  readonly _dyn_core__ops__function__Fn_____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h356b30278fa82c5e: (a: number, b: number) => void;
+  readonly _dyn_core__ops__function__Fn__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h4516f584ef468bed: (a: number, b: number, c: number) => void;
+  readonly _dyn_core__ops__function__FnMut_____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h7844e515e8edbe11: (a: number, b: number) => void;
   readonly _dyn_core__ops__function__FnMut_____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h40c140586fcfab8a: (a: number, b: number) => void;
   readonly _dyn_core__ops__function__FnMut_____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h9bac7b843df5f747: (a: number, b: number) => void;
   readonly _dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h408280d9290aabe5: (a: number, b: number, c: number) => void;
