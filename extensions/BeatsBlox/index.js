@@ -6,7 +6,6 @@
     script.async = false;
     script.onload = () => {
         const audioAPI = new window.WebAudioAPI();
-        console.log(window.WebAudioAPI);
         const I32_MAX = 2147483647;
         const SCHEDULING_WINDOW = 0.02; // seconds
         let midiDevices = [], midiInstruments = [], audioDevices = [];
@@ -16,6 +15,7 @@
         const availableEffects = audioAPI.getAvailableEffects();
         audioAPI.getAvailableNotes();
         const availableNoteDurations = audioAPI.getAvailableNoteDurations();
+        const availableNotes = audioAPI.getAvailableNotes();
         audioAPI.getAvailableMidiDevices().then(returnMidiDevice, fail);
         audioAPI.getAvailableAudioInputDevices().then(returnAudioDevice, fail);
 
@@ -206,12 +206,13 @@
             const match = note.match(NOTE_REGEX);
             if (!match) throw Error(`expected a note, got ${note}`)
 
-            let base = Note[match[1].toUpperCase()];
+            let base = availableNotes[match[1].toUpperCase()];
             for (const c of match[2]) {
                 if (c === 's') base++;
                 else if (c === 'b') base--;
                 else throw Error('Internal Error');
             }
+            console.log(base);
             return base;
         }
 
@@ -389,7 +390,9 @@
                     }),
                     new Extension.Block('note', 'reporter', 'music', 'note %midiNote', ['C3'], parseNote),
                     new Extension.Block('notes', 'reporter', 'music', 'note %noteNames %octaves %accidentals', ['C', '3', ''], function (noteName, octave, accidental) {
-                        parseNote(noteName + octave + accidental);
+                        const note = noteName+octave+accidental;
+                        return parseNote(note);
+
                     }),
                     new Extension.Block('scales', 'reporter', 'music', 'note %midiNote type %scaleTypes scale', ['C3', 'Major'], function (rootNote, type) {
                         rootNote = parseNote(rootNote);
