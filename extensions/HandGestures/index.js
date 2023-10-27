@@ -1,43 +1,4 @@
-// const { difference } = require("lodash");
 (function () {
-
-    async function loadVisionModule() {
-        const module = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.6');
-        // console.log(module);
-        return module;
-    }
-
-    async function loadVisionTask(VisionModule) {
-        const vision = await VisionModule.FilesetResolver.forVisionTasks( 
-            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.6/wasm"
-            );
-            // console.log(vision);
-        return vision;
-    }
-
-    const Vision = {
-        Module: null,
-        Task: null
-    }; 
-
-    function setVisionModuleAndTask() {
-        const modulePromise = loadVisionModule();
-        
-        modulePromise.then((module) => {
-            Vision.Module = module;
-            Object.defineProperty(Vision, "Module", {writable: false}); 
-            
-            const visionPromise = loadVisionTask(module);
-            visionPromise.then((vision) => {
-                Vision.Task = vision;
-                Object.defineProperty(Vision, "Task", {writable: false})
-            },
-                () => {throw Error('Failed to load vision task')});
-        }, 
-            () => {throw Error('Failed to load vision module')});
-    }
-    
-    setVisionModuleAndTask();
 
     const cache = {
         data: null,
@@ -62,19 +23,23 @@
 
             this.frameTime = 0;
             
-            
         }
 
         async generateTask() {
             if(this.handLandmarker !== 'uninitialized' && this.handLandmarker !== 'loading')
                 throw Error('Task is already generated');
+
+            if(!Vision)
+                throw Error('Vision Module is loading');
+
             if(this.handLandmarker == 'loading')
                 throw Error('HandLandmarker is currently loading');
+
             this.handLandmarker = 'loading';
            
             this.handLandmarker = await Vision.Module.HandLandmarker.createFromOptions(Vision.Task, {
                 baseOptions: {
-                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+                    modelAssetPath: "http://localhost:5500/extensions/HandGestures/Models/HandTracking/hand_landmarker.task",
                     delegate: "GPU"
                 },
                 numHands: cache.options.maxHands,
@@ -93,19 +58,16 @@
             this.resolve = 'loading...';
 
             this.frameTime = performance.now();
-            if(cache.data !== null && ((this.frameTime - cache.updateTime) < 10)){
-                // console.log("fetched from cache");
+            if(cache.data !== null && ((this.frameTime - cache.updateTime) < 5)){
                 this.resolve = null;
                 return cache.data;
             }
-            // console.log(`speed: ${this.frameTime-cache.updateTime}`);
             cache.updateTime = this.frameTime;
 
             this.expiry = +new Date() + 10000;
 
-            return await new Promise(async resolve => {
+            return new Promise(resolve => {
                 cache.data = this.handLandmarker.detectForVideo(image, this.frameTime);
-                // console.log("Fetched from api");
                 this.resolve = null;
                 resolve(cache.data);
             })
@@ -120,7 +82,7 @@
             return false;
         }
 
-        // This function takes new model parameters and sets them for the current handler
+        // This function takes new model parameters and sets them for all handlers 
         async setHandleOptions({newDetConf = cache.options.minDetConf, 
                          newPresConf = cache.options.minPresConf,
                          newTracConf = cache.options.minTracConf,
@@ -182,9 +144,11 @@
         const context = canvas.getContext('2d');
 
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const drawer = new Vision.Module.DrawingUtils(context);
+        
         for (const landmarks of data.landmarks) {
-            drawConnectors(context, landmarks, HAND_CONNECTIONS, { color: '#00ff00', lineWidth: 3 });
-            drawLandmarks(context, landmarks, { color: '#ff0000', lineWidth: 1 });
+            drawer.drawConnectors(landmarks, Vision.Module.HandLandmarker.HAND_CONNECTIONS, { color: '#00ff00', lineWidth: 3 });
+            drawer.drawLandmarks(landmarks, { color: '#ff0000', lineWidth: 1 });
         }
 
         return canvas;
@@ -196,7 +160,6 @@
         
         if(option == "Hand World Landmark Coords") landmarkCoords = data.worldLandmarks;
         
-        // console.log(landmarkCoords);
         if(landmarkCoords.length == 0) return landmarkCoords;
 
         const LANDMARKS = ['WRIST','THUMB_cmc','THUMB_mcp','THUMB_ip','THUMB_tip', 
@@ -256,10 +219,6 @@
                 new Extension.Palette.Block('handLandmarksRender'),
                 new Extension.Palette.Block('handLandmarksDistance'),
                 new Extension.Palette.Block('handLandmarksSetOptions'),
-
-                
-                
-                
             ];
             return [
                 new Extension.PaletteCategory('sensing', blocks, SpriteMorph),
@@ -272,7 +231,7 @@
                 return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
             }
             return [
-                block('handLandmarksFindHands', 'reporter', 'sensing', 'get hands data from %s', [], function (img) {
+                block('handLandmarksFindHands', 'reporter', 'sensing', 'hands data from %s', [], function (img) {
                     return this.runAsyncFn(async () => {
                         img = img?.contents || img;
                         if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
@@ -281,12 +240,11 @@
                         if(res == "HandLandmarker is loading..."){
                             return snapify(res);
                         }
-                        // console.log(res);
                         return snapify(res);                        
                     }, { args: [], timeout: 10000 });
                 }),            
 
-                block('handLandmarksFindLandmarks', 'reporter', 'sensing', 'get %handLandmarkGet from %s', ['Hand Landmarks', ''], function (option, img) {
+                block('handLandmarksFindLandmarks', 'reporter', 'sensing', '%handLandmarkGet from %s', ['Hand Landmarks', ''], function (option, img) {
                     return this.runAsyncFn(async () => {
                         img = img?.contents || img;
                         if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
@@ -298,7 +256,7 @@
                         if(res == "HandLandmarker is loading..." || !res){
                             return snapify(res);
                         }
-                        // console.log(res.landmarks);
+                        console.log(res);
                         
                         if(option == 'Hand Landmarks') return snapify(res.landmarks)
                         if(option == 'Hand World Landmarks') return snapify(res.worldLandmarks)
@@ -308,7 +266,7 @@
                     }, { args: [], timeout: 10000 });
                 }),            
 
-                block('handLandmarksFindLandmark', 'reporter', 'sensing', 'get %handLandmarkGetOne of %handLandmarks of hand from %s', ['Hand Landmark Coords', 'INDEX_tip'], function (option, landmark, img) {
+                block('handLandmarksFindLandmark', 'reporter', 'sensing', '%handLandmarkGetOne of %handLandmarks from %s', ['Hand Landmarks', 'INDEX_tip'], function (option, landmark, img) {
                     return this.runAsyncFn(async () => {
                         landmark = landmark?.toString();
                         if (!landmark) throw Error('No landmark specified');
@@ -344,7 +302,7 @@
                         return new Costume(res);}, { args: [], timeout: 10000 });
                 }),
 
-                block('handLandmarksDistance', 'reporter', 'sensing', 'Get distance from %handLandmarks to %handLandmarks with %handLandmarkGetOne from %s', ['WRIST', 'THUMB_tip', 'Hand Landmark Coords'], function (landmark1, landmark2, option, img) {
+                block('handLandmarksDistance', 'reporter', 'sensing', '%handLandmarkGetOne Distance of %handLandmarks to %handLandmarks from %s', ['Hand Landmarks', 'WRIST', 'THUMB_tip'], function (option, landmark1, landmark2, img) {
                     return this.runAsyncFn(async () => {
                         
                         landmark1 = landmark1?.toString();
@@ -364,18 +322,16 @@
 
                         const distance = Math.sqrt((coords1[0] - coords2[0])**2 + (coords1[0]- coords2[0])**2)   
 
-                        // console.log(`distance is ${distance}`);
-
                         return snapify(distance);}, { args: [], timeout: 10000 });
                 }),         
                 
-                block('handLandmarksSetOptions', 'command', 'sensing', 'set %handLandmarkOptions to %n', ['Maximum Number of Hands', 2], function (option, newValue) {
+                block('handLandmarksSetOptions', 'command', 'sensing', 'set %handLandmarkOptions to %n', ['Max Hands', 2], function (option, newValue) {
                     return this.runAsyncFn(async () => {
                         
-                        const OPTIONS = ['Minimum Detection Confidence', 
-                                 'Minimum Presence Confidence',
-                                 'Minimum Tracking Confidence',
-                                 'Maximum Number of Hands' ];
+                        const OPTIONS = ['Min Detect Confidence', 
+                                 'Min Presence Confidence',
+                                 'Min Track Confidence',
+                                 'Max Hands' ];
                         
                         const optionIndex = OPTIONS.indexOf(option);
                         const HANDLES = getAllHandles();
@@ -408,24 +364,34 @@
                 for (const x of s) res[x] = x;
                 return res;
             }
+            function unionMaps(maps) {
+                const res = {};
+                for (const map of maps) {
+                    for (const key in map) res[key] = map[key];
+                }
+                return res;
+            }
             return [
                 new Extension.LabelPart('handLandmarks', () => new InputSlotMorph(
                     null, // text
                     false, // numeric
-                    identityMap(['WRIST','THUMB_cmc','THUMB_mcp','THUMB_ip','THUMB_tip', 
-                                 'INDEX_mcp','INDEX_pip','INDEX_dip','INDEX_tip',
-                                 'MIDDLE_mcp','MIDDLE_pip','MIDDLE_dip','MIDDLE_tip',
-                                 'RING_mcp','RING_pip','RING_dip','RING_tip',
-                                 'PINKY_mcp','PINKY_pip','PINKY_dip','PINKY_tip']),
+                    unionMaps([
+                        identityMap(['WRIST']),
+                        {'THUMB': identityMap(['THUMB_cmc','THUMB_mcp','THUMB_ip','THUMB_tip'])}, 
+                        {'INDEX': identityMap(['INDEX_mcp','INDEX_pip','INDEX_dip','INDEX_tip'])}, 
+                        {'MIDDLE': identityMap(['MIDDLE_mcp','MIDDLE_pip','MIDDLE_dip','MIDDLE_tip'])}, 
+                        {'RING': identityMap([ 'RING_mcp','RING_pip','RING_dip','RING_tip'])}, 
+                        {'PINKY': identityMap(['PINKY_mcp','PINKY_pip','PINKY_dip','PINKY_tip'])}, 
                     true, // readonly (no arbitrary text)
+                    ])
                 )),
                 new Extension.LabelPart('handLandmarkOptions', () => new InputSlotMorph(
                     null, // text
                     false, // numeric
-                    identityMap(['Minimum Detection Confidence', 
-                                 'Minimum Tracking Confidence',
-                                 'Minimum Presence Confidence',
-                                 'Maximum Number of Hands' 
+                    identityMap(['Min Detect Confidence', 
+                                 'Min Track Confidence',
+                                 'Min Presence Confidence',
+                                 'Max Hands' 
                                  ]),
                     true, // readonly (no arbitrary text)
                 )),
@@ -441,8 +407,8 @@
                 new Extension.LabelPart('handLandmarkGetOne', () => new InputSlotMorph(
                     null, // text
                     false, // numeric
-                    identityMap(['Hand Landmark Coords', 
-                                 'Hand World Landmark Coords',
+                    identityMap(['Landmarks', 
+                                 'World Landmark',
                                  ]),
                     true, // readonly (no arbitrary text)
                 )),
@@ -452,14 +418,12 @@
         }
     }
 
-    const sources = [
-        'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js',
-        'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js',
-    ];
-    for (const source of sources) {
+    const visionSource = 'http://localhost:5500/extensions/utils/visionModuleLoader.js';
+    if(!document.getElementById('visionModule')){
         const script = document.createElement('script');
+        script.id = 'visionModule'; 
         script.type = 'text/javascript';
-        script.src = source;
+        script.src = visionSource;
         script.async = false;
         script.crossOrigin = 'anonymous';
         document.body.appendChild(script);
