@@ -1,4 +1,3 @@
-// const { difference } = require("lodash");
 (function () {
 
     const poseCache = {
@@ -197,7 +196,7 @@
         }
     }
 
-    const visionSource = 'http://localhost:5500/extensions/VisionModuleLoader/visionModuleLoader.js';
+    const visionSource = 'http://localhost:5500/extensions/utils/visionModuleLoader.js';
     if(!document.getElementById('visionModule')){
         const script = document.createElement('script');
         script.id = 'visionModule'; 
