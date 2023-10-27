@@ -14,7 +14,9 @@ Extensions currently included in this repository:
  
  - [HideCategories](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/HideCategories/index.js%22]) - This extension allows you to automatically hide categories and is particularly useful when setting different visible categories for collaborating users.
  
- - [🤖 RoboScape Online](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]) - Networked robotics simulation in the browser! (WIP)
+ - [PoseLandmarker](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/PoseLandmarker/index.js%22]#) - Track 3D full body poses in images/video using MediaPipe!
+ 
+ - [🤖 RoboScape Online](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js%22]#) - Networked robotics simulation in the browser! (WIP)
  
  - [🤖 RoboScape Online (beta)](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/RoboScapeOnline2/index.js%22]) - Networked robotics simulation in the browser! (WIP)
  
