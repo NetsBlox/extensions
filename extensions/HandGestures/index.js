@@ -39,7 +39,7 @@
            
             this.handLandmarker = await Vision.Module.HandLandmarker.createFromOptions(Vision.Task, {
                 baseOptions: {
-                    modelAssetPath: "http://localhost:5500/extensions/HandGestures/Models/HandTracking/hand_landmarker.task",
+                    modelAssetPath: "http://localhost:5500/extensions/HandGestures/Models/hand_landmarker.task",
                     delegate: "GPU"
                 },
                 numHands: cache.options.maxHands,
