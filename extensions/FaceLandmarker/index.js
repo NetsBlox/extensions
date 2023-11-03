@@ -151,7 +151,7 @@
             drawer.drawConnectors(
                 landmarks,
                 Vision.Module.FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
-                { color: "#FF3030" }
+                { color: "#30FF30" }
             );
             drawer.drawConnectors(
                 landmarks,
@@ -241,7 +241,7 @@
         }
     }
 
-    const visionSource = 'http://localhost:5500/extensions/utils/visionModuleLoader.js';
+    const visionSource = 'http://localhost:5500/utils/visionModuleLoader.js';
     if(!document.getElementById('visionModule')){
         const script = document.createElement('script');
         script.id = 'visionModule'; 
