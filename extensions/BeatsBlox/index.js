@@ -319,6 +319,7 @@
                     new Extension.Palette.Block('playNote'),
                     new Extension.Palette.Block('playNoteWithAmp'),
                     new Extension.Palette.Block('playAudioClip'),
+                    new Extension.Palette.Block('playAudioClipForDuration'),
                     new Extension.Palette.Block('stopClips'),
                     '-',
                     new Extension.Palette.Block('presetEffect'),
@@ -382,6 +383,15 @@
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
                             const t = await playClip(trackName, clip, this.musicInfo.t);
+                            this.musicInfo.t += t;
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play audio clip %s duration %n', [null, 0], function (clip, duration) {
+                        setupProcess(this);
+                        this.runAsyncFn(async () => {
+                            const trackName = this.receiver.id;
+                            const t = await playClip(trackName, clip, this.musicInfo.t, duration);
                             this.musicInfo.t += t;
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
