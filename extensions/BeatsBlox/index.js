@@ -178,6 +178,25 @@
         }
 
         /**
+         * Converts base64 encoding to ArrayBuffer
+         * @param {String} base64 - base64 encoded audio file
+         * @returns An Array Buffer
+         */
+           function base64toArrayBuffer(base64){
+            const binaryString = window.atob(base64.replace("data:audio/mpeg;base64,", ""));
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        async function playClip(trackName, clip, startTime, duration = undefined) {
+            const buffer = clip.audioBuffer || base64toArrayBuffer(clip.audio.src);
+            return audioAPI.playClip(trackName, buffer, startTime, duration);
+        }
+
+        /**
         * Plays an audio clip
         * @param {String} trackName - name of CurrentTrack
         * @param {List} notes - notes to be played
