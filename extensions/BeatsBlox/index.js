@@ -203,6 +203,8 @@
             if (typeof (note) === 'number') return note;
 
             if (typeof (note) !== 'string') throw Error(`expected a note, got ${note}`);
+            if(note === 'Rest') return availableNotes[note];
+    
             const match = note.match(NOTE_REGEX);
             if (!match) throw Error(`expected a note, got ${note}`)
 
@@ -600,6 +602,7 @@
                         null, //text
                         false, //numeric
                         {
+                            'Rest': 'Rest',
                             'C': {
                                 '0': identityMap(['C0bb', 'C0b', 'C0', 'C0s', 'C0ss']),
                                 '1': identityMap(['C1bb', 'C1b', 'C1', 'C1s', 'C1ss']),
