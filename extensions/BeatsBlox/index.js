@@ -397,7 +397,7 @@
                     new Extension.Block('playNoteWithAmp', 'command', 'music', 'play %noteDurations note(s) %midiNote amp %n %', ['Quarter', 'C3', '100'], function (duration, notes, amp) {
                         playNoteCommon.apply(this, [duration, notes, amp]);
                     }),
-                    new Extension.Block('playAudioClip', 'command', 'music', 'play audio clip %s', [null], function (clip) {
+                    new Extension.Block('playAudioClip', 'command', 'music', 'play audio clip %snd', [null], function (clip) {
                         setupProcess(this);
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
@@ -406,7 +406,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play audio clip %s duration %n', [null, 0], function (clip, duration) {
+                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play audio clip %snd duration %n', [null, 0], function (clip, duration) {
                         setupProcess(this);
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
