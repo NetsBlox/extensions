@@ -421,7 +421,9 @@
                     }),
                     new Extension.Block('note', 'reporter', 'music', 'note %midiNote', ['C3'], parseNote),
                     new Extension.Block('notes', 'reporter', 'music', 'note %noteNames %octaves %accidentals', ['C', '3', ''], function (noteName, octave, accidental) {
-                        const note = noteName+octave+accidental;
+                        var note = '';
+                        if(accidental === '\u266F') note = noteName+octave+'s';
+                        if(accidental === '\u266D') note = noteName+octave+'b';
                         return parseNote(note);
 
                     }),
@@ -581,14 +583,6 @@
                     return res;
                 }
                 return [
-                    new Extension.LabelPart('bpmNotes', () => new InputSlotMorph(
-                        null, //text
-                        false, // numeric
-                        unionMaps([
-                            identityMap(['Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'Thirtysecondth']),
-                        ]),
-                        true,
-                    )),
                     new Extension.LabelPart('enabled', () => new InputSlotMorph(
                         null, //text
                         false, //numeric
@@ -624,7 +618,7 @@
                     new Extension.LabelPart('accidentals', () => new InputSlotMorph(
                         null, //text
                         false, //numeric
-                        identityMap(['s', 'b',]),
+                        identityMap(['\u266F', '\u266D',]),
                         true, //readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('midiNote', () => new InputSlotMorph(
