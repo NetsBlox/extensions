@@ -391,14 +391,15 @@
                             await changeInstrument(trackName, instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playNote', 'command', 'music', 'play %noteDurations note(s) %midiNote', ['Quarter', 'C3'], function (duration, notes) {
-                        playNoteCommon.apply(this, [duration, notes]);
+                    new Extension.Block('playNote', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %midiNote', ['Quarter','', 'C3'], function (duration,durationSpecial, notes) {
+                        playNoteCommon.apply(this, [durationSpecial+duration, notes]);
                     }),
-                    new Extension.Block('playNoteWithAmp', 'command', 'music', 'play %noteDurations note(s) %midiNote amp %n %', ['Quarter', 'C3', '100'], function (duration, notes, amp) {
-                        playNoteCommon.apply(this, [duration, notes, amp]);
+                    new Extension.Block('playNoteWithAmp', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %midiNote amp %n %', ['Quarter', '', 'C3', '100'], function (duration,durationSpecial, notes, amp) {
+                        playNoteCommon.apply(this, [durationSpecial+duration, notes, amp]);
                     }),
                     new Extension.Block('playAudioClip', 'command', 'music', 'play audio clip %snd', [null], function (clip) {
                         setupProcess(this);
+                        console.log(clip);
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
                             const t = await playClip(trackName, clip, this.musicInfo.t);
@@ -710,8 +711,14 @@
                     new Extension.LabelPart('noteDurations', () => new InputSlotMorph(
                         null, //text
                         false, //numeric
-                        identityMap(Object.keys(availableNoteDurations)),
-                        false, //readonly (no arbitrary text)
+                        identityMap(['Whole','Half','Quarter','Eighth','Sixteenth','ThirtySecond','SixtyFourth']),
+                        true, //readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('noteDurationsSpecial', () => new InputSlotMorph(
+                        null, //text
+                        false, //numeric
+                        identityMap(['Dotted','DottedDotted']),
+                        true, //readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('chordTypes', () => new InputSlotMorph(
                         null, //text
