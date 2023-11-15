@@ -4,7 +4,7 @@ export const memory: WebAssembly.Memory;
 export function main(): void;
 export function new_sim_menu(): number;
 export function join_sim_menu(): number;
-export function reset_camera(): number;
+export function reset_camera_menu(): number;
 export function robots_in_room(): number;
 export function room_id(): number;
 export function show_3d_view(): void;

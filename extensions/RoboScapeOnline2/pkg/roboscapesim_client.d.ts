@@ -18,7 +18,7 @@ export function show_3d_view(): void;
 /**
 * @returns {Promise<void>}
 */
-export function reset_camera(): Promise<void>;
+export function reset_camera_menu(): Promise<void>;
 /**
 * @returns {any}
 */
@@ -99,7 +99,7 @@ export interface InitOutput {
   readonly main: () => void;
   readonly new_sim_menu: () => number;
   readonly join_sim_menu: () => number;
-  readonly reset_camera: () => number;
+  readonly reset_camera_menu: () => number;
   readonly robots_in_room: () => number;
   readonly room_id: () => number;
   readonly show_3d_view: () => void;
