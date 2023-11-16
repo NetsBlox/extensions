@@ -183,7 +183,7 @@
          * @returns An Array Buffer
          */
            function base64toArrayBuffer(base64){
-            const binaryString = window.atob(base64.replace("data:audio/mpeg;base64,", ""));
+            const binaryString = window.atob(base64.split(',')[1]);
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) {
                 bytes[i] = binaryString.charCodeAt(i);
@@ -399,7 +399,16 @@
                     }),
                     new Extension.Block('playAudioClip', 'command', 'music', 'play audio clip %snd', [null], function (clip) {
                         setupProcess(this);
-                        console.log(clip);
+                        if(clip === "") throw Error(`Clip value cannot be empty`);
+                        if(this.receiver.sounds.contents.length){
+                            for(let i = 0; i< this.receiver.sounds.contents.length; i++){
+                                if(clip === this.receiver.sounds.contents[i].name){
+                                    clip = this.receiver.sounds.contents[i];
+                                    break;
+                                }
+                            }
+
+                        }
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
                             const t = await playClip(trackName, clip, this.musicInfo.t);
