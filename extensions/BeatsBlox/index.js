@@ -51,6 +51,17 @@
             Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
             LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
         };
+        /**
+         * Object representing a mapping between an effect type and its unique internal code.
+         * @constant {Object.<string, number>}
+         */
+        const EffectType = {
+            Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
+            Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
+            Panning: 31, Equalization: 32,                                                   // Spectral Effects
+            Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
+            LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
+        };
 
         const EffectsPreset = {
             'Under Water': ['LowPassFilter', {
@@ -154,7 +165,7 @@
 
         /**
          * Converts an AudioClip k to a Snap! Sound.
-         * @asyn
+         * @async
          * @param {AudioClip} clip - The clip being rendered.
          * @returns A Snap! Sound.
          */
@@ -189,6 +200,7 @@
                 bytes[i] = binaryString.charCodeAt(i);
             }
             return bytes.buffer;
+        }
         }
 
         async function playClip(trackName, clip, startTime, duration = undefined) {
@@ -246,6 +258,7 @@
                 appliedEffects.push(effectName);
             }
 
+
             const parameters = audioAPI.getAvailableEffectParameters(effectType);
             var effectOptions = {};
             for (let i = 0; i < parameters.length; i++) {
@@ -287,6 +300,7 @@
         }
 
         async function wait(duration) {
+            if (duration <= 0) return;
             return new Promise(resolve => {
                 setTimeout(resolve, duration * 1000);
             })
@@ -301,9 +315,12 @@
             constructor(ide) {
                 super('MusicApp');
 
+
                 this.ide = ide;
 
+
                 appliedEffects = [];
+
 
                 const oldStopAllActiveSounds = StageMorph.prototype.runStopScripts;
                 StageMorph.prototype.runStopScripts = function () {
@@ -312,14 +329,20 @@
                 };
 
                 ide.hideCategory("sound");
+
+                ide.hideCategory("sound");
             }
 
             onOpenRole() {
                 for (const sprite of this.ide.sprites.contents) {
                     setupTrack(sprite.id);
+                for (const sprite of this.ide.sprites.contents) {
+                    setupTrack(sprite.id);
                 }
             }
 
+            onNewSprite(sprite) {
+                setupTrack(sprite.id);
             onNewSprite(sprite) {
                 setupTrack(sprite.id);
             }
@@ -328,6 +351,7 @@
 
             getCategories() {
                 return [
+                    new Extension.Category('music', new Color(148, 0, 211)),
                     new Extension.Category('music', new Color(148, 0, 211)),
                 ];
             }
@@ -497,6 +521,16 @@
                     new Extension.Block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
                         const trackName = this.receiver.id;
 
+                        if (device === '')
+                            this.runAsyncFn(async () => {
+                                disconnectDevices(trackName);
+                            }, { args: [], timeout: I32_MAX });
+                        else if (midiDevices.indexOf(device) != -1)
+                            midiConnect(trackName, device);
+                        else if (audioDevices.indexOf(device != -1))
+                            audioConnect(trackName, device);
+                        else
+                            throw Error('device not found');
                         if (device === '')
                             this.runAsyncFn(async () => {
                                 disconnectDevices(trackName);

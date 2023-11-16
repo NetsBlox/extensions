@@ -69,13 +69,18 @@
         getMenu() {
             return {
                 'Share Project': () => {
-                    const username = this.ide?.cloud?.username;
-                    const projName = this.ide?.controlBar?.label?.text;
-                    const roleName = this.ide?.projectName;
+                    const urlParams = new URLSearchParams(window.location.search);
 
-                    const shareLink = `${location.origin}/?action=present&editMode&noRun&Username=${encodeURIComponent(username)}&ProjectName=${encodeURIComponent(projName)}&role=${encodeURIComponent(roleName)}`;
+                    const username = urlParams.get('Username') || this.ide?.cloud?.username;
+                    const projName = urlParams.get('ProjectName') || this.ide?.room?.name;
+                    const roleName = urlParams.get('Role') || this.ide?.projectName;
 
-                    new ShareMorph(shareLink).popUp(world);
+                    if (username && projName && roleName) {
+                        const shareLink = `${location.origin}/?action=present&editMode&noRun&Username=${encodeURIComponent(username)}&ProjectName=${encodeURIComponent(projName)}&Role=${encodeURIComponent(roleName)}`;
+                        new ShareMorph(shareLink).popUp(world);
+                    } else {
+                        alert('Failed to get shared project info');
+                    }
                 }
             };
         }
