@@ -418,6 +418,16 @@
                     }),
                     new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play audio clip %snd duration %n', [null, 0], function (clip, duration) {
                         setupProcess(this);
+                        if(clip === "") throw Error(`Clip value cannot be empty`);
+                        if(this.receiver.sounds.contents.length){
+                            for(let i = 0; i< this.receiver.sounds.contents.length; i++){
+                                if(clip === this.receiver.sounds.contents[i].name){
+                                    clip = this.receiver.sounds.contents[i];
+                                    break;
+                                }
+                            }
+
+                        }
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
                             const t = await playClip(trackName, clip, this.musicInfo.t, duration);
@@ -431,7 +441,7 @@
                     }),
                     new Extension.Block('note', 'reporter', 'music', 'note %midiNote', ['C3'], parseNote),
                     new Extension.Block('notes', 'reporter', 'music', 'note %noteNames %octaves %accidentals', ['C', '3', ''], function (noteName, octave, accidental) {
-                        var note = '';
+                        var note = noteName+octave;
                         if(accidental === '\u266F') note = noteName+octave+'s';
                         if(accidental === '\u266D') note = noteName+octave+'b';
                         return parseNote(note);
