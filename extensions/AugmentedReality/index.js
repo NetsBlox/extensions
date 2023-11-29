@@ -25,36 +25,55 @@
         this.bounds.setHeight(height);
         this.dictionary = getAprilDictionary();
 
-        this.add(this.IDPrompt = new StringMorph('Code Value:'));  
-        this.add(this.saveButton = new PushButtonMorph(null, () => download(this), 'Download'));
+        this.add(this.IDPrompt = new StringMorph('Code Value: [0-29]'));  
+        this.add(this.saveButton = new PushButtonMorph(null, () => this.download(), 'Download'));
         this.add(this.closeButton = new PushButtonMorph(null, () => this.destroy(), 'Close'));
 
         const [qrwidth, qrheight] = [150, 150];
         this.add(this.ARCode = new Morph());
         this.ARCode.setWidth(qrwidth);
         this.ARCode.setHeight(qrheight);
+        this.ARCode.value = '0';  
+        
+        const options = Array.from(Array(30).keys())
+        for(item of options){
+            options[item] = item.toString();
+        }
+        const menuOptions = Object.assign({}, options);
 
-        const menuOptions = Object.assign({}, Array.from(Array(30).keys()));
-        menuOptions['0'] = menuOptions['0'] + ' ';
-        this.add(this.IDInput = new InputFieldMorph('', true, menuOptions, true));  
+        this.add(this.IDInput = new InputFieldMorph('0', true, menuOptions, true));
         
         this.fixLayout();
         this.rerender();
     };
 
-    ArucoGenMorph.prototype.download = function () {
+    ArucoGenMorph.prototype.download = async function () {
         console.log("downloading");
+        if(this.ARCode.texture){
+            const svg = await (await fetch(this.ARCode.texture)).blob();
+            console.log(svg);
+            const url = window.URL.createObjectURL(svg);
+            const name = `AprilTag_16h5_ID${this.ARCode.value}.svg` 
+            const link = document.createElement("a");
+            link.download = name;
+            link.href = url;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }
     }
 
     ArucoGenMorph.prototype.updateARCode = function () {
-        const value = parseInt(this.IDInput.children[0].children[0].text);
-        if(value > 29){
+        const newValue = parseInt(this.IDInput.children[0].children[0].text);
+        if(newValue > 29){
             return;
         }
-        console.log("value: ", value);
+        this.ARCode.value = newValue; 
+        console.log("value: ", this.ARCode.value);
         
         this.ARCode.cachedTexture = null;
-        this.ARCode.texture = `http://127.0.0.1:5500/extensions/AugmentedReality/js-aruco2/apriltag_16h5_svgs/APRILTAG_16h5_ID${value}.svg`;
+        this.ARCode.texture = `http://127.0.0.1:5500/extensions/AugmentedReality/js-aruco2/apriltag_16h5_svgs/APRILTAG_16h5_ID${this.ARCode.value}.svg`;
 
         this.ARCode.rerender();
     }
@@ -112,7 +131,6 @@
             }
         }
         this.updateARCode();
-        console.log("valueEntered");
     };  
 
     class ArucoHandler {
