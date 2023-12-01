@@ -13,17 +13,16 @@
         let appliedEffects = [];
         audioAPI.start();
         const availableEffects = audioAPI.getAvailableEffects();
-        audioAPI.getAvailableNotes();
         const availableNoteDurations = audioAPI.getAvailableNoteDurations();
         const availableNotes = audioAPI.getAvailableNotes();
         audioAPI.getAvailableMidiDevices().then(returnMidiDevice, fail);
         audioAPI.getAvailableAudioInputDevices().then(returnAudioDevice, fail);
 
-        const devRoot = 'http://localhost:8000/extensions/BeatsBlox/instruments/';
+        const devRoot = 'http://localhost:9090/extensions/BeatsBlox/instruments/';
         const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatsBlox/instruments/';
         const instrumentLocation = window.origin.includes('localhost') ? devRoot : releaseRoot;
 
-        audioAPI.getAvailableInstruments(instrumentLocation).then(
+        audioAPI.getAvailableInstruments(releaseRoot).then(
             instruments => instruments.forEach(
                 instrument => midiInstruments.push(instrument)
             )
@@ -255,6 +254,21 @@
             }
             // console.log(effectOptions);
             await audioAPI.updateTrackEffect(trackName, effectName, effectOptions);
+        }
+
+        function getEffectValues(trackName,appliedEffects){
+            var values = [];
+            var twoD = []
+
+            for(let i = 0; i <appliedEffects.length; i++){
+                var objectOfParameters = audioAPI.getCurrentTrackEffectParameters(trackName,appliedEffects[i]);
+                var valueOfFirstElement = objectOfParameters[Object.keys(objectOfParameters)[0]]
+                twoD.push([appliedEffects[i],valueOfFirstElement]);
+
+            }
+
+            twoD = new List(twoD.map(a => new List(a)));
+            return twoD;
         }
 
         function createTrack(trackName) {
@@ -519,9 +533,9 @@
                     }),
                     new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
                         if(appliedEffects.length === 0) return 'No effects applied';
-
                         
-                        return appliedEffects;
+                        const trackName = this.id;     
+                        return getEffectValues(trackName,appliedEffects);
                     }).for(SpriteMorph,StageMorph),
                     new Extension.Block('tempo', 'reporter', 'music', 'tempo', [], function () {
                         var tempoObject = audioAPI.getTempo();
