@@ -269,6 +269,7 @@
         async function addFxPreset(track, effect) {
             const effectName = EffectsPreset[effect][0];
             await audioAPI.applyTrackEffect(track, effectName, EffectType[effectName]);
+            appliedEffects.push(effectName);
             const effectOptions = EffectsPreset[effect][1];
             await audioAPI.updateTrackEffect(track, effectName, effectOptions);
         }
@@ -339,11 +340,15 @@
                     new Extension.Palette.Block('playNoteWithAmp'),
                     new Extension.Palette.Block('playAudioClip'),
                     new Extension.Palette.Block('playAudioClipForDuration'),
+                    new Extension.Palette.Block('playSampleForDuration'),
                     new Extension.Palette.Block('stopClips'),
                     '-',
                     new Extension.Palette.Block('presetEffect'),
                     new Extension.Palette.Block('setTrackEffect'),
                     new Extension.Palette.Block('clearTrackEffects'),
+                    '-',
+                    new Extension.Palette.Block('appliedEffects').withWatcherToggle(),
+                    new Extension.Palette.Block('tempo').withWatcherToggle(),
                     '-',
                     new Extension.Palette.Block('setInputDevice'),
                     new Extension.Palette.Block('startRecordingInput'),
@@ -353,6 +358,7 @@
                     new Extension.Palette.Block('lastRecordedClip'),
                     '-',
                     new Extension.Palette.Block('note'),
+                    new Extension.Palette.Block('noteNew'),
                     new Extension.Palette.Block('notes'),
                     new Extension.Palette.Block('chords'),
                     new Extension.Palette.Block('scales'),
@@ -435,11 +441,35 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
+                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play sample %snd duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration,durationSpecial) {
+                        //Work in Progess..............
+                        setupProcess(this);
+                        duration = availableNoteDurations[duration];
+                        durationSpecial = availableNoteDurations[durationSpecial];
+                        console.log(`HERE ARE THE DURATIONS ${duration}`);
+                        if(clip === "") throw Error(`Clip value cannot be empty`);
+                        if(this.receiver.sounds.contents.length){
+                            for(let i = 0; i< this.receiver.sounds.contents.length; i++){
+                                if(clip === this.receiver.sounds.contents[i].name){
+                                    clip = this.receiver.sounds.contents[i];
+                                    break;
+                                }
+                            }
+
+                        }
+                        this.runAsyncFn(async () => {
+                            const trackName = this.receiver.id;
+                            const t = await playClip(trackName, clip, this.musicInfo.t, duration+durationSpecial);
+                            this.musicInfo.t += t;
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                        }, { args: [], timeout: I32_MAX });
+                    }),
                     new Extension.Block('stopClips', 'command', 'music', 'stop all clips', [], function () {
                         stopAudio();
                         this.doStopAll();
                     }),
                     new Extension.Block('note', 'reporter', 'music', 'note %midiNote', ['C3'], parseNote),
+                    new Extension.Block('noteNew', 'reporter', 'music', 'note %note', [60], parseNote),
                     new Extension.Block('notes', 'reporter', 'music', 'note %noteNames %octaves %accidentals', ['C', '3', ''], function (noteName, octave, accidental) {
                         var note = noteName+octave;
                         if(accidental === '\u266F') note = noteName+octave+'s';
@@ -487,6 +517,16 @@
                             appliedEffects = [];
                         }, { args: [], timeout: I32_MAX });
                     }),
+                    new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
+                        if(appliedEffects.length === 0) return 'No effects applied';
+
+                        
+                        return appliedEffects;
+                    }).for(SpriteMorph,StageMorph),
+                    new Extension.Block('tempo', 'reporter', 'music', 'tempo', [], function () {
+                        var tempoObject = audioAPI.getTempo();
+                        return tempoObject.beatsPerMinute + ' BPM';
+                    }).for(SpriteMorph,StageMorph),
                     new Extension.Block('presetEffect', 'command', 'music', 'preset effects %fxPreset %onOff', ['', 'on'], function (effect, status) {
                         const trackName = this.receiver.id;
                         if (effect != '') {
