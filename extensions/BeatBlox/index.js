@@ -352,6 +352,8 @@
                     new Extension.Palette.Block('setInstrument'),
                     new Extension.Palette.Block('playNote'),
                     new Extension.Palette.Block('playNoteWithAmp'),
+                    new Extension.Palette.Block('rest'),
+                    '-',
                     new Extension.Palette.Block('playAudioClip'),
                     new Extension.Palette.Block('playAudioClipForDuration'),
                     new Extension.Palette.Block('playSampleForDuration'),
@@ -371,7 +373,6 @@
                     new Extension.Palette.Block('stopRecording'),
                     new Extension.Palette.Block('lastRecordedClip'),
                     '-',
-                    new Extension.Palette.Block('note'),
                     new Extension.Palette.Block('noteNew'),
                     new Extension.Palette.Block('notes'),
                     new Extension.Palette.Block('chords'),
@@ -478,11 +479,13 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
+                    new Extension.Block('rest', 'command', 'music', 'rest %noteDurations %noteDurationsSpecial', ['Quarter',''], function (duration,durationSpecial) {
+                        playNoteCommon.apply(this, [durationSpecial+duration, 'Rest']);
+                    }),
                     new Extension.Block('stopClips', 'command', 'music', 'stop all clips', [], function () {
                         stopAudio();
                         this.doStopAll();
                     }),
-                    new Extension.Block('note', 'reporter', 'music', 'note %midiNote', ['C3'], parseNote),
                     new Extension.Block('noteNew', 'reporter', 'music', 'note %note', [60], parseNote),
                     new Extension.Block('notes', 'reporter', 'music', 'note %noteNames %octaves %accidentals', ['C', '3', ''], function (noteName, octave, accidental) {
                         var note = noteName+octave;
@@ -491,7 +494,7 @@
                         return parseNote(note);
 
                     }),
-                    new Extension.Block('scales', 'reporter', 'music', 'note %midiNote type %scaleTypes scale', ['C3', 'Major'], function (rootNote, type) {
+                    new Extension.Block('scales', 'reporter', 'music', 'scale %midiNote type %scaleTypes', ['C3', 'Major'], function (rootNote, type) {
                         rootNote = parseNote(rootNote);
 
                         const pattern = SCALE_PATTERNS[type];
@@ -499,7 +502,7 @@
 
                         return new List(pattern.map((x) => rootNote + x));
                     }),
-                    new Extension.Block('chords', 'reporter', 'music', 'note %midiNote type %chordTypes chord', ['C3', 'Major'], function (rootNote, type) {
+                    new Extension.Block('chords', 'reporter', 'music', 'chord %midiNote type %chordTypes', ['C3', 'Major'], function (rootNote, type) {
                         rootNote = parseNote(rootNote);
 
                         const pattern = CHORD_PATTERNS[type];
