@@ -18,8 +18,8 @@
         audioAPI.getAvailableMidiDevices().then(returnMidiDevice, fail);
         audioAPI.getAvailableAudioInputDevices().then(returnAudioDevice, fail);
 
-        const devRoot = 'http://localhost:9090/extensions/BeatsBlox/instruments/';
-        const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatsBlox/instruments/';
+        const devRoot = 'http://localhost:9090/extensions/BeatBlox/instruments/';
+        const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatBlox/instruments/';
         const instrumentLocation = window.origin.includes('localhost') ? devRoot : releaseRoot;
 
         audioAPI.getAvailableInstruments(releaseRoot).then(
