@@ -412,10 +412,10 @@
                             await changeInstrument(trackName, instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playNote', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %midiNote', ['Quarter','', 'C3'], function (duration,durationSpecial, notes) {
+                    new Extension.Block('playNote', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %s', ['Quarter','', 'C3'], function (duration,durationSpecial, notes) {
                         playNoteCommon.apply(this, [durationSpecial+duration, notes]);
                     }),
-                    new Extension.Block('playNoteWithAmp', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %midiNote amp %n %', ['Quarter', '', 'C3', '100'], function (duration,durationSpecial, notes, amp) {
+                    new Extension.Block('playNoteWithAmp', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %s amp %n %', ['Quarter', '', 'C3', '100'], function (duration,durationSpecial, notes, amp) {
                         playNoteCommon.apply(this, [durationSpecial+duration, notes, amp]);
                     }),
                     new Extension.Block('playAudioClip', 'command', 'music', 'play audio clip %snd', [null], function (clip) {
