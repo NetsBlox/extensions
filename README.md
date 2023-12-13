@@ -4,7 +4,7 @@ This repository contains the NetsBlox Extensions to be hosted on https://extensi
 
 Extensions currently included in this repository:
  
- - [BeatsBlox](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BeatsBlox/index.js%22]) - BeatsBlox extends Music Functionality within NetsBlox
+ - [BeatBlox](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BeatBlox/index.js%22]) - BeatBlox extends Music Functionality within NetsBlox
  
  - [BetterShare](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BetterShare/index.js%22]) - WIP - Provides a few utilities that can make sharing projects easier
  

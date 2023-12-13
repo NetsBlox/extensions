@@ -13,17 +13,16 @@
         let appliedEffects = [];
         audioAPI.start();
         const availableEffects = audioAPI.getAvailableEffects();
-        audioAPI.getAvailableNotes();
         const availableNoteDurations = audioAPI.getAvailableNoteDurations();
         const availableNotes = audioAPI.getAvailableNotes();
         audioAPI.getAvailableMidiDevices().then(returnMidiDevice, fail);
         audioAPI.getAvailableAudioInputDevices().then(returnAudioDevice, fail);
 
-        const devRoot = 'http://localhost:8000/extensions/BeatsBlox/instruments/';
-        const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatsBlox/instruments/';
+        const devRoot = 'http://localhost:9090/extensions/BeatBlox/instruments/';
+        const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatBlox/instruments/';
         const instrumentLocation = window.origin.includes('localhost') ? devRoot : releaseRoot;
 
-        audioAPI.getAvailableInstruments(instrumentLocation).then(
+        audioAPI.getAvailableInstruments(releaseRoot).then(
             instruments => instruments.forEach(
                 instrument => midiInstruments.push(instrument)
             )
@@ -257,6 +256,21 @@
             await audioAPI.updateTrackEffect(trackName, effectName, effectOptions);
         }
 
+        function getEffectValues(trackName,appliedEffects){
+            var values = [];
+            var twoD = []
+
+            for(let i = 0; i <appliedEffects.length; i++){
+                var objectOfParameters = audioAPI.getCurrentTrackEffectParameters(trackName,appliedEffects[i]);
+                var valueOfFirstElement = objectOfParameters[Object.keys(objectOfParameters)[0]]
+                twoD.push([appliedEffects[i],valueOfFirstElement]);
+
+            }
+
+            twoD = new List(twoD.map(a => new List(a)));
+            return twoD;
+        }
+
         function createTrack(trackName) {
             audioAPI.createTrack(trackName);
         }
@@ -269,6 +283,7 @@
         async function addFxPreset(track, effect) {
             const effectName = EffectsPreset[effect][0];
             await audioAPI.applyTrackEffect(track, effectName, EffectType[effectName]);
+            appliedEffects.push(effectName);
             const effectOptions = EffectsPreset[effect][1];
             await audioAPI.updateTrackEffect(track, effectName, effectOptions);
         }
@@ -337,13 +352,19 @@
                     new Extension.Palette.Block('setInstrument'),
                     new Extension.Palette.Block('playNote'),
                     new Extension.Palette.Block('playNoteWithAmp'),
+                    new Extension.Palette.Block('rest'),
+                    '-',
                     new Extension.Palette.Block('playAudioClip'),
                     new Extension.Palette.Block('playAudioClipForDuration'),
+                    new Extension.Palette.Block('playSampleForDuration'),
                     new Extension.Palette.Block('stopClips'),
                     '-',
                     new Extension.Palette.Block('presetEffect'),
                     new Extension.Palette.Block('setTrackEffect'),
                     new Extension.Palette.Block('clearTrackEffects'),
+                    '-',
+                    new Extension.Palette.Block('appliedEffects').withWatcherToggle(),
+                    new Extension.Palette.Block('tempo').withWatcherToggle(),
                     '-',
                     new Extension.Palette.Block('setInputDevice'),
                     new Extension.Palette.Block('startRecordingInput'),
@@ -352,7 +373,7 @@
                     new Extension.Palette.Block('stopRecording'),
                     new Extension.Palette.Block('lastRecordedClip'),
                     '-',
-                    new Extension.Palette.Block('note'),
+                    new Extension.Palette.Block('noteNew'),
                     new Extension.Palette.Block('notes'),
                     new Extension.Palette.Block('chords'),
                     new Extension.Palette.Block('scales'),
@@ -391,10 +412,10 @@
                             await changeInstrument(trackName, instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playNote', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %midiNote', ['Quarter','', 'C3'], function (duration,durationSpecial, notes) {
+                    new Extension.Block('playNote', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %s', ['Quarter','', 'C3'], function (duration,durationSpecial, notes) {
                         playNoteCommon.apply(this, [durationSpecial+duration, notes]);
                     }),
-                    new Extension.Block('playNoteWithAmp', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %midiNote amp %n %', ['Quarter', '', 'C3', '100'], function (duration,durationSpecial, notes, amp) {
+                    new Extension.Block('playNoteWithAmp', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %s amp %n %', ['Quarter', '', 'C3', '100'], function (duration,durationSpecial, notes, amp) {
                         playNoteCommon.apply(this, [durationSpecial+duration, notes, amp]);
                     }),
                     new Extension.Block('playAudioClip', 'command', 'music', 'play audio clip %snd', [null], function (clip) {
@@ -435,11 +456,37 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
+                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play sample %snd duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration,durationSpecial) {
+                        //Work in Progess..............
+                        setupProcess(this);
+                        duration = availableNoteDurations[duration];
+                        durationSpecial = availableNoteDurations[durationSpecial];
+                        console.log(`HERE ARE THE DURATIONS ${duration}`);
+                        if(clip === "") throw Error(`Clip value cannot be empty`);
+                        if(this.receiver.sounds.contents.length){
+                            for(let i = 0; i< this.receiver.sounds.contents.length; i++){
+                                if(clip === this.receiver.sounds.contents[i].name){
+                                    clip = this.receiver.sounds.contents[i];
+                                    break;
+                                }
+                            }
+
+                        }
+                        this.runAsyncFn(async () => {
+                            const trackName = this.receiver.id;
+                            const t = await playClip(trackName, clip, this.musicInfo.t, duration+durationSpecial);
+                            this.musicInfo.t += t;
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('rest', 'command', 'music', 'rest %noteDurations %noteDurationsSpecial', ['Quarter',''], function (duration,durationSpecial) {
+                        playNoteCommon.apply(this, [durationSpecial+duration, 'Rest']);
+                    }),
                     new Extension.Block('stopClips', 'command', 'music', 'stop all clips', [], function () {
                         stopAudio();
                         this.doStopAll();
                     }),
-                    new Extension.Block('note', 'reporter', 'music', 'note %midiNote', ['C3'], parseNote),
+                    new Extension.Block('noteNew', 'reporter', 'music', 'note %note', [60], parseNote),
                     new Extension.Block('notes', 'reporter', 'music', 'note %noteNames %octaves %accidentals', ['C', '3', ''], function (noteName, octave, accidental) {
                         var note = noteName+octave;
                         if(accidental === '\u266F') note = noteName+octave+'s';
@@ -447,7 +494,7 @@
                         return parseNote(note);
 
                     }),
-                    new Extension.Block('scales', 'reporter', 'music', 'note %midiNote type %scaleTypes scale', ['C3', 'Major'], function (rootNote, type) {
+                    new Extension.Block('scales', 'reporter', 'music', 'scale %midiNote type %scaleTypes', ['C3', 'Major'], function (rootNote, type) {
                         rootNote = parseNote(rootNote);
 
                         const pattern = SCALE_PATTERNS[type];
@@ -455,7 +502,7 @@
 
                         return new List(pattern.map((x) => rootNote + x));
                     }),
-                    new Extension.Block('chords', 'reporter', 'music', 'note %midiNote type %chordTypes chord', ['C3', 'Major'], function (rootNote, type) {
+                    new Extension.Block('chords', 'reporter', 'music', 'chord %midiNote type %chordTypes', ['C3', 'Major'], function (rootNote, type) {
                         rootNote = parseNote(rootNote);
 
                         const pattern = CHORD_PATTERNS[type];
@@ -487,6 +534,16 @@
                             appliedEffects = [];
                         }, { args: [], timeout: I32_MAX });
                     }),
+                    new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
+                        if(appliedEffects.length === 0) return 'No effects applied';
+                        
+                        const trackName = this.id;     
+                        return getEffectValues(trackName,appliedEffects);
+                    }).for(SpriteMorph,StageMorph),
+                    new Extension.Block('tempo', 'reporter', 'music', 'tempo', [], function () {
+                        var tempoObject = audioAPI.getTempo();
+                        return tempoObject.beatsPerMinute + ' BPM';
+                    }).for(SpriteMorph,StageMorph),
                     new Extension.Block('presetEffect', 'command', 'music', 'preset effects %fxPreset %onOff', ['', 'on'], function (effect, status) {
                         const trackName = this.receiver.id;
                         if (effect != '') {
