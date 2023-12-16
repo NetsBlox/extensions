@@ -1,257 +1,266 @@
 // const { difference } = require("lodash");
 (function () {
 
-    const faceCache = {
-        data: null,
-        updateTime: -1,
-        options: {
-            numFaces: 1,
-            minFaceDetConf: .5,
-            minFacePresConf: .5,
-            minTracConf: .5,
-            segMask: false
-        }
+  const DEVURL = {}
+    
+  if(window.location.href.includes('localhost')){
+    DEVURL.MODELPATHURL = "http://localhost:8000/extensions/FaceLandmarker/Models/face_landmarker.task",
+    DEVURL.VISIONMODULELOADERURL = 'http://localhost:8000/utils/visionModuleLoader.js';  
+  }else{
+    DEVURL.MODELPATHURL = "http://extensions.netsblox.org/extensions/FaceLandmarker/Models/face_landmarker.task",
+    DEVURL.VISIONMODULELOADERURL = 'https://extensions.netsblox.org/utils/visionModuleLoader.js';
+  }
+
+  class FaceHandler {
+    constructor() {
+
+      this.faceLandmarker; 
+      
+      this.generateTask();
+
+      this.expiry = 0;
+      this.resolve = null;
+
+      this.frameTime = 0;
+    }
+    static config = {
+      data: null,
+      updateTime: -1,
+      options: {
+        numFaces: 1,
+        minFaceDetConf: .5,
+        minFacePresConf: .5,
+        minTracConf: .5,
+        segMask: false
+      }
     }
 
-    class FaceHandle {
-        constructor() {
+    async generateTask() {
+      if(!Vision)
+        throw Error('Vision Module is loading...');
 
-            this.faceLandmarker; 
-            
-            this.generateTask();
+      if(this.faceLandmarker == 'loading')
+        throw Error('faceLandmarker is currently loading');
 
-            this.expiry = 0;
-            this.resolve = null;
+      this.faceLandmarker = 'loading';
+       
+      this.faceLandmarker = await Vision.Module.FaceLandmarker.createFromOptions(Vision.Task, {
+        baseOptions: {
+          modelAssetPath: DEVURL.MODELPATHURL,
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        outputFaceBlendshapes: true,
+        numFaces: FaceHandler.config.options.numFaces,
+        minFaceDetectionConfidence: FaceHandler.config.options.minFaceDetConf,
+        minFacePresenceConfidence: FaceHandler.config.options.minFacePresConf,
+        minTrackingConfidence: FaceHandler.config.options.minTracConf
 
-            this.frameTime = 0;
-        }
+      })
+    }
 
-        async generateTask() {
-            if(!Vision)
-                throw Error('Vision Module is loading...');
+    async infer(image){
+      if(!this.faceLandmarker) throw Error('faceLandmarker is not initialized');
+      if(this.faceLandmarker == 'loading') return "faceLandmarker is loading...";
 
-            if(this.faceLandmarker == 'loading')
-                throw Error('faceLandmarker is currently loading');
+      if(this.resolve !== null) throw Error('FaceHandler is currently in use');
+      this.resolve = 'loading...';
 
-            this.faceLandmarker = 'loading';
-           
-            this.faceLandmarker = await Vision.Module.FaceLandmarker.createFromOptions(Vision.Task, {
-                baseOptions: {
-                    modelAssetPath: "http://localhost:5500/extensions/FaceLandmarker/Models/face_landmarker.task",
-                    delegate: "GPU"
-                },
-                runningMode: "VIDEO",
-                outputFaceBlendshapes: true,
-                numFaces: faceCache.options.numFaces,
-                minFaceDetectionConfidence: faceCache.options.minFaceDetConf,
-                minFacePresenceConfidence: faceCache.options.minFacePresConf,
-                minTrackingConfidence: faceCache.options.minTracConf
+      this.frameTime = performance.now();
+      if(FaceHandler.config.data !== null && ((this.frameTime - FaceHandler.config.updateTime) < 10)){
+        this.resolve = null;
+        return FaceHandler.config.data;
+      }
+      FaceHandler.config.updateTime = this.frameTime;
 
-            })
-        }
+      this.expiry = +new Date() + 10000;
 
-        async infer(image){
-            if(!this.faceLandmarker) throw Error('faceLandmarker is not initialized');
-            if(this.faceLandmarker == 'loading') return "faceLandmarker is loading...";
+      return new Promise(resolve => {
+        FaceHandler.config.data = this.faceLandmarker.detectForVideo(image, this.frameTime);
+        this.resolve = null;
+        resolve(FaceHandler.config.data);
+      })
+    }
 
-            if(this.resolve !== null) throw Error('faceHandler is currently in use');
-            this.resolve = 'loading...';
+    isIdle() {
+      if (this.resolve === null) return true;
+      if (+new Date() > this.expiry) {
+        this.resolve = null;
+        return true;
+      }
+      return false;
+    }
+  }        
 
-            this.frameTime = performance.now();
-            if(faceCache.data !== null && ((this.frameTime - faceCache.updateTime) < 10)){
-                this.resolve = null;
-                return faceCache.data;
-            }
-            faceCache.updateTime = this.frameTime;
-
-            this.expiry = +new Date() + 10000;
-
-            return new Promise(resolve => {
-                faceCache.data = this.faceLandmarker.detectForVideo(image, this.frameTime);
-                this.resolve = null;
-                resolve(faceCache.data);
-            })
-        }
-
-        isIdle() {
-            if (this.resolve === null) return true;
-            if (+new Date() > this.expiry) {
-                this.resolve = null;
-                return true;
-            }
-            return false;
-        }
-    }        
-
-    const FACE_HANDLES = [];
-    function getFaceHandle() {
-        for (const handle of FACE_HANDLES) {
-            if (handle.isIdle()) 
-                return handle;
-        }
-        const handle = new FaceHandle();
-        FACE_HANDLES.push(handle);
+  const FACE_HANDLES = [];
+  function getFaceHandler() {
+    for (const handle of FACE_HANDLES) {
+      if (handle.isIdle()) 
         return handle;
     }
+    const handle = new FaceHandler();
+    FACE_HANDLES.push(handle);
+    return handle;
+  }
 
-    async function findFace(image) {
-        const handle = getFaceHandle();
-        return await handle.infer(image);
+  async function findFace(image) {
+    const handle = getFaceHandler();
+    return await handle.infer(image);
+  }
+
+  async function renderFace(image) {
+    const data = await findFace(image);
+    if(data == "faceLandmarker is loading..."){
+      return data;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext('2d');
+
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const drawer = new Vision.Module.DrawingUtils(context);
+
+    for (const landmarks of data.faceLandmarks) {
+      drawer.drawConnectors(
+        landmarks,
+        Vision.Module.FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+        { color: "#C0C0C070", lineWidth: 1 }
+      );
+      drawer.drawConnectors(
+        landmarks,
+        Vision.Module.FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
+        { color: "#30FF30" }
+      );
+      drawer.drawConnectors(
+        landmarks,
+        Vision.Module.FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
+        { color: "#30FF30" }
+      );
+      drawer.drawConnectors(
+        landmarks,
+        Vision.Module.FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
+        { color: "#30FF30" }
+      );
+      drawer.drawConnectors(
+        landmarks,
+        Vision.Module.FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
+        { color: "#30FF30" }
+      );
+      drawer.drawConnectors(
+        landmarks,
+        Vision.Module.FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
+        { color: "#30FF30" }
+      );
+      drawer.drawConnectors(
+        landmarks, 
+        Vision.Module.FaceLandmarker.FACE_LANDMARKS_LIPS, 
+        { color: "#30FF30" }
+      );
+      drawer.drawConnectors(
+        landmarks,
+        Vision.Module.FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
+        { color: "#30FF30" }
+      );
+      drawer.drawConnectors(
+        landmarks,
+        Vision.Module.FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
+        { color: "#30FF30" }
+      );
+    }
+    return canvas;
+  }
+
+  function snapify(value) {
+    if (Array.isArray(value)) {
+      const res = [];
+      for (const item of value) res.push(snapify(item));
+      return new List(res);
+    } else if (typeof(value) === 'object') {
+      const res = [];
+      for (const key in value) res.push(new List([key, snapify(value[key])]));
+      return new List(res);
+    } else return value;
+  }
+  
+  class FaceLandmarker extends Extension {
+    constructor(ide) {
+      super('FaceLandmarker');
+      this.ide = ide;
     }
 
-    async function renderFace(image) {
-        const data = await findFace(image);
-        if(data == "faceLandmarker is loading..."){
-            return data;
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height;
-        const context = canvas.getContext('2d');
+    onOpenRole() {}
 
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        const drawer = new Vision.Module.DrawingUtils(context);
+    getMenu() { return {}; }
 
-        for (const landmarks of data.faceLandmarks) {
-            drawer.drawConnectors(
-                landmarks,
-                Vision.Module.FaceLandmarker.FACE_LANDMARKS_TESSELATION,
-                { color: "#C0C0C070", lineWidth: 1 }
-            );
-            drawer.drawConnectors(
-                landmarks,
-                Vision.Module.FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
-                { color: "#30FF30" }
-            );
-            drawer.drawConnectors(
-                landmarks,
-                Vision.Module.FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
-                { color: "#30FF30" }
-            );
-            drawer.drawConnectors(
-                landmarks,
-                Vision.Module.FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
-                { color: "#30FF30" }
-            );
-            drawer.drawConnectors(
-                landmarks,
-                Vision.Module.FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
-                { color: "#30FF30" }
-            );
-            drawer.drawConnectors(
-                landmarks,
-                Vision.Module.FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
-                { color: "#30FF30" }
-            );
-            drawer.drawConnectors(
-                landmarks, 
-                Vision.Module.FaceLandmarker.FACE_LANDMARKS_LIPS, 
-                { color: "#30FF30" }
-            );
-            drawer.drawConnectors(
-                landmarks,
-                Vision.Module.FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
-                { color: "#30FF30" }
-            );
-            drawer.drawConnectors(
-                landmarks,
-                Vision.Module.FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
-                { color: "#30FF30" }
-            );
-        }
-        return canvas;
+    getCategories() { return []; }
+
+    getPalette() {
+      const blocks = [
+        new Extension.Palette.Block('faceLandmarksFindFace'),
+        new Extension.Palette.Block('faceLandmarksRender'),
+      ];
+      return [
+        new Extension.PaletteCategory('sensing', blocks, SpriteMorph),
+        new Extension.PaletteCategory('sensing', blocks, StageMorph),
+      ];
     }
 
-    function snapify(value) {
-        if (Array.isArray(value)) {
-            const res = [];
-            for (const item of value) res.push(snapify(item));
-            return new List(res);
-        } else if (typeof(value) === 'object') {
-            const res = [];
-            for (const key in value) res.push(new List([key, snapify(value[key])]));
-            return new List(res);
-        } else return value;
-    }
-    
-    class FaceLandmarker extends Extension {
-        constructor(ide) {
-            super('FaceLandmarker');
-            this.ide = ide;
-        }
+    getBlocks() {
+      function block(name, type, category, spec, defaults, action) {
+        return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
+      }
+      return [
+        block('faceLandmarksFindFace', 'reporter', 'sensing', 'get face data from %s', [], function (img) {
+          return this.runAsyncFn(async () => {
+            img = img?.contents || img;
+            if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
 
-        onOpenRole() {}
-
-        getMenu() { return {}; }
-
-        getCategories() { return []; }
-
-        getPalette() {
-            const blocks = [
-                new Extension.Palette.Block('faceLandmarksFindFace'),
-                new Extension.Palette.Block('faceLandmarksRender'),
-            ];
-            return [
-                new Extension.PaletteCategory('sensing', blocks, SpriteMorph),
-                new Extension.PaletteCategory('sensing', blocks, StageMorph),
-            ];
-        }
-
-        getBlocks() {
-            function block(name, type, category, spec, defaults, action) {
-                return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
+            const res = await findFace(img);
+            if(res == "faceLandmarker is loading..."){
+              return snapify(res);
             }
-            return [
-                block('faceLandmarksFindFace', 'reporter', 'sensing', 'get face data from %s', [], function (img) {
-                    return this.runAsyncFn(async () => {
-                        img = img?.contents || img;
-                        if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
-
-                        const res = await findFace(img);
-                        if(res == "faceLandmarker is loading..."){
-                            return snapify(res);
-                        }
-                        return snapify(res);                        
-                    }, { args: [], timeout: 10000 });
-                }),            
-                
-                block('faceLandmarksRender', 'reporter', 'sensing', 'render face %s', [''], function (img) {
-                    return this.runAsyncFn(async () => {
-                        img = img?.contents || img;
-                       
-                        if (!img || typeof(img) !== 'object' || !img.width || !img.height) {throw Error('Expected an image as input');}
-                       
-                        const res = await renderFace(img);
-                        if(res == "faceLandmarker is loading..."){
-                            return snapify(res);
-                        }
-                        return new Costume(res);}, { args: [], timeout: 10000 });
-                }),
-            ];
-        }
-
-        getLabelParts() {
-            function identityMap(s) {
-                const res = {};
-                for (const x of s) res[x] = x;
-                return res;
+            return snapify(res);                        
+          }, { args: [], timeout: 10000 });
+        }),            
+        
+        block('faceLandmarksRender', 'reporter', 'sensing', 'render face %s', [''], function (img) {
+          return this.runAsyncFn(async () => {
+            img = img?.contents || img;
+             
+            if (!img || typeof(img) !== 'object' || !img.width || !img.height) {throw Error('Expected an image as input');}
+             
+            const res = await renderFace(img);
+            if(res == "faceLandmarker is loading..."){
+              return snapify(res);
             }
-            return [
-            ];
-        }
+            return new Costume(res);}, { args: [], timeout: 10000 });
+        }),
+      ];
     }
 
-    const visionSource = 'http://localhost:5500/utils/visionModuleLoader.js';
-    if(!document.getElementById('visionModule')){
-        const script = document.createElement('script');
-        script.id = 'visionModule'; 
-        script.type = 'text/javascript';
-        script.src = visionSource;
-        script.async = false;
-        script.crossOrigin = 'anonymous';
-        document.body.appendChild(script);
+    getLabelParts() {
+      function identityMap(s) {
+        const res = {};
+        for (const x of s) res[x] = x;
+        return res;
+      }
+      return [
+      ];
     }
+  }
 
-    NetsBloxExtensions.register(FaceLandmarker);
-    disableRetinaSupport();
+  const visionSource = DEVURL.VISIONMODULELOADERURL;
+  if(!document.getElementById('visionModule')){
+    const script = document.createElement('script');
+    script.id = 'visionModule'; 
+    script.type = 'text/javascript';
+    script.src = visionSource;
+    script.async = false;
+    script.crossOrigin = 'anonymous';
+    document.body.appendChild(script);
+  }
+
+  NetsBloxExtensions.register(FaceLandmarker);
+  disableRetinaSupport();
 })();
