@@ -39,7 +39,7 @@
       if(!Vision)
         throw Error('Vision Module is loading...');
 
-      if(this.poseLandmarker == 'loading')
+      if(this.poseLandmarker === 'loading')
         throw Error('PoseLandmarker is currently loading');
 
       this.poseLandmarker = 'loading';
@@ -59,7 +59,7 @@
 
     async infer(image){
       if(!this.poseLandmarker) throw Error('poseLandmarker is not initialized');
-      if(this.poseLandmarker == 'loading') return "poseLandmarker is loading...";
+      if(this.poseLandmarker === 'loading') return "poseLandmarker is loading...";
 
       if(this.resolve !== null) throw Error('PoseHandler is currently in use');
       this.resolve = 'loading...';
@@ -108,15 +108,11 @@
 
   async function renderPose(image) {
     const data = await findPose(image);
-    if(data == "poseLandmarker is loading..."){
+    if(typeof(data) === 'string'){
       return data;
     }
-    const canvas = document.createElement('canvas');
-    canvas.width = image.width;
-    canvas.height = image.height;
-    const context = canvas.getContext('2d');
+    const context = image.getContext('2d');
 
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
     const drawer = new Vision.Module.DrawingUtils(context);
 
     for (const landmarks of data.landmarks) {
@@ -124,7 +120,7 @@
       drawer.drawLandmarks(landmarks);
     }
 
-    return canvas;
+    return image;
   }
 
   function snapify(value) {
@@ -173,7 +169,7 @@
             if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
 
             const res = await findPose(img);
-            if(res == "poseLandmarker is loading..."){
+            if(typeof(res) === 'string'){
               return snapify(res);
             }
             return snapify(res);                        
@@ -187,7 +183,7 @@
             if (!img || typeof(img) !== 'object' || !img.width || !img.height) {throw Error('Expected an image as input');}
              
             const res = await renderPose(img);
-            if(res == "poseLandmarker is loading..."){
+            if(typeof(res) === 'string'){
               return snapify(res);
             }
             return new Costume(res);}, { args: [], timeout: 10000 });

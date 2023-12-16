@@ -1,4 +1,3 @@
-// const { difference } = require("lodash");
 (function () {
 
   const DEVURL = {}
@@ -39,7 +38,7 @@
       if(!Vision)
         throw Error('Vision Module is loading...');
 
-      if(this.faceLandmarker == 'loading')
+      if(this.faceLandmarker === 'loading')
         throw Error('faceLandmarker is currently loading');
 
       this.faceLandmarker = 'loading';
@@ -61,7 +60,7 @@
 
     async infer(image){
       if(!this.faceLandmarker) throw Error('faceLandmarker is not initialized');
-      if(this.faceLandmarker == 'loading') return "faceLandmarker is loading...";
+      if(this.faceLandmarker === 'loading') return "faceLandmarker is loading...";
 
       if(this.resolve !== null) throw Error('FaceHandler is currently in use');
       this.resolve = 'loading...';
@@ -110,15 +109,11 @@
 
   async function renderFace(image) {
     const data = await findFace(image);
-    if(data == "faceLandmarker is loading..."){
+    if(typeof(data) === 'string'){
       return data;
     }
-    const canvas = document.createElement('canvas');
-    canvas.width = image.width;
-    canvas.height = image.height;
-    const context = canvas.getContext('2d');
+    const context = image.getContext('2d');
 
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
     const drawer = new Vision.Module.DrawingUtils(context);
 
     for (const landmarks of data.faceLandmarks) {
@@ -168,7 +163,7 @@
         { color: "#30FF30" }
       );
     }
-    return canvas;
+    return image;
   }
 
   function snapify(value) {
@@ -217,7 +212,7 @@
             if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
 
             const res = await findFace(img);
-            if(res == "faceLandmarker is loading..."){
+            if(typeof(res) === 'string'){
               return snapify(res);
             }
             return snapify(res);                        
@@ -231,7 +226,7 @@
             if (!img || typeof(img) !== 'object' || !img.width || !img.height) {throw Error('Expected an image as input');}
              
             const res = await renderFace(img);
-            if(res == "faceLandmarker is loading..."){
+            if(typeof(res) === 'string'){
               return snapify(res);
             }
             return new Costume(res);}, { args: [], timeout: 10000 });
