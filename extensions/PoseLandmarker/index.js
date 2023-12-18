@@ -3,10 +3,10 @@
   const DEVURL = {}
     
   if(window.location.href.includes('localhost')){
-    DEVURL.MODELPATHURL = "http://localhost:8000/extensions/PoseLandmarker/Models/pose_landmarker_full.task",
+    DEVURL.MODELPATHURL = 'http://localhost:8000/extensions/PoseLandmarker/Models/pose_landmarker_full.task',
     DEVURL.VISIONMODULELOADERURL = 'http://localhost:8000/utils/visionModuleLoader.js';  
   }else{
-    DEVURL.MODELPATHURL = "http://extensions.netsblox.org/extensions/PoseLandmarker/Models/pose_landmarker_full.task",
+    DEVURL.MODELPATHURL = 'http://extensions.netsblox.org/extensions/PoseLandmarker/Models/pose_landmarker_full.task',
     DEVURL.VISIONMODULELOADERURL = 'https://extensions.netsblox.org/utils/visionModuleLoader.js';
   }
 
@@ -45,10 +45,10 @@
       this.poseLandmarker = await Vision.Module.PoseLandmarker.createFromOptions(Vision.Task, {
         baseOptions: {
           modelAssetPath: DEVURL.MODELPATHURL,
-          delegate: "GPU"
+          delegate: 'GPU'
         },
         numPoses: PoseHandler.config.options.numPoses,
-        runningMode: "VIDEO",
+        runningMode: 'VIDEO',
         minPoseDetectionConfidence: PoseHandler.config.options.minPoseDetConf,
         minPosePresenceConfidence: PoseHandler.config.options.minPosePresConf,
         minTrackingConfidence: PoseHandler.config.options.minTracConf

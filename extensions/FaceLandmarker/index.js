@@ -3,10 +3,10 @@
   const DEVURL = {}
     
   if(window.location.href.includes('localhost')){
-    DEVURL.MODELPATHURL = "http://localhost:8000/extensions/FaceLandmarker/Models/face_landmarker.task",
+    DEVURL.MODELPATHURL = 'http://localhost:8000/extensions/FaceLandmarker/Models/face_landmarker.task',
     DEVURL.VISIONMODULELOADERURL = 'http://localhost:8000/utils/visionModuleLoader.js';  
   }else{
-    DEVURL.MODELPATHURL = "http://extensions.netsblox.org/extensions/FaceLandmarker/Models/face_landmarker.task",
+    DEVURL.MODELPATHURL = 'http://extensions.netsblox.org/extensions/FaceLandmarker/Models/face_landmarker.task',
     DEVURL.VISIONMODULELOADERURL = 'https://extensions.netsblox.org/utils/visionModuleLoader.js';
   }
 
@@ -45,9 +45,9 @@
       this.faceLandmarker = await Vision.Module.FaceLandmarker.createFromOptions(Vision.Task, {
         baseOptions: {
           modelAssetPath: DEVURL.MODELPATHURL,
-          delegate: "GPU"
+          delegate: 'GPU'
         },
-        runningMode: "VIDEO",
+        runningMode: 'VIDEO',
         outputFaceBlendshapes: true,
         numFaces: FaceHandler.config.options.numFaces,
         minFaceDetectionConfidence: FaceHandler.config.options.minFaceDetConf,
@@ -122,47 +122,47 @@
       drawer.drawConnectors(
         landmarks,
         Vision.Module.FaceLandmarker.FACE_LANDMARKS_TESSELATION,
-        { color: "#C0C0C070", lineWidth: 1 }
+        { color: '#C0C0C070', lineWidth: 1 }
       );
       drawer.drawConnectors(
         landmarks,
         Vision.Module.FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
-        { color: "#30FF30" }
+        { color: '#30FF30' }
       );
       drawer.drawConnectors(
         landmarks,
         Vision.Module.FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
-        { color: "#30FF30" }
+        { color: '#30FF30' }
       );
       drawer.drawConnectors(
         landmarks,
         Vision.Module.FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
-        { color: "#30FF30" }
+        { color: '#30FF30' }
       );
       drawer.drawConnectors(
         landmarks,
         Vision.Module.FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
-        { color: "#30FF30" }
+        { color: '#30FF30' }
       );
       drawer.drawConnectors(
         landmarks,
         Vision.Module.FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
-        { color: "#30FF30" }
+        { color: '#30FF30' }
       );
       drawer.drawConnectors(
         landmarks, 
         Vision.Module.FaceLandmarker.FACE_LANDMARKS_LIPS, 
-        { color: "#30FF30" }
+        { color: '#30FF30' }
       );
       drawer.drawConnectors(
         landmarks,
         Vision.Module.FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
-        { color: "#30FF30" }
+        { color: '#30FF30' }
       );
       drawer.drawConnectors(
         landmarks,
         Vision.Module.FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
-        { color: "#30FF30" }
+        { color: '#30FF30' }
       );
     }
     return image;

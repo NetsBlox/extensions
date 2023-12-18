@@ -1,10 +1,10 @@
 const DEVURL = {}
     
 if(window.location.href.includes('localhost')){
-  DEVURL.MODELPATHURL = "http://localhost:8000/extensions/HandGestures/Models/hand_landmarker.task",
+  DEVURL.MODELPATHURL = 'http://localhost:8000/extensions/HandGestures/Models/hand_landmarker.task',
   DEVURL.VISIONMODULELOADERURL = 'http://localhost:8000/utils/visionModuleLoader.js';  
 }else{
-  DEVURL.MODELPATHURL = "https://extensions.netsblox.org/extensions/HandGestures/Models/hand_landmarker.task",
+  DEVURL.MODELPATHURL = 'https://extensions.netsblox.org/extensions/HandGestures/Models/hand_landmarker.task',
   DEVURL.VISIONMODULELOADERURL = 'https://extensions.netsblox.org/utils/visionModuleLoader.js';
 }
 
@@ -60,10 +60,10 @@ class VisionHandler {
     this.handLandmarker = await Vision.Module.HandLandmarker.createFromOptions(Vision.Task, {
       baseOptions: {
         modelAssetPath: this.modelPathUrl,
-        delegate: "GPU"
+        delegate: 'GPU'
       },
       numHands: VisionHandler.config.options.maxHands,
-      runningMode: "VIDEO",
+      runningMode: 'VIDEO',
       minHandDetectionConfidence: VisionHandler.config.options.minDetConf,
       minHandPresenceConfidence: VisionHandler.config.options.minPresConf,
       minTrackingConfidence: VisionHandler.config.options.minTracConf
