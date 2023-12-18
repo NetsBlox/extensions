@@ -122,7 +122,6 @@ class VisionHandler {
 
 const VISION_HANDLES = [];
 function getVisionHandler() {
-  console.log(VISION_HANDLES);
   for (const handle of VISION_HANDLES) {
     if (handle.isIdle()) 
       return handle;
@@ -143,7 +142,6 @@ async function renderHands(image) {
     return data;
   }
   const context = image.getContext('2d');
-
   const drawer = new Vision.Module.DrawingUtils(context);
   
   for (const landmarks of data.landmarks) {

@@ -13,9 +13,7 @@
   class PoseHandler {
     constructor() {
 
-      this.poseLandmarker; 
-      
-      this.generateTask();
+      this.poseLandmarker = null; 
 
       this.expiry = 0;
       this.resolve = null;
@@ -39,10 +37,10 @@
       if(!Vision)
         throw Error('Vision Module is loading...');
 
-      if(this.poseLandmarker === 'loading')
+      if(this.poseLandmarker === 'loading...')
         throw Error('PoseLandmarker is currently loading');
 
-      this.poseLandmarker = 'loading';
+      this.poseLandmarker = 'loading...';
        
       this.poseLandmarker = await Vision.Module.PoseLandmarker.createFromOptions(Vision.Task, {
         baseOptions: {
@@ -54,13 +52,18 @@
         minPoseDetectionConfidence: PoseHandler.config.options.minPoseDetConf,
         minPosePresenceConfidence: PoseHandler.config.options.minPosePresConf,
         minTrackingConfidence: PoseHandler.config.options.minTracConf
+      }).catch((err) => {
+        throw new Error(`Failed to generate vision task: Error: ${err}`);
       })
     }
 
     async infer(image){
-      if(!this.poseLandmarker) throw Error('poseLandmarker is not initialized');
-      if(this.poseLandmarker === 'loading') return "poseLandmarker is loading...";
-
+      if(this.poseLandmarker === null){ 
+        throw new Error('poseLandmarker is not initialized');
+      }
+      if(this.poseLandmarker === 'loading...'){ 
+        throw new Error ('poseLandmarker is loading...');
+      }
       if(this.resolve !== null) throw Error('PoseHandler is currently in use');
       this.resolve = 'loading...';
 
@@ -108,18 +111,14 @@
 
   async function renderPose(image) {
     const data = await findPose(image);
-    if(typeof(data) === 'string'){
-      return data;
-    }
-    const context = image.getContext('2d');
 
+    const context = image.getContext('2d');
     const drawer = new Vision.Module.DrawingUtils(context);
 
     for (const landmarks of data.landmarks) {
       drawer.drawConnectors(landmarks, Vision.Module.PoseLandmarker.POSE_CONNECTIONS);
       drawer.drawLandmarks(landmarks);
     }
-
     return image;
   }
 
@@ -169,9 +168,6 @@
             if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
 
             const res = await findPose(img);
-            if(typeof(res) === 'string'){
-              return snapify(res);
-            }
             return snapify(res);                        
           }, { args: [], timeout: 10000 });
         }),            
@@ -183,10 +179,8 @@
             if (!img || typeof(img) !== 'object' || !img.width || !img.height) {throw Error('Expected an image as input');}
              
             const res = await renderPose(img);
-            if(typeof(res) === 'string'){
-              return snapify(res);
-            }
-            return new Costume(res);}, { args: [], timeout: 10000 });
+            return new Costume(res);
+          }, { args: [], timeout: 10000 });
         }),
       ];
     }

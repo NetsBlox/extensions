@@ -13,15 +13,14 @@
   class FaceHandler {
     constructor() {
 
-      this.faceLandmarker; 
-      
-      this.generateTask();
+      this.faceLandmarker = null;       
 
       this.expiry = 0;
       this.resolve = null;
 
       this.frameTime = 0;
     }
+
     static config = {
       data: null,
       updateTime: -1,
@@ -38,10 +37,10 @@
       if(!Vision)
         throw Error('Vision Module is loading...');
 
-      if(this.faceLandmarker === 'loading')
+      if(this.faceLandmarker === 'loading...')
         throw Error('faceLandmarker is currently loading');
 
-      this.faceLandmarker = 'loading';
+      this.faceLandmarker = 'loading...';
        
       this.faceLandmarker = await Vision.Module.FaceLandmarker.createFromOptions(Vision.Task, {
         baseOptions: {
@@ -54,14 +53,18 @@
         minFaceDetectionConfidence: FaceHandler.config.options.minFaceDetConf,
         minFacePresenceConfidence: FaceHandler.config.options.minFacePresConf,
         minTrackingConfidence: FaceHandler.config.options.minTracConf
-
+      }).catch((err) => {
+        throw new Error(`Failed to generate vision task: Error: ${err}`);
       })
     }
 
     async infer(image){
-      if(!this.faceLandmarker) throw Error('faceLandmarker is not initialized');
-      if(this.faceLandmarker === 'loading') return "faceLandmarker is loading...";
-
+      if(this.faceLandmarker === null){ 
+        await this.generateTask();
+      }
+      if(this.faceLandmarker === 'loading...') {
+        throw new Error('handLandmarker is loading...')
+      }
       if(this.resolve !== null) throw Error('FaceHandler is currently in use');
       this.resolve = 'loading...';
 
@@ -113,7 +116,6 @@
       return data;
     }
     const context = image.getContext('2d');
-
     const drawer = new Vision.Module.DrawingUtils(context);
 
     for (const landmarks of data.faceLandmarks) {
@@ -212,10 +214,8 @@
             if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
 
             const res = await findFace(img);
-            if(typeof(res) === 'string'){
-              return snapify(res);
-            }
-            return snapify(res);                        
+  
+            return snapify(res);           
           }, { args: [], timeout: 10000 });
         }),            
         
@@ -226,10 +226,9 @@
             if (!img || typeof(img) !== 'object' || !img.width || !img.height) {throw Error('Expected an image as input');}
              
             const res = await renderFace(img);
-            if(typeof(res) === 'string'){
-              return snapify(res);
-            }
-            return new Costume(res);}, { args: [], timeout: 10000 });
+            
+            return new Costume(res);
+          }, { args: [], timeout: 10000 });
         }),
       ];
     }
