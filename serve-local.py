@@ -1,4 +1,5 @@
 from http.server import HTTPServer, SimpleHTTPRequestHandler, test
+import argparse
 
 class CORSRequestHandler(SimpleHTTPRequestHandler):
     def end_headers(self) -> None:
@@ -6,4 +7,8 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         super().end_headers()
 
 if __name__ == '__main__':
-    test(CORSRequestHandler, HTTPServer)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--port', type = int, default = 8000)
+    args = parser.parse_args()
+
+    test(CORSRequestHandler, HTTPServer, port = args.port)
