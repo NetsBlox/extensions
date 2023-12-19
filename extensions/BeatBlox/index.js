@@ -363,6 +363,8 @@
                     new Extension.Palette.Block('setTrackEffect'),
                     new Extension.Palette.Block('clearTrackEffects'),
                     '-',
+                    new Extension.Palette.Block('makeTempo'),
+                    '-',
                     new Extension.Palette.Block('appliedEffects').withWatcherToggle(),
                     new Extension.Palette.Block('tempo').withWatcherToggle(),
                     '-',
@@ -418,7 +420,7 @@
                     new Extension.Block('playNoteWithAmp', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %s amp %n %', ['Quarter', '', 'C3', '100'], function (duration,durationSpecial, notes, amp) {
                         playNoteCommon.apply(this, [durationSpecial+duration, notes, amp]);
                     }),
-                    new Extension.Block('playAudioClip', 'command', 'music', 'play audio clip %snd', [null], function (clip) {
+                    new Extension.Block('playAudioClip', 'command', 'music', 'play sound %snd', [null], function (clip) {
                         setupProcess(this);
                         if(clip === "") throw Error(`Clip value cannot be empty`);
                         if(this.receiver.sounds.contents.length){
@@ -437,7 +439,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play audio clip %snd duration %n', [null, 0], function (clip, duration) {
+                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play sound %snd duration %n', [null, 0], function (clip, duration) {
                         setupProcess(this);
                         if(clip === "") throw Error(`Clip value cannot be empty`);
                         if(this.receiver.sounds.contents.length){
@@ -456,7 +458,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play sample %snd duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration,durationSpecial) {
+                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play sound %snd duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration,durationSpecial) {
                         //Work in Progess..............
                         setupProcess(this);
                         duration = availableNoteDurations[duration];
@@ -534,8 +536,14 @@
                             appliedEffects = [];
                         }, { args: [], timeout: I32_MAX });
                     }),
+                    new Extension.Block('makeTempo','command','music','set tempo %n', [120], function(tempo){
+                        audioAPI.updateTempo(4,tempo,4,4)
+                    }),
                     new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
-                        if(appliedEffects.length === 0) return 'No effects applied';
+                        if(appliedEffects.length === 0) {
+                            var twoD = []        
+                            twoD = new List(twoD.map(a => new List(a)));
+                            return twoD;}
                         
                         const trackName = this.id;     
                         return getEffectValues(trackName,appliedEffects);
