@@ -413,6 +413,7 @@
                 }
                 return [
                     new Extension.Block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', ['Synthesizer'], function (instrument) {
+                        if(instrument === '') throw Error(`instrument cannot be empty`);
                         const trackName = this.receiver.id;
                         this.runAsyncFn(async () => {
                             await changeInstrument(trackName, instrument);
