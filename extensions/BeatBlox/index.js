@@ -22,7 +22,7 @@
         const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatBlox/instruments/';
         const instrumentLocation = window.origin.includes('localhost') ? devRoot : releaseRoot;
 
-        audioAPI.getAvailableInstruments(releaseRoot).then(
+        audioAPI.getAvailableInstruments(instrumentLocation).then(
             instruments => instruments.forEach(
                 instrument => midiInstruments.push(instrument)
             )
@@ -330,9 +330,13 @@
             }
 
             onOpenRole() {
+                //Create Tracks for all sprites
                 for (const sprite of this.ide.sprites.contents) {
                     setupTrack(sprite.id);
                 }
+
+                //Create Track for the stage
+                setupTrack(this.ide.stage.id);
             }
 
             onNewSprite(sprite) {
@@ -422,7 +426,7 @@
                     }),
                     new Extension.Block('playAudioClip', 'command', 'music', 'play sound %snd', [null], function (clip) {
                         setupProcess(this);
-                        if(clip === "") throw Error(`Clip value cannot be empty`);
+                        if(clip === "") throw Error(`sound cannot be empty`);
                         if(this.receiver.sounds.contents.length){
                             for(let i = 0; i< this.receiver.sounds.contents.length; i++){
                                 if(clip === this.receiver.sounds.contents[i].name){
@@ -441,7 +445,7 @@
                     }),
                     new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play sound %snd duration %n', [null, 0], function (clip, duration) {
                         setupProcess(this);
-                        if(clip === "") throw Error(`Clip value cannot be empty`);
+                        if(clip === "") throw Error(`sound cannot be empty`);
                         if(this.receiver.sounds.contents.length){
                             for(let i = 0; i< this.receiver.sounds.contents.length; i++){
                                 if(clip === this.receiver.sounds.contents[i].name){
@@ -464,7 +468,7 @@
                         duration = availableNoteDurations[duration];
                         durationSpecial = availableNoteDurations[durationSpecial];
                         console.log(`HERE ARE THE DURATIONS ${duration}`);
-                        if(clip === "") throw Error(`Clip value cannot be empty`);
+                        if(clip === "") throw Error(`sound cannot be empty`);
                         if(this.receiver.sounds.contents.length){
                             for(let i = 0; i< this.receiver.sounds.contents.length; i++){
                                 if(clip === this.receiver.sounds.contents[i].name){
