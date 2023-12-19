@@ -263,7 +263,7 @@
             for(let i = 0; i <appliedEffects.length; i++){
                 var objectOfParameters = audioAPI.getCurrentTrackEffectParameters(trackName,appliedEffects[i]);
                 var valueOfFirstElement = objectOfParameters[Object.keys(objectOfParameters)[0]]
-                twoD.push([appliedEffects[i],valueOfFirstElement]);
+                twoD.push([appliedEffects[i],(valueOfFirstElement*100)]);
 
             }
 
@@ -513,15 +513,11 @@
                         return new List(pattern.map((x) => rootNote + x));
                     }),
                     new Extension.Block('setTrackEffect', 'command', 'music', 'track %supportedEffects effect to %n %', ['Volume', '50'], function (effectName, level) {
-                        if (parseInt(level) > 100 || level == '') {
-                            throw Error('Level must be a value between 1 and 100');
-                        }
-                        if (effectName == "Echo" && level > 95) {
-                            throw Error("Echo: value cannot be greater than 95")
-                        }
-                        if (effectName == "Reverb" && level < 10) {
-                            throw Error("Reverb: value cannot be less than 10")
-                        }
+
+                        if (parseInt(level) > 100) level = 100
+                        if (parseInt(level) < 0) level = 0
+                        if (effectName == "Echo" && level > 95) level = 95
+                        if (effectName == "Reverb" && level < 10) level = 10
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
                             await setTrackEffect(trackName, effectName, parseInt(level) / 100);
