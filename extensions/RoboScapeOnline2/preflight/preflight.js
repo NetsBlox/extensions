@@ -1,3 +1,6 @@
+let path = document.currentScript.src;
+path = path.substring(0, path.lastIndexOf("/"));
+
 function runTest() {    
     // Step -1: Importing Babylon.js and Pseudomorphic
     // Add CSS
@@ -61,9 +64,6 @@ function runTest1() {
     }
 
     // Step 0: Import WASM module
-    let path = document.currentScript.src;
-    path = path.substring(0, path.lastIndexOf("/"));
-
     var s = document.createElement('script');
     s.type = "module";
     s.innerHTML = `import init, {step1, step2, step3, step4} from '${path}/pkg/roboscapesim_preflight.js';
