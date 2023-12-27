@@ -61,9 +61,12 @@ function runTest1() {
     }
 
     // Step 0: Import WASM module
+    let path = document.currentScript.src;
+    path = path.substring(0, path.lastIndexOf("/"));
+
     var s = document.createElement('script');
     s.type = "module";
-    s.innerHTML = `import init, {step1, step2, step3, step4} from '/pkg/roboscapesim_preflight.js';
+    s.innerHTML = `import init, {step1, step2, step3, step4} from '${path}/pkg/roboscapesim_preflight.js';
     
         await init();
 
