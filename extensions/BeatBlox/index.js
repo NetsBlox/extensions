@@ -240,9 +240,9 @@
 
         async function setTrackEffect(trackName, effectName, level) {
             const effectType = availableEffects[effectName];
-            if (!appliedEffects.includes(effectName)) {
+            if (!appliedEffects.includes(trackName+effectName)) {
                 await audioAPI.applyTrackEffect(trackName, effectName, effectType);
-                appliedEffects.push(effectName);
+                appliedEffects.push(trackName+effectName);
             }
 
             const parameters = audioAPI.getAvailableEffectParameters(effectType);
@@ -368,7 +368,6 @@
                     new Extension.Palette.Block('clearTrackEffects'),
                     '-',
                     new Extension.Palette.Block('makeTempo'),
-                    new Extension.Palette.Block('makeTimeSignature'),
                     '-',
                     new Extension.Palette.Block('appliedEffects').withWatcherToggle(),
                     new Extension.Palette.Block('tempo').withWatcherToggle(),
