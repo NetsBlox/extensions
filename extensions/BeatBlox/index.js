@@ -21,6 +21,9 @@
         const devRoot = 'http://localhost:9090/extensions/BeatBlox/instruments/';
         const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatBlox/instruments/';
         const instrumentLocation = window.origin.includes('localhost') ? devRoot : releaseRoot;
+        let beatBase = 4;
+        let beatNumerator = 4;
+        let Tempo = 100;
 
         audioAPI.getAvailableInstruments(instrumentLocation).then(
             instruments => instruments.forEach(
@@ -257,8 +260,7 @@
         }
 
         function getEffectValues(trackName,appliedEffects){
-            var values = [];
-            var twoD = []
+            var twoD = [];
 
             for(let i = 0; i <appliedEffects.length; i++){
                 var objectOfParameters = audioAPI.getCurrentTrackEffectParameters(trackName,appliedEffects[i]);
@@ -288,6 +290,7 @@
             await audioAPI.updateTrackEffect(track, effectName, effectOptions);
         }
         function setupTrack(name) {
+            appliedEffects = [];
             createTrack(name);
             for (const inst of midiInstruments) {
                 changeInstrument(name, inst);
@@ -368,9 +371,11 @@
                     new Extension.Palette.Block('clearTrackEffects'),
                     '-',
                     new Extension.Palette.Block('makeTempo'),
+                    new Extension.Palette.Block('makeTimeSignature'),
                     '-',
                     new Extension.Palette.Block('appliedEffects').withWatcherToggle(),
                     new Extension.Palette.Block('tempo').withWatcherToggle(),
+                    new Extension.Palette.Block('timeSig').withWatcherToggle(),
                     '-',
                     new Extension.Palette.Block('setInputDevice'),
                     new Extension.Palette.Block('startRecordingInput'),
@@ -464,11 +469,11 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('playSampleForDuration', 'command', 'music', 'play sound %snd duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration,durationSpecial) {
-                        //Work in Progess..............
                         setupProcess(this);
-                        duration = availableNoteDurations[duration];
-                        durationSpecial = availableNoteDurations[durationSpecial];
-                        console.log(`HERE ARE THE DURATIONS ${duration}`);
+                        let playDuration = availableNoteDurations[duration];
+                        if(durationSpecial != '') {
+                            playDuration =  availableNoteDurations[durationSpecial+duration];
+                        }
                         if(clip === "") throw Error(`sound cannot be empty`);
                         if(this.receiver.sounds.contents.length){
                             for(let i = 0; i< this.receiver.sounds.contents.length; i++){
@@ -481,7 +486,9 @@
                         }
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
-                            const t = await playClip(trackName, clip, this.musicInfo.t, duration+durationSpecial);
+                            const clipDuration = audioAPI.convertNoteDurationToSeconds(playDuration);
+                            console.log(clipDuration);
+                            const t = await playClip(trackName, clip, this.musicInfo.t, clipDuration);
                             this.musicInfo.t += t;
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
@@ -537,8 +544,14 @@
                             appliedEffects = [];
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('makeTempo','command','music','set tempo %n', [120], function(tempo){
-                        audioAPI.updateTempo(4,tempo,4,4)
+                    new Extension.Block('makeTempo','command','music','set tempo %n bpm', [120], function(tempo){
+                        Tempo = tempo;
+                        audioAPI.updateTempo(beatBase,tempo,beatNumerator,beatBase);
+                    }),
+                    new Extension.Block('makeTimeSignature','command','music','set time signature %n / %n', [4,4], function(numerator,denominator){
+                        beatBase = denominator;
+                        beatNumerator = numerator;
+                        audioAPI.updateTempo(beatBase,Tempo,beatNumerator,beatBase);
                     }),
                     new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
                         if(appliedEffects.length === 0) {
@@ -551,7 +564,11 @@
                     }).for(SpriteMorph,StageMorph),
                     new Extension.Block('tempo', 'reporter', 'music', 'tempo', [], function () {
                         var tempoObject = audioAPI.getTempo();
-                        return tempoObject.beatsPerMinute + ' BPM';
+                        return tempoObject.beatsPerMinute + ' BPM ';
+                    }).for(SpriteMorph,StageMorph),
+                    new Extension.Block('timeSig', 'reporter', 'music', 'time signature', [], function () {
+                        var tempoObject = audioAPI.getTempo();
+                        return 'time signature: ' + tempoObject.timeSignatureNumerator + '/'+tempoObject.timeSignatureDenominator;
                     }).for(SpriteMorph,StageMorph),
                     new Extension.Block('presetEffect', 'command', 'music', 'preset effects %fxPreset %onOff', ['', 'on'], function (effect, status) {
                         const trackName = this.receiver.id;
