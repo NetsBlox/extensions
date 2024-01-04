@@ -21,9 +21,6 @@
         const devRoot = 'http://localhost:9090/extensions/BeatBlox/instruments/';
         const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatBlox/instruments/';
         const instrumentLocation = window.origin.includes('localhost') ? devRoot : releaseRoot;
-        let beatBase = 4;
-        let beatNumerator = 4;
-        let Tempo = 100;
 
         audioAPI.getAvailableInstruments(instrumentLocation).then(
             instruments => instruments.forEach(
@@ -375,7 +372,6 @@
                     '-',
                     new Extension.Palette.Block('appliedEffects').withWatcherToggle(),
                     new Extension.Palette.Block('tempo').withWatcherToggle(),
-                    new Extension.Palette.Block('timeSig').withWatcherToggle(),
                     '-',
                     new Extension.Palette.Block('setInputDevice'),
                     new Extension.Palette.Block('startRecordingInput'),
@@ -545,13 +541,7 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('makeTempo','command','music','set tempo %n bpm', [120], function(tempo){
-                        Tempo = tempo;
-                        audioAPI.updateTempo(beatBase,tempo,beatNumerator,beatBase);
-                    }),
-                    new Extension.Block('makeTimeSignature','command','music','set time signature %n / %n', [4,4], function(numerator,denominator){
-                        beatBase = denominator;
-                        beatNumerator = numerator;
-                        audioAPI.updateTempo(beatBase,Tempo,beatNumerator,beatBase);
+                        audioAPI.updateTempo(4,tempo,4,4);
                     }),
                     new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
                         if(appliedEffects.length === 0) {
@@ -565,10 +555,6 @@
                     new Extension.Block('tempo', 'reporter', 'music', 'tempo', [], function () {
                         var tempoObject = audioAPI.getTempo();
                         return tempoObject.beatsPerMinute + ' BPM ';
-                    }).for(SpriteMorph,StageMorph),
-                    new Extension.Block('timeSig', 'reporter', 'music', 'time signature', [], function () {
-                        var tempoObject = audioAPI.getTempo();
-                        return 'time signature: ' + tempoObject.timeSignatureNumerator + '/'+tempoObject.timeSignatureDenominator;
                     }).for(SpriteMorph,StageMorph),
                     new Extension.Block('presetEffect', 'command', 'music', 'preset effects %fxPreset %onOff', ['', 'on'], function (effect, status) {
                         const trackName = this.receiver.id;
