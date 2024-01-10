@@ -1,21 +1,12 @@
-(function () {
+(async function () {
 
   const localMode = window.location.href.includes('localhost');
-  const moduleURL = localMode? 'http://localhost:8000/extensions/HandGestures/handLandmarkerModule.mjs' : 'http://extensionss.netsblox.org/extensions/HandGestures/handLandmarkerModule.mjs';  
+  const moduleURL = 
+    localMode? 'http://localhost:8000/extensions/HandGestures/handLandmarkerModule.mjs' : 
+               'https://extensions.netsblox.org/extensions/HandGestures/handLandmarkerModule.mjs';  
 
-  async function loadHandModule(){
-    const module = await import(moduleURL);
-    return module;
-  }
-
-  let handModule;
-  loadHandModule().then(
-    (res) => {
-      handModule = res;
-      console.log('doneLoadingModule');
-    });
-  loadHandModule();
-
+  const handModule = await import(moduleURL);
+  
   function snapify(value) {
     if (Array.isArray(value)) {
       const res = [];
@@ -32,7 +23,6 @@
     constructor(ide) {
       super('HandGestures');
       this.ide = ide;
-
     }
 
     onOpenRole() {}
@@ -94,8 +84,8 @@
             
             if(!res.landmarks) return snapify(res);
             if(option === 'Hand Landmarks') return snapify(res.landmarks);
-            if(option === 'Hand World Landmarks') return snapify(res.worldLandmarks);
-            if(option === 'Handedness') return snapify(res.handedness[0]);
+            if(option === 'World Landmarks') return snapify(res.worldLandmarks);
+            if(option === 'Handedness') return snapify(res.handedness);
             
             throw new Error('Block Error')
           }, { args: [], timeout: 10000 });
@@ -111,7 +101,6 @@
             if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
 
             const coords = await handModule.parseLandmark(img, option, landmark);
-            console.log(coords);
             
             return snapify(coords);
           }, { args: [], timeout: 10000 });
@@ -128,7 +117,7 @@
             img = img?.contents || img;
             if (!img || typeof(img) !== 'object' || !img.width || !img.height) {throw Error('Expected an image as input');}
              
-            const distance = await handModule.parseLandmarkDistance(img, option, landmark1, landmark2);
+            const distance = await handModule.parseLandmarkDistance(img, landmark1, landmark2);
             
             return snapify(distance);}, { args: [], timeout: 10000 });
         }),         
@@ -145,7 +134,6 @@
         }),         
       ];
     }
-    
 
     getLabelParts() {
       function identityMap(s) {

@@ -29,6 +29,24 @@ function inRange(x, min, max){
   return min <= x && x <= max; 
 }
 
+/* dataOptionConverter */
+function convertOption(option){
+  const index = DATAOPTIONS.indexOf(option);
+  switch (index) {
+    case 0:
+      return 'landmarks';
+
+    case 1:
+      return 'worldLandmarks';
+      
+    case 2:
+      return 'handedness';
+      
+    default:
+      return undefined;
+  }
+}
+
 class VisionHandler {
   constructor() {
 
@@ -138,9 +156,7 @@ async function findHands(image) {
 
 async function renderHands(image) {
   const data = await findHands(image);
-  if(typeof(data) === 'string'){
-    return data;
-  }
+
   const context = image.getContext('2d');
   const drawer = new Vision.Module.DrawingUtils(context);
   
@@ -152,14 +168,14 @@ async function renderHands(image) {
   return image;
 }
 
-async function findCentralCoords(image){
+async function getCentralCoords(image){
   const data = await findHands(image);
-  if(typeof(data) === 'string' || !data || data.landmarks.length){
+  if(!data || data.landmarks.length){
     return data;
   }
   const imageCoords = data.landmarks;
-  for(hands of imageCoords){
-    for(coord of hands){
+  for(const hands of imageCoords){
+    for(const coord of hands){
       coord.x = (coord.x * image.width) - (image.width/2);
       coord.y = 1 - ((coord.y * image.height) - (image.height/2));
       coord.z = (coord.z * image.width) - (image.width/2); 
@@ -168,46 +184,55 @@ async function findCentralCoords(image){
   return imageCoords;
 }
 
-async function findCentralCoord(image, landmark){
+async function getCentralCoord(image, landmark){
   const data = await findHands(image);
-  if(typeof(data) === 'string' || !data || data.landmarks.length){
-    return data;
+  if(!data || !data.landmarks.length){
+    return;
   }
   const index = LANDMARKS.indexOf(landmark);  
-  const imageCoords = data.landmarks;
-  const res = [];
-  for(hands of imageCoords){
-     const coord = {
-      x: (hands[index].x * image.width) - (image.width/2),
-      y: 1 - ((hands[index].y) * image.height) - (image.height/2),
-      z: (hands[index].z * image.width) - (image.width/2)
-     }
-     res.push(coord);
+  const coords = data.landmarks[0][index]; /* does hand 0 everytime */ 
+  
+  const centralCoords = {
+    x: (coords.x * image.width) - (image.width/2),
+    y: 1 - (coords.y * image.height) - (image.height/2),
+    z: (coords.z) //* image.width) - (image.width/2)
   }
+
+  return centralCoords;
+}
+
+async function parseLandmark(image, option, landmark) { 
+  const data = await findHands(image);
+  const convOption = convertOption(option);
+  const coords = data[convOption];
+  const res = new Array();
+  
+  for(const hand of coords){
+    const index = LANDMARKS.indexOf(landmark);
+    res.push(hand[index]);  
+  }  
   return res;
 }
 
-async function parseLandmark(image, option, landmark) {
+async function parseLandmarkDistance(image, landmark1, landmark2) {
   const data = await findHands(image);
-
-  let coords;
-  if(option === 'Hand Landmarks') coords = data.landmarks[0];
-  else coords = data.worldLandmarks[0];
+  const coords = data.landmarks;
+  const res = new Array();
   
-  if(!coords || coords.length === 0) {
-    return [];
+  for(const hand of coords){
+    const index1 = LANDMARKS.indexOf(landmark1);
+    const index2 = LANDMARKS.indexOf(landmark2);
+    const dist = Math.sqrt(((hand[index1].x - hand[index2].x) * image.width)**2 + ((hand[index1].y - hand[index2].y) * image.height)**2);
+    res.push(dist);
   }
-
-  const index = LANDMARKS.indexOf(landmark);  
-  return coords[index];
+  
+  return res;
 }
 
-async function parseLandmarkDistance(image, option, landmark1, landmark2) {
+async function parseNormalLandmarkDist(image, landmark1, landmark2) {
   const data = await findHands(image);
 
-  let coords;
-  if(option === 'Hand Landmarks') coords = data.landmarks[0];
-  else coords = data.worldLandmarks[0];
+  const coords = data.landmarks[0];
   
   if(!coords || coords.length === 0) {
     return [];
@@ -215,7 +240,9 @@ async function parseLandmarkDistance(image, option, landmark1, landmark2) {
 
   const index1 = LANDMARKS.indexOf(landmark1);
   const index2 = LANDMARKS.indexOf(landmark2);
-  const distance = Math.sqrt(((coords[index1].x - coords[index2].x) * image.width)**2 + ((coords[index1].y - coords[index2].y) * image.height)**2);
+  const distance = Math.sqrt(((coords[index1].x - coords[index2].x))**2 + 
+    ((coords[index1].y - coords[index2].y))**2 + 
+    ((coords[index1].z - coords[index2].z))**2);
   
   return distance;
 }
@@ -281,4 +308,4 @@ if(!document.getElementById('visionModule')){
   document.body.appendChild(script);
 }
 
-export {VisionHandler, VISION_HANDLES, getVisionHandler, findHands, renderHands, parseLandmark, findCentralCoords, findCentralCoord, updateAllHandleOptions, isValidConfigOption, isValidDataOption, isValidLandmark, parseLandmarkDistance}
+export {VisionHandler, VISION_HANDLES, getVisionHandler, findHands, renderHands, parseLandmark, getCentralCoords, getCentralCoord, updateAllHandleOptions, isValidConfigOption, isValidDataOption, isValidLandmark, parseLandmarkDistance, parseNormalLandmarkDist}

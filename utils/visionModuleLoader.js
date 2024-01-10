@@ -1,48 +1,37 @@
+/* 
+This file creates a global 
+'Vision' variable that contains 
+essential components used by 
+all mediapipe vision extensions.
+These includes: 
+  handGestures, 
+  poseLandmarker, 
+  faceLandmarker.
+This file is added as a script tag
+when a mediapipe vision extension is 
+loaded. Only one script tag is added. */
+
+/*
+Global Vision Constant used by 
+mediapipe vision task extensions */
 const Vision = {
   Module: null,
   Task: null
 };
 
-(function (){
+/* 
+This anonymous function 
+sets the values for the 
+global vision constants*/
 
-  const DEVURL = {};
+(async function (){
 
-  if(window.location.href.includes('localhost')){
-    DEVURL.VisionModuleURL = 'http://localhost:8000/node_modules/@mediapipe/tasks-vision/vision_bundle.mjs';
-    DEVURL.WASMURL = 'http://localhost:8000/node_modules/@mediapipe/tasks-vision/wasm';
-  }else{
-    DEVURL.VisionModuleURL = 'https://extensions.netsblox.org/node_modules/@mediapipe/tasks-vision/vision_bundle.mjs';
-    DEVURL.WASMURL = 'https://extensions.netsblox.org/node_modules/@mediapipe/tasks-vision/wasm';
-  }
+  const VisionModuleURL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs';
+  const WASMURL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm';
 
-  async function loadVisionModule() {
-      const module = await import(DEVURL.VisionModuleURL);
-      console.log(module);
-      return module;
-    }
-    
-  async function loadVisionTask(VisionModule) {
-    const vision = await VisionModule.FilesetResolver.forVisionTasks(DEVURL.WASMURL);
-      console.log(vision);
-    return vision;
-  } 
+  Vision.Module = await import(VisionModuleURL);
+  Vision.Task = await Vision.Module.FilesetResolver.forVisionTasks(WASMURL);
   
-  function setVisionModuleAndTask() {
-    const modulePromise = loadVisionModule();
-    
-    modulePromise.then((module) => {
-      Vision.Module = module;
-      Object.defineProperty(Vision, "Module", {writable: false}); 
-      
-      const visionPromise = loadVisionTask(module);
-      visionPromise.then((vision) => {
-        Vision.Task = vision;
-        Object.defineProperty(Vision, "Task", {writable: false})
-      },
-        () => {throw Error('Failed to load vision task')});
-    }, 
-      () => {throw Error('Failed to load vision module')});
-  }
-    
-    setVisionModuleAndTask();
-  })();;
+  Object.defineProperty(Vision, "Module", {writable: false}); 
+  Object.defineProperty(Vision, "Task", {writable: false});
+  })();

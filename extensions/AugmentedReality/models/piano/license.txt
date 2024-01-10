@@ -1,0 +1,11 @@
+Model Information:
+* title:	Toy Piano
+* source:	https://sketchfab.com/3d-models/toy-piano-006202bb156b4a43bf75917d06c39125
+* author:	amhyde (https://sketchfab.com/amhyde)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Toy Piano" (https://sketchfab.com/3d-models/toy-piano-006202bb156b4a43bf75917d06c39125) by amhyde (https://sketchfab.com/amhyde) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
