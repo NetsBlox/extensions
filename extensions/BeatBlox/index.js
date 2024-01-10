@@ -215,13 +215,13 @@
         function parseNote(note) {
             if (Array.isArray(note)) return note.map((x) => parseNote(x));
             if (note.contents !== undefined) return note.contents.map((x) => parseNote(x));
-            if (typeof Number(note) === 'number') return note;
-        
-
+            if (typeof (note) === 'number') return note;
             if (typeof (note) !== 'string') throw Error(`expected a note, got ${note}`);
 
             if(note === 'Rest') return availableNotes[note];
-    
+
+            if(!isNaN(Number(note))) return Number(note);
+         
             const match = note.match(NOTE_REGEX);
             if (!match) throw Error(`expected a note, got ${note}`);
 
@@ -233,6 +233,7 @@
             }
             console.log(base);
             return base;
+   
         }
 
 
