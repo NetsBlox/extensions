@@ -32,8 +32,6 @@
     constructor(ide) {
       super('AugmentedReality');
       this.ide = ide;
-      this.ide.parent.isDevMode = true;
-      console.log(this.ide.stage);
     }
 
     onOpenRole() {
