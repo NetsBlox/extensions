@@ -218,13 +218,15 @@
         function parseNote(note) {
             if (Array.isArray(note)) return note.map((x) => parseNote(x));
             if (note.contents !== undefined) return note.contents.map((x) => parseNote(x));
-            if (typeof (note) === 'number') return note;
+            if (typeof Number(note) === 'number') return note;
+        
 
             if (typeof (note) !== 'string') throw Error(`expected a note, got ${note}`);
+
             if(note === 'Rest') return availableNotes[note];
     
             const match = note.match(NOTE_REGEX);
-            if (!match) throw Error(`expected a note, got ${note}`)
+            if (!match) throw Error(`expected a note, got ${note}`);
 
             let base = availableNotes[match[1].toUpperCase()];
             for (const c of match[2]) {
@@ -260,9 +262,9 @@
             var twoD = [];
 
             for(let i = 0; i <appliedEffects.length; i++){
-                var objectOfParameters = audioAPI.getCurrentTrackEffectParameters(trackName,appliedEffects[i]);
+                var objectOfParameters = audioAPI.getCurrentTrackEffectParameters(trackName,appliedEffects[i].replace(trackName,''));
                 var valueOfFirstElement = objectOfParameters[Object.keys(objectOfParameters)[0]]
-                twoD.push([appliedEffects[i],(valueOfFirstElement*100)]);
+                twoD.push([appliedEffects[i].replace(trackName,''),(valueOfFirstElement*100)]);
 
             }
 
@@ -544,9 +546,8 @@
                     }),
                     new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
                         if(appliedEffects.length === 0) {
-                            var twoD = []        
-                            twoD = new List(twoD.map(a => new List(a)));
-                            return twoD;}
+                            return new List();
+                        }
                         
                         const trackName = this.id;     
                         return getEffectValues(trackName,appliedEffects);
