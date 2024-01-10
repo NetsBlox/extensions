@@ -64,9 +64,6 @@
                 ['feedback']: 0.5,
                 ['intensity']: 0.4,
             }],
-            'Fan Blade': ['Tremolo', {
-                ['tremeloFrequency']: 18,
-            }],
         };
 
         const CHORD_PATTERNS = {
