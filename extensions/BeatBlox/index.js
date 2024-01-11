@@ -220,7 +220,7 @@
 
             if(note === 'Rest') return availableNotes[note];
 
-            if(!isNaN(Number(note))) return Number(note);
+            if(Number.isInteger(Number(note))) return note;
          
             const match = note.match(NOTE_REGEX);
             if (!match) throw Error(`expected a note, got ${note}`);
@@ -552,7 +552,8 @@
                     }).for(SpriteMorph,StageMorph),
                     new Extension.Block('tempo', 'reporter', 'music', 'tempo', [], function () {
                         var tempoObject = audioAPI.getTempo();
-                        return tempoObject.beatsPerMinute + ' BPM ';
+                        var tempo = tempoObject.beatsPerMinute
+                        return tempo;
                     }).for(SpriteMorph,StageMorph),
                     new Extension.Block('presetEffect', 'command', 'music', 'preset effects %fxPreset %onOff', ['', 'on'], function (effect, status) {
                         const trackName = this.receiver.id;
