@@ -22,7 +22,7 @@
         const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatBlox/instruments/';
         const instrumentLocation = window.origin.includes('localhost') ? devRoot : releaseRoot;
 
-        audioAPI.getAvailableInstruments(releaseRoot).then(
+        audioAPI.getAvailableInstruments(instrumentLocation).then(
             instruments => instruments.forEach(
                 instrument => midiInstruments.push(instrument)
             )
@@ -63,9 +63,6 @@
             'Cave': ['Echo', {
                 ['feedback']: 0.5,
                 ['intensity']: 0.4,
-            }],
-            'Fan Blade': ['Tremolo', {
-                ['tremeloFrequency']: 18,
             }],
         };
 
@@ -218,13 +215,17 @@
         function parseNote(note) {
             if (Array.isArray(note)) return note.map((x) => parseNote(x));
             if (note.contents !== undefined) return note.contents.map((x) => parseNote(x));
+            if(note === '') throw Error(`expected a note, got ${note}`);
             if (typeof (note) === 'number') return note;
-
             if (typeof (note) !== 'string') throw Error(`expected a note, got ${note}`);
+
             if(note === 'Rest') return availableNotes[note];
-    
+
+            if(Number.isInteger(Number(note)) && note == parseInt(note,10) ) return Number(note);
+   
+         
             const match = note.match(NOTE_REGEX);
-            if (!match) throw Error(`expected a note, got ${note}`)
+            if (!match) throw Error(`expected a note, got ${note}`);
 
             let base = availableNotes[match[1].toUpperCase()];
             for (const c of match[2]) {
@@ -234,15 +235,16 @@
             }
             console.log(base);
             return base;
+   
         }
 
 
 
         async function setTrackEffect(trackName, effectName, level) {
             const effectType = availableEffects[effectName];
-            if (!appliedEffects.includes(effectName)) {
+            if (!appliedEffects.includes(trackName+effectName)) {
                 await audioAPI.applyTrackEffect(trackName, effectName, effectType);
-                appliedEffects.push(effectName);
+                appliedEffects.push(trackName+effectName);
             }
 
             const parameters = audioAPI.getAvailableEffectParameters(effectType);
@@ -257,13 +259,12 @@
         }
 
         function getEffectValues(trackName,appliedEffects){
-            var values = [];
-            var twoD = []
+            var twoD = [];
 
             for(let i = 0; i <appliedEffects.length; i++){
-                var objectOfParameters = audioAPI.getCurrentTrackEffectParameters(trackName,appliedEffects[i]);
+                var objectOfParameters = audioAPI.getCurrentTrackEffectParameters(trackName,appliedEffects[i].replace(trackName,''));
                 var valueOfFirstElement = objectOfParameters[Object.keys(objectOfParameters)[0]]
-                twoD.push([appliedEffects[i],valueOfFirstElement]);
+                twoD.push([appliedEffects[i].replace(trackName,''),(valueOfFirstElement*100)]);
 
             }
 
@@ -288,6 +289,7 @@
             await audioAPI.updateTrackEffect(track, effectName, effectOptions);
         }
         function setupTrack(name) {
+            appliedEffects = [];
             createTrack(name);
             for (const inst of midiInstruments) {
                 changeInstrument(name, inst);
@@ -330,9 +332,13 @@
             }
 
             onOpenRole() {
+                //Create Tracks for all sprites
                 for (const sprite of this.ide.sprites.contents) {
                     setupTrack(sprite.id);
                 }
+
+                //Create Track for the stage
+                setupTrack(this.ide.stage.id);
             }
 
             onNewSprite(sprite) {
@@ -362,6 +368,8 @@
                     new Extension.Palette.Block('presetEffect'),
                     new Extension.Palette.Block('setTrackEffect'),
                     new Extension.Palette.Block('clearTrackEffects'),
+                    '-',
+                    new Extension.Palette.Block('makeTempo'),
                     '-',
                     new Extension.Palette.Block('appliedEffects').withWatcherToggle(),
                     new Extension.Palette.Block('tempo').withWatcherToggle(),
@@ -407,6 +415,7 @@
                 }
                 return [
                     new Extension.Block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', ['Synthesizer'], function (instrument) {
+                        if(instrument === '') throw Error(`instrument cannot be empty`);
                         const trackName = this.receiver.id;
                         this.runAsyncFn(async () => {
                             await changeInstrument(trackName, instrument);
@@ -418,9 +427,9 @@
                     new Extension.Block('playNoteWithAmp', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %s amp %n %', ['Quarter', '', 'C3', '100'], function (duration,durationSpecial, notes, amp) {
                         playNoteCommon.apply(this, [durationSpecial+duration, notes, amp]);
                     }),
-                    new Extension.Block('playAudioClip', 'command', 'music', 'play audio clip %snd', [null], function (clip) {
+                    new Extension.Block('playAudioClip', 'command', 'music', 'play sound %snd', [null], function (clip) {
                         setupProcess(this);
-                        if(clip === "") throw Error(`Clip value cannot be empty`);
+                        if(clip === "") throw Error(`sound cannot be empty`);
                         if(this.receiver.sounds.contents.length){
                             for(let i = 0; i< this.receiver.sounds.contents.length; i++){
                                 if(clip === this.receiver.sounds.contents[i].name){
@@ -437,9 +446,9 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play audio clip %snd duration %n', [null, 0], function (clip, duration) {
+                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play sound %snd duration %n', [null, 0], function (clip, duration) {
                         setupProcess(this);
-                        if(clip === "") throw Error(`Clip value cannot be empty`);
+                        if(clip === "") throw Error(`sound cannot be empty`);
                         if(this.receiver.sounds.contents.length){
                             for(let i = 0; i< this.receiver.sounds.contents.length; i++){
                                 if(clip === this.receiver.sounds.contents[i].name){
@@ -456,13 +465,13 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play sample %snd duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration,durationSpecial) {
-                        //Work in Progess..............
+                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play sound %snd duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration,durationSpecial) {
                         setupProcess(this);
-                        duration = availableNoteDurations[duration];
-                        durationSpecial = availableNoteDurations[durationSpecial];
-                        console.log(`HERE ARE THE DURATIONS ${duration}`);
-                        if(clip === "") throw Error(`Clip value cannot be empty`);
+                        let playDuration = availableNoteDurations[duration];
+                        if(durationSpecial != '') {
+                            playDuration =  availableNoteDurations[durationSpecial+duration];
+                        }
+                        if(clip === "") throw Error(`sound cannot be empty`);
                         if(this.receiver.sounds.contents.length){
                             for(let i = 0; i< this.receiver.sounds.contents.length; i++){
                                 if(clip === this.receiver.sounds.contents[i].name){
@@ -474,7 +483,9 @@
                         }
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
-                            const t = await playClip(trackName, clip, this.musicInfo.t, duration+durationSpecial);
+                            const clipDuration = audioAPI.convertNoteDurationToSeconds(playDuration);
+                            console.log(clipDuration);
+                            const t = await playClip(trackName, clip, this.musicInfo.t, clipDuration);
                             this.musicInfo.t += t;
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
@@ -511,15 +522,11 @@
                         return new List(pattern.map((x) => rootNote + x));
                     }),
                     new Extension.Block('setTrackEffect', 'command', 'music', 'track %supportedEffects effect to %n %', ['Volume', '50'], function (effectName, level) {
-                        if (parseInt(level) > 100 || level == '') {
-                            throw Error('Level must be a value between 1 and 100');
-                        }
-                        if (effectName == "Echo" && level > 95) {
-                            throw Error("Echo: value cannot be greater than 95")
-                        }
-                        if (effectName == "Reverb" && level < 10) {
-                            throw Error("Reverb: value cannot be less than 10")
-                        }
+
+                        if (parseInt(level) > 100) level = 100
+                        if (parseInt(level) < 0) level = 0
+                        if (effectName == "Echo" && level > 95) level = 95
+                        if (effectName == "Reverb" && level < 10) level = 10
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
                             await setTrackEffect(trackName, effectName, parseInt(level) / 100);
@@ -534,15 +541,21 @@
                             appliedEffects = [];
                         }, { args: [], timeout: I32_MAX });
                     }),
+                    new Extension.Block('makeTempo','command','music','set tempo %n bpm', [120], function(tempo){
+                        audioAPI.updateTempo(4,tempo,4,4);
+                    }),
                     new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
-                        if(appliedEffects.length === 0) return 'No effects applied';
+                        if(appliedEffects.length === 0) {
+                            return new List();
+                        }
                         
                         const trackName = this.id;     
                         return getEffectValues(trackName,appliedEffects);
                     }).for(SpriteMorph,StageMorph),
                     new Extension.Block('tempo', 'reporter', 'music', 'tempo', [], function () {
                         var tempoObject = audioAPI.getTempo();
-                        return tempoObject.beatsPerMinute + ' BPM';
+                        var tempo = tempoObject.beatsPerMinute
+                        return tempo;
                     }).for(SpriteMorph,StageMorph),
                     new Extension.Block('presetEffect', 'command', 'music', 'preset effects %fxPreset %onOff', ['', 'on'], function (effect, status) {
                         const trackName = this.receiver.id;
