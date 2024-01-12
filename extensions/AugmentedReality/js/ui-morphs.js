@@ -70,8 +70,8 @@ ArucoGenMorph.prototype.updateARCode = function () {
   this.ARCode.cachedTexture = null;
   this.ARCode.texture = 
     localMode ? 
-    `http://localhost:8000/extensions/AugmentedReality/libs/js-aruco2/apriltag_16h5_svgs/APRILTAG_16h5_ID${this.ARCode.value}.svg`: 
-    `https://extensions.netsblox.org/extensions/AugmentedReality/libs/js-aruco2/apriltag_16h5_svgs/APRILTAG_16h5_ID${this.ARCode.value}.svg`;
+    `http://localhost:8000/extensions/AugmentedReality/tag_svgs/apriltag_16h5_svgs/APRILTAG_16h5_ID${this.ARCode.value}.svg`: 
+    `https://extensions.netsblox.org/extensions/AugmentedReality/tag_svgs/apriltag_16h5_svgs/APRILTAG_16h5_ID${this.ARCode.value}.svg`;
 
   this.ARCode.rerender();
 }
