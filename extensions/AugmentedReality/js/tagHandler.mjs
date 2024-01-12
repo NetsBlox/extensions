@@ -1,7 +1,7 @@
 const localMode = window.location.href.includes('localhost');  
 const positVersion = 1;
 
-const localhost = (await fetch('http://localhost:8000/extensions')).ok;
+const localhost = (await fetch('http://localhost:8000/extensions/AugmentedReality/js/tagHandler.mjs')).ok;
 
 class aprilTagHandler {
   constructor() {
@@ -84,31 +84,18 @@ async function getVisibleTags(image) {
   return res;
 }
 
-const DEVURL = {}; 
-   if(localhost){
-    DEVURL.SVDURL = 
-    'http://localhost:8000/extensions/AugmentedReality/libs/js-aruco2/src/svd.js';
-    DEVURL.POSIT1URL = 
-    `http://localhost:8000/extensions/AugmentedReality/libs/js-aruco2/src/posit${positVersion}.js`;
-    DEVURL.CVURL = 
-    'http://localhost:8000/extensions/AugmentedReality/libs/js-aruco2/src/cv.js';
-    DEVURL.ARUCOURL = 
-    'http://localhost:8000/extensions/AugmentedReality/libs/js-aruco2/src/aruco.js';
-    DEVURL.APRILTAGURL = 
-    'http://localhost:8000/extensions/AugmentedReality/libs/js-aruco2/src/dictionaries/apriltag_16h5.js';
-  }else{
-    DEVURL.SVDURL = 
-    'https://extensions.netsblox.org/extensions/AugmentedReality/js-aruco2/src/svd.js';
-    DEVURL.POSIT1URL = 
-    `https://extensions.netsblox.org/extensions/AugmentedReality/js-aruco2/src/posit${positVersion}.js`;
-    DEVURL.CVURL = 
-    'https://extensions.netsblox.org/extensions/AugmentedReality/js-aruco2/src/cv.js';
-    DEVURL.ARUCOURL = 
-    'https://extensions.netsblox.org/extensions/AugmentedReality/js-aruco2/src/aruco.js';
-    DEVURL.APRILTAGURL = 
-    'https://extensions.netsblox.org/extensions/AugmentedReality/libs/js-aruco2/src/dictionaries/apriltag_16h5.js';
-
-  }
+const DEVURL = {
+    SVDURL: 
+    'https://samankittani.github.io/js-aruco2/src/svd.js',
+    POSIT1URL: 
+    `https://samankittani.github.io/js-aruco2/src/posit${positVersion}.js`,
+    CVURL: 
+    'https://samankittani.github.io/js-aruco2/src/cv.js',
+    ARUCOURL: 
+    'https://samankittani.github.io/js-aruco2/src/aruco.js',
+    APRILTAGURL: 
+    'https://samankittani.github.io/js-aruco2/src/dictionaries/apriltag_16h5.js'
+   }
   const sources = Object.values(DEVURL);
 
   if((document.getElementsByClassName("ARScripts")).length === 0){
