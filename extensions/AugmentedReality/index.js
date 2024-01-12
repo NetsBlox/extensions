@@ -3,7 +3,7 @@
   let videoMirrored = false;
 
   const positVersion = 1;
-  const localMode = window.location.href.includes('localhost');
+  const localMode = (await fetch('http://localhost:8000/extensions/AugmentedReality/js/')).ok;
   
   const rendererURL = 
     localMode?  'http://localhost:8000/extensions/AugmentedReality/js/renderModule.mjs':
@@ -35,7 +35,7 @@
     }
 
     onOpenRole() {
-      this.ide.stage.mirrorVideo = false;
+      videoMirrored = this.ide.stage.mirrorVideo;
     }
 
     getMenu() { return {
@@ -52,8 +52,12 @@
       const blocks = [
         new Extension.Palette.Block('ARCodeTracker'),
         new Extension.Palette.Block('ARCodeFlag'),
+        new Extension.Palette.Block('ARCodeVisibleArray'),
         new Extension.Palette.Block('ARCodeRender'),
-        new Extension.Palette.Block('ARCodeFlipVideo')
+        '-',
+        new Extension.Palette.Block('ARCodeFlipVideo'),
+        new Extension.Palette.Block('flipped').withWatcherToggle(),
+        '-'
       ];
       return [
         new Extension.PaletteCategory('sensing', blocks, SpriteMorph),
@@ -114,6 +118,21 @@
           }, { args: [], timeout: 10000 });
         }),
 
+        block('ARCodeVisibleArray', 'reporter', 'sensing', 'All AR codes visible in %s', [], function (image) {
+          return this.runAsyncFn(async () => {
+
+            image = image?.contents || image;
+            if (!image || typeof(image) !== 'object' || !image.width || !image.height){
+              throw TypeError('Expected an image as input');
+            }
+
+            const visible = await tagModule.getVisibleTags(image);
+
+            return snapify(visible);
+            
+          }, { args: [], timeout: 10000 });
+        }),
+
         block('ARCodeRender', 'reporter', 'sensing', 'render %model on %s', ['box'], function (model, image) {
           return this.runAsyncFn(async () => {
             
@@ -131,10 +150,16 @@
         block('ARCodeFlipVideo', 'command', 'sensing', 'flip video', [], function () {
           return this.runAsyncFn(async () => {
             
-            world.children[0].stage.mirrorVideo = !videoMirrored;
+            world.children[0].stage.mirrorVideo = !world.children[0].stage.mirrorVideo;
             videoMirrored = world.children[0].stage.mirrorVideo;
 
           }, { args: [], timeout: 10000 });
+        }),
+
+        block('flipped', 'reporter', 'sensing', 'flipped?', [], function () {
+            
+          videoMirrored = world.children[0].stage.mirrorVideo;
+          return snapify(videoMirrored); 
         })
       ];
     }

@@ -1,6 +1,7 @@
 (async function () {
 
-  const localMode = window.location.href.includes('localhost');
+  const localMode = (await fetch('http://localhost:8000/extensions/HandGestures/Models/')).ok;
+
   const moduleURL = 
     localMode? 'http://localhost:8000/extensions/HandGestures/handLandmarkerModule.mjs' : 
                'https://extensions.netsblox.org/extensions/HandGestures/handLandmarkerModule.mjs';  
@@ -33,12 +34,14 @@
 
     getPalette() {
       const blocks = [
+        '-',
         new Extension.Palette.Block('handLandmarksFindHands'),
         new Extension.Palette.Block('handLandmarksRender'),
         new Extension.Palette.Block('handLandmarksFindLandmarks'),
         new Extension.Palette.Block('handLandmarksFindLandmark'),
         new Extension.Palette.Block('handLandmarksDistance'),
         new Extension.Palette.Block('handLandmarksSetOptions'),
+        '-'
       ];
       return [
         new Extension.PaletteCategory('sensing', blocks, SpriteMorph),

@@ -75,6 +75,15 @@ async function isTagVisible(image, value) {
   return false;
 }
 
+async function getVisibleTags(image) {
+  const res = (new Array(30)).fill(false);
+  const markers = await getCoordinates(image);
+  for(let marker of markers){
+    res[marker.id] = true;
+  }
+  return res;
+}
+
 const DEVURL = {}; 
    if(localhost){
     DEVURL.SVDURL = 
@@ -114,4 +123,4 @@ const DEVURL = {};
     }
   }  
 
-export {getCoordinates, transformCoordinates, isTagVisible}
+export {getCoordinates, transformCoordinates, isTagVisible, getVisibleTags}

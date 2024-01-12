@@ -1,6 +1,8 @@
 const DEVURL = {}
-    
-if(window.location.href.includes('localhost')){
+   
+const localmode = (await fetch('http://localhost:8000/extensions/HandGestures/Models/')).ok;
+
+if(localmode){
   DEVURL.MODELPATHURL = 'http://localhost:8000/extensions/HandGestures/Models/hand_landmarker.task',
   DEVURL.VISIONMODULELOADERURL = 'http://localhost:8000/utils/visionModuleLoader.js';  
 }else{
