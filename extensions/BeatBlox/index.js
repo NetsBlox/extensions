@@ -221,7 +221,7 @@
 
             if(note === 'Rest') return availableNotes[note];
 
-            if(Number.isInteger(Number(note)) && note === Number.isInteger(Number(note)) ) return Number(note);
+            if(Number.isInteger(Number(note))) return Number(note);
    
          
             const match = note.match(NOTE_REGEX);
