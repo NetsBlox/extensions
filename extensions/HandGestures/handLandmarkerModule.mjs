@@ -1,13 +1,9 @@
-const DEVURL = {}
-   
-const localmode = (await fetch('http://localhost:8000/extensions/HandGestures/Models/')).ok;
+const localhost = (await fetch('http://localhost:8000/extensions/HandGestures/Models/hand_landmarker.task')).ok;
+const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
 
-if(localmode){
-  DEVURL.MODELPATHURL = 'http://localhost:8000/extensions/HandGestures/Models/hand_landmarker.task',
-  DEVURL.VISIONMODULELOADERURL = 'http://localhost:8000/utils/visionModuleLoader.js';  
-}else{
-  DEVURL.MODELPATHURL = 'https://extensions.netsblox.org/extensions/HandGestures/Models/hand_landmarker.task',
-  DEVURL.VISIONMODULELOADERURL = 'https://extensions.netsblox.org/utils/visionModuleLoader.js';
+const DEVURL = {
+  MODEPATHURL: root + 'extensions/HandGestures/Models/hand_landmarker.task',
+  VISIONMODULELOADERURL: root + 'utils/visionModuleLoader.js'
 }
 
 const LANDMARKS = ['WRIST','THUMB_cmc','THUMB_mcp','THUMB_ip','THUMB_tip', 

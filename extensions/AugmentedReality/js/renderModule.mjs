@@ -5,6 +5,7 @@ import * as tagModule from './tagHandler.mjs';
 import * as filters from './filters.mjs';
 
 const localhost = (await fetch('http://localhost:8000/extensions/AugmentedReality/js/renderModule.mjs')).ok;
+const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
 
 const models = {};
 

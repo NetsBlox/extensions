@@ -1,11 +1,9 @@
 (async function () {
 
-  const localMode = (await fetch('http://localhost:8000/extensions/HandGestures/Models/')).ok;
+  const localhost = (await fetch('http://localhost:8000/extensions/HandGestures/handLandmarkerModule.mjs')).ok;
+  const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
 
-  const moduleURL = 
-    localMode? 'http://localhost:8000/extensions/HandGestures/handLandmarkerModule.mjs' : 
-               'https://extensions.netsblox.org/extensions/HandGestures/handLandmarkerModule.mjs';  
-
+  const moduleURL = root + 'extensions/HandGestures/handLandmarkerModule.mjs';
   const handModule = await import(moduleURL);
   
   function snapify(value) {

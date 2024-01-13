@@ -1,4 +1,5 @@
-const localMode = window.location.href.includes('localhost');
+const localhost = (await fetch('http://localhost:8000/extensions/AugmentedReality/js/ui-morphs.js')).ok;
+const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
 
 function ArucoGenMorph (){
   this.init();
@@ -68,11 +69,7 @@ ArucoGenMorph.prototype.updateARCode = function () {
   console.log('value: ', this.ARCode.value);
   
   this.ARCode.cachedTexture = null;
-  this.ARCode.texture = 
-    localMode ? 
-    `http://localhost:8000/extensions/AugmentedReality/tag_svgs/apriltag_16h5_svgs/APRILTAG_16h5_ID${this.ARCode.value}.svg`: 
-    `https://extensions.netsblox.org/extensions/AugmentedReality/tag_svgs/apriltag_16h5_svgs/APRILTAG_16h5_ID${this.ARCode.value}.svg`;
-
+  this.ARCode.texture = root + `extensions/AugmentedReality/tag_svgs/apriltag_16h5_svgs/APRILTAG_16h5_ID${this.ARCode.value}.svg`; 
   this.ARCode.rerender();
 }
 
@@ -130,7 +127,6 @@ ArucoGenMorph.prototype.accept = function () {
   }
   this.updateARCode();
 };
-
 
 /* In development 
 

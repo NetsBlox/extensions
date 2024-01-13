@@ -2,16 +2,11 @@
 
   let videoMirrored = false;
 
-  const positVersion = 1;
-  const localMode = (await fetch('http://localhost:8000/extensions/AugmentedReality/js/')).ok;
+  const localhost = (await fetch('http://localhost:8000/extensions/AugmentedReality/index.js')).ok;
+  const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
   
-  const rendererURL = 
-    localMode?  'http://localhost:8000/extensions/AugmentedReality/js/renderModule.mjs':
-                'https://extensions.netsblox.org/extensions/AugmentedReality/js/renderModule.mjs';
-  
-  const tagURL = 
-    localMode?  'http://localhost:8000/extensions/AugmentedReality/js/tagHandler.mjs':
-                'https://extensions.netsblox.org/extensions/AugmentedReality/js/tagHandler.mjs';
+  const rendererURL = root + 'extensions/AugmentedReality/js/renderModule.mjs';                
+  const tagURL = root + 'extensions/AugmentedReality/js/tagHandler.mjs';
 
   const renderModule = await import(rendererURL);
   const tagModule = await import(tagURL);
@@ -189,7 +184,7 @@
     }
   }
 
-  const sources = ['http://localhost:8000/extensions/AugmentedReality/js/ui-morphs.js'];
+  const sources = [root + 'extensions/AugmentedReality/js/ui-morphs.js'];
 
   for(const source of sources){
     const script = document.createElement('script');

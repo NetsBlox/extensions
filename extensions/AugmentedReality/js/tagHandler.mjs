@@ -1,4 +1,3 @@
-const localMode = window.location.href.includes('localhost');  
 const positVersion = 1;
 
 const localhost = (await fetch('http://localhost:8000/extensions/AugmentedReality/js/tagHandler.mjs')).ok;

@@ -1,13 +1,11 @@
-(function () {
+(async function () {
 
-  const DEVURL = {}
-    
-  if(window.location.href.includes('localhost')){
-    DEVURL.MODELPATHURL = 'http://localhost:8000/extensions/PoseLandmarker/Models/pose_landmarker_full.task',
-    DEVURL.VISIONMODULELOADERURL = 'http://localhost:8000/utils/visionModuleLoader.js';  
-  }else{
-    DEVURL.MODELPATHURL = 'http://extensions.netsblox.org/extensions/PoseLandmarker/Models/pose_landmarker_full.task',
-    DEVURL.VISIONMODULELOADERURL = 'https://extensions.netsblox.org/utils/visionModuleLoader.js';
+  const localhost = (await fetch('http://localhost:8000/extensions/PoseLandmarker/index.js')).ok;
+  const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
+  
+  const DEVURL = {
+    MODELPATHURL: root + 'extensions/PoseLandmarker/Models/pose_landmarker_full.task',
+    VISIONMODULELOADERURL: root + 'utils/visionModuleLoader.js'
   }
 
   class PoseHandler {

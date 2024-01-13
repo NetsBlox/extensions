@@ -1,13 +1,11 @@
-(function () {
+(async function () {
 
-  const DEVURL = {}
-    
-  if(window.location.href.includes('localhost')){
-    DEVURL.MODELPATHURL = 'http://localhost:8000/extensions/FaceLandmarker/Models/face_landmarker.task',
-    DEVURL.VISIONMODULELOADERURL = 'http://localhost:8000/utils/visionModuleLoader.js';  
-  }else{
-    DEVURL.MODELPATHURL = 'http://extensions.netsblox.org/extensions/FaceLandmarker/Models/face_landmarker.task',
-    DEVURL.VISIONMODULELOADERURL = 'https://extensions.netsblox.org/utils/visionModuleLoader.js';
+  const localhost = (await fetch('http://localhost:8000/extensions/FaceLandmarker/index.js')).ok;
+  const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
+  
+  const DEVURL = {
+    MODELPATHURL: root + 'extensions/FaceLandmarker/Models/face_landmarker.task',
+    VISIONMODULELOADERURL: root + 'utils/visionModuleLoader.js'
   }
 
   class FaceHandler {
