@@ -1,8 +1,8 @@
-const localhost = (await fetch('http://localhost:8000/extensions/HandGestures/Models/hand_landmarker.task')).ok;
+const localhost = (await fetch('http://localhost:8000/extensions/HandGestures/handLandmarkerModule.mjs')).ok;
 const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
 
 const DEVURL = {
-  MODELPATHURL: root + 'extensions/HandGestures/Models/hand_landmarker.task',
+  MODELPATHURL: 'https://samankittani.github.io/mediapipe_models/models/hand_landmarker.task',
   VISIONMODULELOADERURL: root + 'utils/visionModuleLoader.js'
 }
 

@@ -4,7 +4,7 @@
   const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
   
   const DEVURL = {
-    MODELPATHURL: root + 'extensions/FaceLandmarker/Models/face_landmarker.task',
+    MODELPATHURL: 'https://samankittani.github.io/mediapipe_models/models/face_landmarker.task',
     VISIONMODULELOADERURL: root + 'utils/visionModuleLoader.js'
   }
 
