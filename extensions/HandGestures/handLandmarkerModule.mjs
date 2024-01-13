@@ -2,7 +2,7 @@ const localhost = (await fetch('http://localhost:8000/extensions/HandGestures/Mo
 const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
 
 const DEVURL = {
-  MODEPATHURL: root + 'extensions/HandGestures/Models/hand_landmarker.task',
+  MODELPATHURL: root + 'extensions/HandGestures/Models/hand_landmarker.task',
   VISIONMODULELOADERURL: root + 'utils/visionModuleLoader.js'
 }
 
@@ -73,6 +73,7 @@ class VisionHandler {
       throw Error('Vision Module is loading');
 
     this.handLandmarker = 'loading...';
+    console.log('Vision:', Vision.Task);
     this.handLandmarker = await Vision.Module.HandLandmarker.createFromOptions(Vision.Task, {
       baseOptions: {
         modelAssetPath: this.modelPathUrl,
