@@ -1,6 +1,15 @@
-const localhost = (await fetch('http://localhost:8000/extensions/AugmentedReality/js/ui-morphs.js')).ok;
-const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
-
+let root = 'https://extensions.netsblox.org/';
+fetch('http://localhost:8000/extensions/AugmentedReality/js/ui-morphs.js')
+  .then((value) => {
+    root = 'http://localhost:8000/';
+  })
+  .catch(() => {
+    //do nothing
+  })
+  .finally(() => {
+    console.log('done checking for localhost');
+  });
+ 
 function ArucoGenMorph (){
   this.init();
 }
@@ -62,7 +71,7 @@ ArucoGenMorph.prototype.download = async function () {
 
 ArucoGenMorph.prototype.updateARCode = function () {
   const newValue = parseInt(this.IDInput.children[0].children[0].text);
-  if(newValue > 29){
+  if(newValue > 29 || isNaN(newValue)){
     return;
   }
   this.ARCode.value = newValue; 

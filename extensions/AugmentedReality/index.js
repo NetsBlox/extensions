@@ -115,6 +115,7 @@
 
         block('ARCodeVisibleArray', 'reporter', 'sensing', 'All AR codes visible in %s', [], function (image) {
           return this.runAsyncFn(async () => {
+            const begin = performance.now();
 
             image = image?.contents || image;
             if (!image || typeof(image) !== 'object' || !image.width || !image.height){
@@ -123,6 +124,7 @@
 
             const visible = await tagModule.getVisibleTags(image);
 
+            console.log(performance.now() - begin);
             return snapify(visible);
             
           }, { args: [], timeout: 10000 });
