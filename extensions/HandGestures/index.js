@@ -1,178 +1,199 @@
-(function () {
-    class HandsHandle {
-        constructor() {
-            this.resolve = null;
-            this.expiry = 0;
+(async function () {
 
-            this.rawHandle = new Hands({
-                locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-            });
-            this.rawHandle.setOptions({
-                maxNumHands: 2,
-                modelComplexity: 1,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5,
-            });
-            this.rawHandle.onResults(results => {
-                const resolve = this.resolve;
-                this.resolve = null;
-                if (resolve !== null) resolve(results); // make sure resolve didn't expire
-            });
-        }
-        async infer(image) {
-            if (this.resolve !== null) throw Error('HandsHandle is currently in use');
-            this.resolve = 'loading...'; // must immediately set resolve to non-null (gets real value async-ly later)
-            this.expiry = +new Date() + 10000; // if not resolved by this time, invalidate
+  const localhost = (await fetch('http://localhost:8000/extensions/HandGestures/handLandmarkerModule.mjs')).ok;
+  const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
 
-            return await new Promise(async resolve => {
-                this.resolve = resolve;
-                await this.rawHandle.send({ image });
-            });
-        }
-        isIdle() {
-            if (this.resolve === null) return true;
-            if (+new Date() > this.expiry) {
-                this.resolve = null;
-                return true;
+  const moduleURL = root + 'extensions/HandGestures/handLandmarkerModule.mjs';
+  const handModule = await import(moduleURL);
+  
+  function snapify(value) {
+    if (Array.isArray(value)) {
+      const res = [];
+      for (const item of value) res.push(snapify(item));
+      return new List(res);
+    } else if (typeof(value) === 'object') {
+      const res = [];
+      for (const key in value) res.push(new List([key, snapify(value[key])]));
+      return new List(res);
+    } else return value;
+  }
+  
+  class HandGestures extends Extension {
+    constructor(ide) {
+      super('HandGestures');
+      this.ide = ide;
+    }
+
+    onOpenRole() {}
+
+    getMenu() { return {}; }
+
+    getCategories() { return []; }
+
+    getPalette() {
+      const blocks = [
+        '-',
+        new Extension.Palette.Block('handLandmarksFindHands'),
+        new Extension.Palette.Block('handLandmarksRender'),
+        new Extension.Palette.Block('handLandmarksFindLandmarks'),
+        new Extension.Palette.Block('handLandmarksFindLandmark'),
+        new Extension.Palette.Block('handLandmarksDistance'),
+        new Extension.Palette.Block('handLandmarksSetOptions'),
+        '-'
+      ];
+      return [
+        new Extension.PaletteCategory('sensing', blocks, SpriteMorph),
+        new Extension.PaletteCategory('sensing', blocks, StageMorph),
+      ];
+    }
+
+    getBlocks() {
+      function block(name, type, category, spec, defaults, action) {
+        return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
+      }
+      return [
+        block('handLandmarksFindHands', 'reporter', 'sensing', 'hands data from %s', [], function (img) {
+          return this.runAsyncFn(async () => {
+            img = img?.contents || img;
+            if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
+
+            const res = await handModule.findHands(img);
+            
+            return snapify(res);                        
+          }, { args: [], timeout: 10000 });
+        }),      
+                
+        block('handLandmarksRender', 'reporter', 'sensing', 'render hands %s', [''], function (img) {
+          return this.runAsyncFn(async () => {
+            img = img?.contents || img;
+            if (!img || typeof(img) !== 'object' || !img.width || !img.height) {throw Error('Expected an image as input');}
+             
+            const res = await handModule.renderHands(img);
+
+            return new Costume(res);}, { args: [], timeout: 10000 });
+        }),      
+
+        block('handLandmarksFindLandmarks', 'reporter', 'sensing', '%handLandmarkGet from %s', ['Hand Landmarks', ''], function (option, img) {
+          return this.runAsyncFn(async () => {
+            img = img?.contents || img;
+            if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
+
+            option = option?.toString();
+            if(!option) throw Error('Select a valid option')
+
+            const res = await handModule.findHands(img);
+            
+            if(!res.landmarks) return snapify(res);
+            if(option === 'Hand Landmarks') return snapify(res.landmarks);
+            if(option === 'World Landmarks') return snapify(res.worldLandmarks);
+            if(option === 'Handedness') return snapify(res.handedness);
+            
+            throw new Error('Block Error')
+          }, { args: [], timeout: 10000 });
+        }),            
+
+        block('handLandmarksFindLandmark', 'reporter', 'sensing', '%handLandmarkGetOne of %handLandmarks from %s', ['Hand Landmarks', 'INDEX_tip'], function (option, landmark, img) {
+          return this.runAsyncFn(async () => {
+            landmark = landmark?.toString();
+            option = option?.toString();
+            if (!landmark || !handModule.isValidLandmark(landmark)) throw Error('invalid landmark');
+            if (!option || !handModule.isValidDataOption(option)) throw Error('invalid option');
+            img = img?.contents || img;
+            if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
+
+            const coords = await handModule.parseLandmark(img, option, landmark);
+            
+            return snapify(coords);
+          }, { args: [], timeout: 10000 });
+        }),
+
+
+        block('handLandmarksDistance', 'reporter', 'sensing', '%handLandmarkGetOne Distance of %handLandmarks to %handLandmarks from %s', ['Hand Landmarks', 'WRIST', 'THUMB_tip'], function (option, landmark1, landmark2, img) {
+          return this.runAsyncFn(async () => {
+            
+            landmark1 = landmark1?.toString();
+            landmark2 = landmark2?.toString(); 
+            if (!landmark1 || !landmark2) throw Error('landmark not specified');
+
+            img = img?.contents || img;
+            if (!img || typeof(img) !== 'object' || !img.width || !img.height) {throw Error('Expected an image as input');}
+             
+            const distance = await handModule.parseLandmarkDistance(img, landmark1, landmark2);
+            
+            return snapify(distance);}, { args: [], timeout: 10000 });
+        }),         
+        
+        block('handLandmarksSetOptions', 'command', 'sensing', 'set %handLandmarkOptions to %n', ['Max Hands', 2], function (option, newValue) {
+          return this.runAsyncFn(async () => {
+            if(!handModule.isValidConfigOption(option)){
+              throw new Error('option not valid');
             }
-            return false;
-        }
+
+            await handModule.updateAllHandleOptions(option, newValue);
+            
+            return snapify(newValue);}, { args: [], timeout: 10000 });
+        }),         
+      ];
     }
 
-    const HANDS_HANDLES = [];
-    function getHandsHandle() {
-        for (const handle of HANDS_HANDLES) {
-            if (handle.isIdle()) return handle;
+    getLabelParts() {
+      function identityMap(s) {
+        const res = {};
+        for (const x of s) res[x] = x;
+        return res;
+      }
+      function unionMaps(maps) {
+        const res = {};
+        for (const map of maps) {
+          for (const key in map) res[key] = map[key];
         }
-        const handle = new HandsHandle();
-        HANDS_HANDLES.push(handle);
-        return handle;
+        return res;
+      }
+      return [
+        new Extension.LabelPart('handLandmarks', () => new InputSlotMorph(
+          null, // text
+          false, // numeric
+          unionMaps([
+            identityMap(['WRIST']),
+            {'THUMB': identityMap(['THUMB_cmc','THUMB_mcp','THUMB_ip','THUMB_tip'])}, 
+            {'INDEX': identityMap(['INDEX_mcp','INDEX_pip','INDEX_dip','INDEX_tip'])}, 
+            {'MIDDLE': identityMap(['MIDDLE_mcp','MIDDLE_pip','MIDDLE_dip','MIDDLE_tip'])}, 
+            {'RING': identityMap([ 'RING_mcp','RING_pip','RING_dip','RING_tip'])}, 
+            {'PINKY': identityMap(['PINKY_mcp','PINKY_pip','PINKY_dip','PINKY_tip'])} 
+          ]),
+          true, // readonly (no arbitrary text)
+        )),
+        new Extension.LabelPart('handLandmarkOptions', () => new InputSlotMorph(
+          null, // text
+          false, // numeric
+          identityMap(['Min Detect Confidence', 
+                       'Min Presence Confidence',
+                       'Min Track Confidence',
+                       'Max Hands' ]),
+          true, // readonly (no arbitrary text)
+        )),
+        new Extension.LabelPart('handLandmarkGet', () => new InputSlotMorph(
+          null, // text
+          false, // numeric
+          identityMap(['Hand Landmarks', 
+                       'World Landmarks',
+                       'Handedness'
+                       ]),
+          true, // readonly (no arbitrary text)
+        )),
+        new Extension.LabelPart('handLandmarkGetOne', () => new InputSlotMorph(
+          null, // text
+          false, // numeric
+          identityMap(['Hand Landmarks', 
+                       'World Landmarks',
+                       ]),
+          true, // readonly (no arbitrary text)
+        )),
+          
+      ];
     }
+  }
 
-    async function findHands(image) {
-        const handle = getHandsHandle();
-        return await handle.infer(image);
-    }
-    async function renderHands(image) {
-        const data = await findHands(image);
-        const canvas = document.createElement('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height;
-        const context = canvas.getContext('2d');
-
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        for (const landmarks of data.multiHandLandmarks) {
-            drawConnectors(context, landmarks, HAND_CONNECTIONS, { color: '#00ff00', lineWidth: 3 });
-            drawLandmarks(context, landmarks, { color: '#ff0000', lineWidth: 1 });
-        }
-
-        return canvas;
-    }
-
-    function snapify(value) {
-        if (Array.isArray(value)) {
-            const res = [];
-            for (const item of value) res.push(snapify(item));
-            return new List(res);
-        } else if (typeof(value) === 'object') {
-            const res = [];
-            for (const key in value) res.push(new List([key, snapify(value[key])]));
-            return new List(res);
-        } else return value;
-    }
-
-    class HandGestures extends Extension {
-        constructor(ide) {
-            super('HandGestures');
-            this.ide = ide;
-        }
-
-        onOpenRole() {}
-
-        getMenu() { return {}; }
-
-        getCategories() { return []; }
-
-        getPalette() {
-            const blocks = [
-                new Extension.Palette.Block('handGesturesCalc'),
-            ];
-            return [
-                new Extension.PaletteCategory('sensing', blocks, SpriteMorph),
-                new Extension.PaletteCategory('sensing', blocks, StageMorph),
-            ];
-        }
-
-        getBlocks() {
-            function block(name, type, category, spec, defaults, action) {
-                return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
-            }
-            return [
-                block('handGesturesCalc', 'reporter', 'sensing', '%handGesturesMode hands %s', ['find'], function (mode, img) {
-                    return this.runAsyncFn(async () => {
-                        mode = mode?.toString();
-                        if (!mode) throw Error('No hand detection mode specified');
-
-                        img = img?.contents || img;
-                        if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
-
-                        if (mode === 'find') {
-                            const res = await findHands(img);
-                            const parseLandmarks = raw => raw.map(coords => coords.map(p => [p.x, p.y, p.z]));
-                            const imageLandmarks = parseLandmarks(res.multiHandLandmarks);
-                            const worldLandmarks = parseLandmarks(res.multiHandWorldLandmarks);
-                            const handedness = res.multiHandedness.map(e => ({ index: e.index, score: e.score, label: e.label }));
-
-                            if (imageLandmarks.length !== worldLandmarks.length || imageLandmarks.length !== handedness.length) throw Error('Hand Detector Internal Error');
-
-                            const ret = [];
-                            for (let i = 0; i < imageLandmarks.length; ++i) {
-                                ret.push({
-                                    imagelandmarks: imageLandmarks[i],
-                                    worldLandmarks: worldLandmarks[i],
-                                    handedness: handedness[i],
-                                });
-                            }
-                            return snapify(ret);
-                        } else if (mode === 'render') {
-                            const res = await renderHands(img);
-                            return new Costume(res);
-                        } else throw Error(`Unknown hand detection mode: "${mode}"`);
-                    }, { args: [], timeout: 10000 });
-                }),
-            ];
-        }
-
-        getLabelParts() {
-            function identityMap(s) {
-                const res = {};
-                for (const x of s) res[x] = x;
-                return res;
-            }
-            return [
-                new Extension.LabelPart('handGesturesMode', () => new InputSlotMorph(
-                    null, // text
-                    false, // numeric
-                    identityMap(['find', 'render']),
-                    true, // readonly (no arbitrary text)
-                )),
-            ];
-        }
-    }
-
-    const sources = [
-        'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js',
-        'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js',
-    ];
-    for (const source of sources) {
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = source;
-        script.async = false;
-        script.crossOrigin = 'anonymous';
-        document.body.appendChild(script);
-    }
-
-    NetsBloxExtensions.register(HandGestures);
-    disableRetinaSupport();
+  NetsBloxExtensions.register(HandGestures);
+  disableRetinaSupport();
 })();
