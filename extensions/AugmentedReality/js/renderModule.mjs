@@ -20,10 +20,7 @@ setModelDic();
 
 function createDrumObj(){
   const loader = new GLTFModule.GLTFLoader();
-  const modelURL = 
-    localhost?
-    'http://localhost:8000/extensions/AugmentedReality/models/drum/untitled.gltf':
-    'https://extensions.netsblox.org/extensions/AugmentedReality/models/drum/untitled.gltf';
+  const modelURL = 'https://samankittani.github.io/GLTF_Model_Server/models/drum/untitled.gltf'
 
   loader.load(modelURL, function ( gltf ) {
     const drum = gltf.scene.children[0];
@@ -36,10 +33,7 @@ function createDrumObj(){
 
 function createPianoObj(){
   const loader = new GLTFModule.GLTFLoader();
-  const modelURL = 
-    localhost?
-    'http://localhost:8000/extensions/AugmentedReality/models/piano/untitled.gltf':
-    'https://extensions.netsblox.org/extensions/AugmentedReality/models/piano/untitled.gltf';
+  const modelURL = 'https://samankittani.github.io/GLTF_Model_Server/models/piano/untitled.gltf';
 
   loader.load(modelURL, function ( gltf ) {
     const piano = gltf.scene.children[0];
