@@ -1,19 +1,5 @@
-async function checkLocalhost(){
-  try {
-    const response = await fetch('http://localhost:8000/extensions/HandGestures/handLandmarkerModule.mjs');
-    if (!response.ok) {
-      console.log('INFO: Failed to reach localhost');
-      return false;
-    }else{
-      return true;
-    }
-  } catch (error) {
-    console.log("INFO: localhost fetch failed with error", error)
-    return false;
-  }
-}
 
-const localhost = await checkLocalhost();
+const localhost = window.location.search.includes('localhost');
 const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
 
 const DEVURL = {
