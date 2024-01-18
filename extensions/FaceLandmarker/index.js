@@ -1,6 +1,6 @@
 (async function () {
-
-  const localhost = (await fetch('http://localhost:8000/extensions/FaceLandmarker/index.js')).ok;
+  
+  const localhost = window.location.search.includes('localhost');
   const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
   
   const DEVURL = {

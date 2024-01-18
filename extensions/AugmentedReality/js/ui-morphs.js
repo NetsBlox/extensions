@@ -1,18 +1,5 @@
-let root = 'https://extensions.netsblox.org/';
-fetch('http://localhost:8000/extensions/AugmentedReality/js/ui-morphs.js')
-  .then((value) => {
-    root = 'http://localhost:8000/';
-  })
-  .catch(() => {
-    //do nothing
-  })
-  .finally(() => {
-    console.log('done checking for localhost');
-  });
- 
-function ArucoGenMorph (){
-  this.init();
-}
+const localhost = window.location.search.includes('localhost');
+const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
 
 ArucoGenMorph.prototype = new DialogBoxMorph();
 ArucoGenMorph.prototype.constructor = ArucoGenMorph;

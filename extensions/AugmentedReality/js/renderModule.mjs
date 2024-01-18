@@ -4,7 +4,7 @@ import * as handModule from '../../HandGestures/handLandmarkerModule.mjs';
 import * as tagModule from './tagHandler.mjs';
 import * as filters from './filters.mjs';
 
-const localhost = (await fetch('http://localhost:8000/extensions/AugmentedReality/js/renderModule.mjs')).ok;
+const localhost = window.location.search.includes('localhost');
 const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
 
 const models = {};

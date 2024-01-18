@@ -1,6 +1,5 @@
 (async function () {
-
-  const localhost = (await fetch('http://localhost:8000/extensions/HandGestures/handLandmarkerModule.mjs')).ok;
+  const localhost = window.location.search.includes('localhost');  
   const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
 
   const moduleURL = root + 'extensions/HandGestures/handLandmarkerModule.mjs';
