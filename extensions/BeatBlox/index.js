@@ -15,6 +15,8 @@
         const availableEffects = audioAPI.getAvailableEffects();
         const availableNoteDurations = audioAPI.getAvailableNoteDurations();
         const availableNotes = audioAPI.getAvailableNotes();
+        const availableAnalysisTypes = audioAPI.getAvailableAnalysisTypes();
+        const availableEncoders = audioAPI.getAvailableEncoders();
 
         const devRoot = 'http://localhost:9090/extensions/BeatBlox/instruments/';
         const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatBlox/instruments/';
@@ -38,26 +40,6 @@
             audioAPI.removeTrack(tempTrack);
             console.log('instrument pre-fetch completed');
         })();
-
-        /**
-         * Object representing a mapping between an encoding file type and its unique internal code.
-         * @constant {Object.<string, number>}
-         */
-        const EncodingType = {
-            WAV: 1
-        };
-
-        /**
-         * Object representing a mapping between an effect type and its unique internal code.
-         * @constant {Object.<string, number>}
-         */
-        const EffectType = {
-            Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
-            Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
-            Panning: 31, Equalization: 32,                                                   // Spectral Effects
-            Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
-            LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
-        };
 
         const EffectsPreset = {
             'Under Water': ['LowPassFilter', {
@@ -125,9 +107,21 @@
          * @returns A Snap! Sound.
          */
         async function clipToSnap(clip) {
-            const blob = await clip.getEncodedData(EncodingType['WAV']);
+            const blob = await clip.getEncodedData(availableEncoders['WAV']);
             const audio = new Audio(URL.createObjectURL(blob, { type: 'audio/wav' }));
             return new Sound(audio, 'netsblox-sound');
+        }
+
+        function snapify(value) {
+            if (Array.isArray(value)) {
+                const res = [];
+                for (const item of value) res.push(snapify(item));
+                return new List(res);
+            } else if (typeof(value) === 'object') {
+                const res = [];
+                for (const key in value) res.push(new List([key, snapify(value[key])]));
+                return new List(res);
+            } else return value;
         }
 
         /**
@@ -222,16 +216,13 @@
 
         function getEffectValues(trackName,appliedEffects){
             const res = [];
-
             for(let i = 0; i < appliedEffects.length; i++){
                 const objectOfParameters = audioAPI.getCurrentTrackEffectParameters(trackName, appliedEffects[i].replace(trackName, ''));
                 const valueOfFirstElement = objectOfParameters[Object.keys(objectOfParameters)[0]]
                 res.push([ appliedEffects[i].replace(trackName, ''), valueOfFirstElement * 100 ]);
 
             }
-
-            res = new List(res.map((x) => new List(x)));
-            return res;
+            return snapify(res);
         }
 
         function createTrack(trackName) {
@@ -245,7 +236,7 @@
         }
         async function addFxPreset(track, effect) {
             const effectName = EffectsPreset[effect][0];
-            await audioAPI.applyTrackEffect(track, effectName, EffectType[effectName]);
+            await audioAPI.applyTrackEffect(track, effectName, availableEffects[effectName]);
             appliedEffects.push(effectName);
             const effectOptions = EffectsPreset[effect][1];
             await audioAPI.updateTrackEffect(track, effectName, effectOptions);
@@ -331,6 +322,8 @@
                     new Extension.Palette.Block('clearTrackEffects'),
                     '-',
                     new Extension.Palette.Block('makeTempo'),
+                    '-',
+                    new Extension.Palette.Block('audioAnalysis'),
                     '-',
                     new Extension.Palette.Block('appliedEffects').withWatcherToggle(),
                     new Extension.Palette.Block('tempo').withWatcherToggle(),
@@ -476,7 +469,7 @@
                         const pattern = SCALE_PATTERNS[type];
                         if (!pattern) throw Error(`invalid chord type: '${type}'`);
 
-                        return new List(pattern.map((x) => rootNote + x));
+                        return snapify(pattern.map((x) => rootNote + x));
                     }),
                     new Extension.Block('chords', 'reporter', 'music', 'chord %midiNote type %chordTypes', ['C3', 'Major'], function (rootNote, type) {
                         rootNote = parseNote(rootNote);
@@ -484,7 +477,7 @@
                         const pattern = CHORD_PATTERNS[type];
                         if (!pattern) throw Error(`invalid chord type: '${type}'`);
 
-                        return new List(pattern.map((x) => rootNote + x));
+                        return snapify(pattern.map((x) => rootNote + x));
                     }),
                     new Extension.Block('setTrackEffect', 'command', 'music', 'track %supportedEffects effect to %n %', ['Volume', '50'], function (effectName, level) {
                         if (parseInt(level) > 100) level = 100
@@ -597,9 +590,13 @@
 
                         return this.runAsyncFn(async () => {
                             let temp = await clipToSnap(lastRecordedClip);
-                            temp.audioBuffer = await lastRecordedClip.getEncodedData(EncodingType['WAV']);
+                            temp.audioBuffer = await lastRecordedClip.getEncodedData(availableEncoders['WAV']);
                             return temp;
                         }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('audioAnalysis', 'reporter', 'music', 'get output %analysisType', ['TimeSeries'], function (ty) {
+                        if (!availableAnalysisTypes[ty]) throw Error(`unknown audio analysis type: '${ty}'`);
+                        return snapify(audioAPI.analyzeAudio(availableAnalysisTypes[ty]));
                     }),
                 ];
             }
@@ -785,6 +782,12 @@
                         null, // text
                         false, //numeric
                         identityMap([ ...midiDevices, ...audioDevices ]),
+                        true, // readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('analysisType', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
+                        identityMap(Object.keys(availableAnalysisTypes)),
                         true, // readonly (no arbitrary text)
                     )),
                 ];
