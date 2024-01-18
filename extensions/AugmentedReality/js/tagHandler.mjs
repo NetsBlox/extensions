@@ -1,7 +1,5 @@
 const positVersion = 1;
 
-const localhost = (await fetch('http://localhost:8000/extensions/AugmentedReality/js/tagHandler.mjs')).ok;
-
 class aprilTagHandler {
   constructor() {
     this.detector = new AR.Detector({dictionaryName: 'APRILTAG_16h5'});
