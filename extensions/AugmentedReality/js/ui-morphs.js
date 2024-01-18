@@ -1,6 +1,10 @@
 const localhost = window.location.search.includes('localhost');
 const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
 
+function ArucoGenMorph(){
+  this.init();
+}
+
 ArucoGenMorph.prototype = new DialogBoxMorph();
 ArucoGenMorph.prototype.constructor = ArucoGenMorph;
 ArucoGenMorph.uber = DialogBoxMorph.prototype;
