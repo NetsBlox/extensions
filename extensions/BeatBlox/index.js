@@ -113,10 +113,8 @@
         }
 
         function snapify(value) {
-            if (Array.isArray(value)) {
-                const res = [];
-                for (const item of value) res.push(snapify(item));
-                return new List(res);
+            if (typeof(value.map) === 'function') {
+                return new List(value.map((x) => snapify(x)));
             } else if (typeof(value) === 'object') {
                 const res = [];
                 for (const key in value) res.push(new List([key, snapify(value[key])]));
@@ -445,7 +443,6 @@
                             await instrumentPrefetch; // wait for all instruments to be loaded
                             const trackName = this.receiver.id;
                             const clipDuration = audioAPI.convertNoteDurationToSeconds(playDuration);
-                            console.log(clipDuration);
                             const t = await playClip(trackName, clip, this.musicInfo.t, clipDuration);
                             this.musicInfo.t += t;
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
