@@ -3,7 +3,6 @@ const positVersion = 1;
 class aprilTagHandler {
   constructor() {
     this.detector = new AR.Detector({dictionaryName: aprilTagHandler.config.dictionary, maxHammingDistance: 3});
-    console.log(this.detector);
     this.state = 'Idle';
     this.expiry = 0;
   }
@@ -60,8 +59,6 @@ async function getCoordinates(image){
   const imageData = context.getImageData(0,0,image.width, image.height);         
   
   const markers = await handler.detectAR(imageData);
-  console.log('markers:', markers)
-
   return markers;
 }
 
