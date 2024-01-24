@@ -1,6 +1,8 @@
 (async function () {
 
   let videoMirrored = false;
+
+  const dictionaries = ['APRILTAG_16h5', 'APRILTAG_16h5_mini','APRILTAG_16h5_duo'];
  
   const localhost = window.location.search.includes('localhost');
   const root = localhost? 'http://localhost:8000/' : 'https://extensions.netsblox.org/';
@@ -46,12 +48,16 @@
     getPalette() {
       const blocks = [
         new Extension.Palette.Block('ARCodeTracker'),
-        new Extension.Palette.Block('ARCodeFlag'),
-        new Extension.Palette.Block('ARCodeVisibleArray'),
         new Extension.Palette.Block('ARCodeRender'),
         '-',
+        new Extension.Palette.Block('ARCodeFlag'),
+        new Extension.Palette.Block('ARCodeVisibleArray'),
+        '-',
+        new Extension.Palette.Block('ARCodeSetDictionary'),
+        new Extension.Palette.Block('ARCodeDictionary').withWatcherToggle(),
+        '-',
         new Extension.Palette.Block('ARCodeFlipVideo'),
-        new Extension.Palette.Block('flipped').withWatcherToggle(),
+        new Extension.Palette.Block('ARCodeFlipped').withWatcherToggle(),
         '-'
       ];
       return [
@@ -78,7 +84,23 @@
             return snapify(res);        
 
           }, { args: [], timeout: 10000 });
-        }),            
+        }),    
+        
+        
+        block('ARCodeRender', 'reporter', 'sensing', 'render %model on %s', ['box'], function (model, image) {
+          return this.runAsyncFn(async () => {
+            
+            image = image?.contents || image;
+            if (!image || typeof(image) !== 'object' || !image.width || !image.height){
+              throw TypeError('Expected an image as input');
+            }
+            const res = await renderModule.renderScene(image, model);
+
+            return new Costume(res);        
+
+          }, { args: [], timeout: 10000 });
+        }),
+
 
         block('ARCodeFlag', 'predicate', 'sensing', 'AR code %n visible in %s ?', [], function (value, image) {
           return this.runAsyncFn(async () => {
@@ -113,9 +135,9 @@
           }, { args: [], timeout: 10000 });
         }),
 
+
         block('ARCodeVisibleArray', 'reporter', 'sensing', 'All AR codes visible in %s', [], function (image) {
           return this.runAsyncFn(async () => {
-            const begin = performance.now();
 
             image = image?.contents || image;
             if (!image || typeof(image) !== 'object' || !image.width || !image.height){
@@ -124,26 +146,31 @@
 
             const visible = await tagModule.getVisibleTags(image);
 
-            console.log(performance.now() - begin);
             return snapify(visible);
             
           }, { args: [], timeout: 10000 });
         }),
 
-        block('ARCodeRender', 'reporter', 'sensing', 'render %model on %s', ['box'], function (model, image) {
+
+        block('ARCodeSetDictionary', 'command', 'sensing', 'set dictionary to %dictionaries', ['APRILTAG_16h5'], function (dict) {
           return this.runAsyncFn(async () => {
             
-            image = image?.contents || image;
-            if (!image || typeof(image) !== 'object' || !image.width || !image.height){
-              throw TypeError('Expected an image as input');
+            console.log(dict, dictionaries.indexOf(dict) );
+            if(dictionaries.indexOf(dict) === -1){
+              return new Error(dict, 'is not a valid dictionary.');
             }
-            const res = await renderModule.renderScene(image, model);
 
-            return new Costume(res);        
+            tagModule.setDictionary(dict)
 
           }, { args: [], timeout: 10000 });
         }),
 
+        
+        block('ARCodeDictionary', 'reporter', 'sensing', 'dictionary', [], function () {
+          return tagModule.getDictionary();
+        }),
+
+    
         block('ARCodeFlipVideo', 'command', 'sensing', 'flip video', [], function () {
           return this.runAsyncFn(async () => {
             
@@ -153,13 +180,15 @@
           }, { args: [], timeout: 10000 });
         }),
 
-        block('flipped', 'reporter', 'sensing', 'flipped?', [], function () {
+
+        block('ARCodeFlipped', 'reporter', 'sensing', 'flipped?', [], function () {
             
           videoMirrored = world.children[0].stage.mirrorVideo;
           return snapify(videoMirrored); 
         })
       ];
     }
+
 
     getLabelParts() {
       function identityMap(s) {
@@ -180,6 +209,12 @@
           null, // text
           false, // numeric
           identityMap(['box', 'drum', 'piano']), 
+          true
+        )),
+        new Extension.LabelPart('dictionaries', () => new InputSlotMorph(
+          null, // text
+          false, // numeric
+          identityMap(dictionaries), 
           true
         )),
       ];
