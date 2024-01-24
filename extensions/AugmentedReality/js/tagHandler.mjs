@@ -2,10 +2,16 @@ const positVersion = 1;
 
 class aprilTagHandler {
   constructor() {
-    this.detector = new AR.Detector({dictionaryName: 'APRILTAG_16h5'});
+    this.detector = new AR.Detector({dictionaryName: aprilTagHandler.config.dictionary, maxHammingDistance: 3});
+    console.log(this.detector);
     this.state = 'Idle';
     this.expiry = 0;
   }
+
+  static config = {
+    dictionary: 'APRILTAG_16h5'
+  }
+
   async detectAR(imageData){
     this.state = 'Detecting...';
     this.expiry = +new Date() + 10000;
@@ -28,12 +34,24 @@ const APRILTAGHANDLERS = [];
 
 function getAprilHandler(){
   for(const handler of APRILTAGHANDLERS){
-    if(handler.isIdle())
+    if(handler.isIdle()){
       return handler;
+    }
   }
   const newHandler = new aprilTagHandler();
   APRILTAGHANDLERS.push(newHandler);
   return newHandler;
+}
+
+function resetAllDetectors(dict){
+
+  for(const handler of APRILTAGHANDLERS){
+    (async (handler, dict) => {
+      console.log(handler, dict);
+      handler.detector = new AR.Detector({dictionaryName: dict});
+      console.log(handler, dict);
+    })(handler, dict);
+  }
 }
 
 async function getCoordinates(image){
@@ -42,8 +60,7 @@ async function getCoordinates(image){
   const imageData = context.getImageData(0,0,image.width, image.height);         
   
   const markers = await handler.detectAR(imageData);
-  console.log('markers:');
-  console.log(markers);
+  console.log('markers:', markers)
 
   return markers;
 }
@@ -53,8 +70,8 @@ function transformCoordinates(markers, image){
     return markers;
   }
 
-  for(let marker of markers){
-    for(let corner of marker.corners){
+  for(const marker of markers){
+    for(const corner of marker.corners){
       corner.x = corner.x - (image.width/2);
       corner.y = 1 - (corner.y - (image.height/2));
     }
@@ -64,7 +81,7 @@ function transformCoordinates(markers, image){
 
 async function isTagVisible(image, value) {
   const markers = await getCoordinates(image);
-  for(let marker of markers){
+  for(const marker of markers){
     if(value.indexOf(marker.id) !== -1){
       return true;
     }
@@ -73,12 +90,25 @@ async function isTagVisible(image, value) {
 }
 
 async function getVisibleTags(image) {
-  const res = (new Array(30)).fill(false);
+  const handler = getAprilHandler();
+  const res = (new Array(handler.detector.dictionary.codeList.length)).fill(false);
   const markers = await getCoordinates(image);
-  for(let marker of markers){
+  for(const marker of markers){
     res[marker.id] = true;
   }
   return res;
+}
+
+function getDictionary(){
+  return aprilTagHandler.config.dictionary;
+}
+
+function setDictionary(dict){
+  if(dict === aprilTagHandler.config.dictionary){
+    return;
+  }
+  aprilTagHandler.config.dictionary = dict;
+  resetAllDetectors(dict);
 }
 
 const DEVURL = {
@@ -90,8 +120,12 @@ const DEVURL = {
     'https://samankittani.github.io/js-aruco2/src/cv.js',
     ARUCOURL: 
     'https://samankittani.github.io/js-aruco2/src/aruco.js',
-    APRILTAGURL: 
-    'https://samankittani.github.io/js-aruco2/src/dictionaries/apriltag_16h5.js'
+    TAGDICURL01:
+    'https://samankittani.github.io/js-aruco2/src/dictionaries/apriltag_16h5.js',
+    TAGDICURL02: 
+    'https://samankittani.github.io/js-aruco2/src/dictionaries/apriltag_16h5_duo.js',
+    TAGDICURL03: 
+    'https://samankittani.github.io/js-aruco2/src/dictionaries/apriltag_16h5_mini.js'
    }
   const sources = Object.values(DEVURL);
 
@@ -107,4 +141,4 @@ const DEVURL = {
     }
   }  
 
-export {getCoordinates, transformCoordinates, isTagVisible, getVisibleTags}
+export {getCoordinates, transformCoordinates, isTagVisible, getVisibleTags, getDictionary, setDictionary}
