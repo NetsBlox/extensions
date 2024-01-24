@@ -29,16 +29,29 @@
         audioAPI.start();
 
         const instrumentPrefetch = (async () => {
-            midiDevices = (await audioAPI.getAvailableMidiDevices()).map((x) => `${x}---(midi)`);
-            audioDevices = await audioAPI.getAvailableAudioInputDevices();
-            midiInstruments = await audioAPI.getAvailableInstruments(instrumentLocation);
+            try {
+                midiDevices = (await audioAPI.getAvailableMidiDevices()).map((x) => `${x}---(midi)`);
+            } catch (e) {
+                console.error('failed to load midi devices', e);
+            }
 
-            console.log('beginning instrument pre-fetch...');
-            const tempTrack = '<<<temp-track>>>';
-            audioAPI.createTrack(tempTrack);
-            await Promise.all(midiInstruments.map((x) => audioAPI.updateInstrument(tempTrack, x)));
-            audioAPI.removeTrack(tempTrack);
-            console.log('instrument pre-fetch completed');
+            try {
+                audioDevices = await audioAPI.getAvailableAudioInputDevices();
+            } catch (e) {
+                console.error('failed to load audio input devices', e);
+            }
+
+            try {
+                midiInstruments = await audioAPI.getAvailableInstruments(instrumentLocation);
+                console.log('beginning instrument pre-fetch...');
+                const tempTrack = '<<<temp-track>>>';
+                audioAPI.createTrack(tempTrack);
+                await Promise.all(midiInstruments.map((x) => audioAPI.updateInstrument(tempTrack, x)));
+                audioAPI.removeTrack(tempTrack);
+                console.log('instrument pre-fetch completed');
+            } catch (e) {
+                console.error('failed to load instruments', e);
+            }
         })();
 
         const EffectsPreset = {
@@ -173,28 +186,40 @@
             return ret;
         }
 
-        const NOTE_REGEX = new RegExp('^([a-g][0-9]+)([bs]*)$', 'i');
         function parseNote(note) {
             if (Array.isArray(note)) return note.map((x) => parseNote(x));
             if (note.contents !== undefined) return note.contents.map((x) => parseNote(x));
             if (typeof (note) === 'number' && Number.isInteger(note)) return note;
-            if (typeof (note) !== 'string') throw Error(`expected a note, got ${note}`);
-
+            if (typeof (note) !== 'string' || note === '') throw Error(`expected a note, got '${note}'`);
             if (note === 'Rest') return availableNotes[note];
 
             const v = Number(note);
             if (Number.isInteger(v) && note == v) return v;
 
-            const match = note.match(NOTE_REGEX);
-            if (!match) throw Error(`expected a note, got ${note}`);
-
-            let base = availableNotes[match[1].toUpperCase()];
-            for (const c of match[2]) {
-                if (c === 's') base++;
-                else if (c === 'b') base--;
-                else throw Error('Internal Error');
+            const letter = note[0];
+            let octave = null;
+            let delta = 0;
+            for (let i = 1; i < note.length; ++i) {
+                let v = note[i];
+                if (v === '+' || v === '-' || (v >= '0' && v <= '9')) {
+                    if (octave != null) throw Error(`expected a note, got '${note}' (multiple octaves listed)`);
+                    ++i;
+                    for (; i < note.length && note[i] >= '0' && note[i] <= '9'; ++i) v += note[i];
+                    --i;
+                    octave = parseInt(v);
+                } else if (v === 's' || v === '#' || v === '♯') {
+                    delta += 1;
+                } else if (v === 'b' || v === '♭') {
+                    delta -= 1;
+                } else {
+                    throw Error(`expected a note, got '${note}' (unknown character '${v}')`);
+                }
             }
-            return base;
+            if (octave == null) throw Error(`expected a note, got '${note}' (missing octave number)`);
+
+            const base = availableNotes[`${letter}${octave}`.toUpperCase()];
+            if (base === undefined) throw Error(`expected a note, got '${note}'`);
+            return base + delta;
         }
 
         async function setTrackEffect(trackName, effectName, level) {
