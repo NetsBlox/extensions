@@ -340,6 +340,11 @@
                     new Extension.Palette.Block('playSampleForDuration'),
                     new Extension.Palette.Block('stopClips'),
                     '-',
+                    new Extension.Palette.Block('soundMetaData'),
+                    '-',
+                    new Extension.Palette.Block('playFrequency'),
+                    new Extension.Palette.Block('stopFrequency'),
+                    '-',
                     new Extension.Palette.Block('presetEffect'),
                     new Extension.Palette.Block('setTrackEffect'),
                     new Extension.Palette.Block('clearTrackEffects'),
@@ -429,7 +434,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play sound %snd duration %n', [null, 0], function (clip, duration) {
+                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play sound %snd for duration %n', [null, 0], function (clip, duration) {
                         setupProcess(this);
                         if (clip === '') throw Error(`sound cannot be empty`);
                         if (this.receiver.sounds.contents.length){
@@ -449,7 +454,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play sound %snd duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration,durationSpecial) {
+                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play sound %snd for duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration,durationSpecial) {
                         setupProcess(this);
                         let playDuration = availableNoteDurations[duration];
                         if (durationSpecial != '') {
@@ -476,6 +481,39 @@
                     new Extension.Block('stopClips', 'command', 'music', 'stop all clips', [], function () {
                         stopAudio();
                         this.doStopAll();
+                    }),
+                    new Extension.Block('soundMetaData', 'reporter', 'music', '%soundMetaData of sound %snd', ['duration', ''], function (option, sound){
+                        if (sound === '') throw Error(`sound cannot be empty`);
+                        if (this.receiver.sounds.contents.length){
+                            for (let i = 0; i< this.receiver.sounds.contents.length; i++){
+                                if (sound === this.receiver.sounds.contents[i].name){
+                                    sound = this.receiver.sounds.contents[i];
+                                    break;
+                                }
+                            }
+                        }
+                        else{
+                            sound = clipToSnap(sound);
+                        }
+                        switch(option){
+                            case 'name':
+                                return sound.name;
+                            case 'duration':
+                                console.log(sound);
+                                console.log(sound.audio.draggable);
+                                return sound.audio.duration;
+                            case 'beats':
+                                return 'beats';
+                            case 'samples':
+                                return 'samples';
+                        }
+                        return "OK";
+                    }),
+                    new Extension.Block('playFrequency', 'command', 'music', 'play frequency %n Hz', [440], function(freq){
+                        this.receiver.playFreq(freq)
+                    }),
+                    new Extension.Block('stopFrequency', 'command', 'music', 'stop frequency', [], function(){
+                        this.receiver.stopFreq()
                     }),
                     new Extension.Block('noteNew', 'reporter', 'music', 'note %note', [60], parseNote),
                     new Extension.Block('notes', 'reporter', 'music', 'note %noteNames %octaves %accidentals', ['C', '3', ''], function (noteName, octave, accidental) {
@@ -786,6 +824,12 @@
                         null, // text
                         false, //numeric
                         identityMap(['on', 'off']),
+                        true, // readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('soundMetaData', () => new InputSlotMorph(
+                        null, // text
+                        false, //numeric
+                        identityMap(['name', 'duration','beats','samples']),
                         true, // readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('webMidiInstrument', () => new InputSlotMorph(
