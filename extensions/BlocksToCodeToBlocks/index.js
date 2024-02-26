@@ -1671,16 +1671,35 @@ Context.prototype.updateEmptySlots = function () {
                     }
 
 
+                    const globalCustomBlocks = NetsBloxExtensions.ide.stage.globalBlocks;
+                    if(globalCustomBlocks.length > 0) {
+                        let tempProcess = new Process(null, null, null, null);
+                        for(let i = 0; i < globalCustomBlocks.length; i++) {
+                            output += '\nGlobal Custom Block: ' + globalCustomBlocks[i].spec + '\n';
+                            output += blocksToCode.call(tempProcess, globalCustomBlocks[i].body) + '\n';
+                        }
+                    }
+
                     for(let i = 0; i < sprites.length; i++) {
                         let scripts = sprites[i].scripts.children;
                         sprites[i].edit();
 
-                        output += '\nSprite: ' + sprites[i].name + '\n';
+                        output += '\n\nSprite: ' + sprites[i].name + '\n';
 
                         const vars = Object.keys(sprites[i].variables.vars);
                         if(vars.length > 0) {
-                            output += 'Sprite Variables: ' + vars.join(', ') + '\n';
+                            output += 'Local Variables: ' + vars.join(', ') + '\n';
                         }
+
+                        const customBlocks = sprites[i].customBlocks;
+                        if(customBlocks.length > 0) {
+                            let tempProcess = new Process(null, null, null, null);
+                            for(let i = 0; i < customBlocks.length; i++) {
+                                output += '\nLocal Custom Block: ' + customBlocks[i].spec + '\n';
+                                output += blocksToCode.call(tempProcess, customBlocks[i].body) + '\n';
+                            }
+                        }
+
 
                         for(let j = 0; j < scripts.length; j++) {
                             let tempProcess = new Process(scripts[j], null, null, null);
@@ -1695,7 +1714,7 @@ Context.prototype.updateEmptySlots = function () {
 
                     }
 
-                    output += '\nStage:\n';
+                    output += '\n\nStage:\n';
                     let stage = NetsBloxExtensions.ide.stage;
                     stage.edit();
                     for(let i = 0; i < stage.scripts.children.length; i++) {
