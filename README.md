@@ -10,6 +10,8 @@ Extensions currently included in this repository:
  
  - [BetterShare](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BetterShare/index.js%22]) - WIP - Provides a few utilities that can make sharing projects easier
  
+ - [Blocks to Code to Blocks (beta)](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/BlocksToCodeToBlocks/index.js%22]) - Transform back and forth with LISP-like code and NetsBlox, based on new features in Snap! v10 (WIP)
+ 
  - [FaceLandmarker](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/FaceLandmarker/index.js%22]) - Track Faces in images/video using MediaPipe!
  
  - [HandGestures](https://dev.netsblox.org/?extensions=[%22https://extensions.netsblox.org/extensions/HandGestures/index.js%22]) - Track 3D hand gestures in images/video using MediaPipe!
