@@ -1,0 +1,48 @@
+[
+    
+    {
+        "name": "BeatsBlox",
+        "url": "https://extensions.netsblox.org/extensions/BeatsBlox/index.js"
+    },
+    
+    {
+        "name": "BetterShare",
+        "url": "https://extensions.netsblox.org/extensions/BetterShare/index.js"
+    },
+    
+    {
+        "name": "HandGestures",
+        "url": "https://extensions.netsblox.org/extensions/HandGestures/index.js"
+    },
+    
+    {
+        "name": "HideCategories",
+        "url": "https://extensions.netsblox.org/extensions/HideCategories/index.js"
+    },
+    
+    {
+        "name": "RoboScapeOnline",
+        "url": "https://extensions.netsblox.org/extensions/RoboScapeOnline/index.js"
+    },
+    
+    {
+        "name": "TimeSync",
+        "url": "https://extensions.netsblox.org/extensions/TimeSync/index.js"
+    },
+    
+    {
+        "name": "TuneScope",
+        "url": "https://extensions.netsblox.org/extensions/TuneScope/index.js"
+    },
+    
+    {
+        "name": "WebSerial",
+        "url": "https://extensions.netsblox.org/extensions/WebSerial/index.js"
+    },
+    
+    {
+        "name": "WhenKeyPressedLogger",
+        "url": "https://extensions.netsblox.org/extensions/WhenKeyPressedLogger/index.js"
+    }
+    
+]
