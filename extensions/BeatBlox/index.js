@@ -274,7 +274,7 @@
         function setupProcess(proc) {
             if (proc.musicInfo) return;
             proc.musicInfo = {
-                t: audioAPI.getCurrentTime(),
+                t: audioAPI.getCurrentTime() +0.001,
             };
         }
 
