@@ -349,6 +349,7 @@
                     new Extension.Palette.Block('setTrackEffect'),
                     new Extension.Palette.Block('clearTrackEffects'),
                     '-',
+                    new Extension.Palette.Block('setKeySignature'),
                     new Extension.Palette.Block('makeTempo'),
                     '-',
                     new Extension.Palette.Block('audioAnalysis'),
@@ -565,6 +566,9 @@
                             await instrumentPrefetch; // wait for all instruments to be loaded
                             audioAPI.updateTempo(4, tempo, 4, 4);
                         }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('setKeySignature','command','music','set key signature %s', ['C'], function(key) {
+                        return "Done";
                     }),
                     new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
                         if (appliedEffects.length === 0) {
