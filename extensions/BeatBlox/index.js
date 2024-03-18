@@ -16,6 +16,7 @@
         const availableNoteDurations = audioAPI.getAvailableNoteDurations();
         const availableNotes = audioAPI.getAvailableNotes();
         const availableAnalysisTypes = audioAPI.getAvailableAnalysisTypes();
+        const availableKeySignatures = audioAPI.getAvailableKeySignatures();
         const availableEncoders = audioAPI.getAvailableEncoders();
 
         const devRoot = 'http://localhost:9090/extensions/BeatBlox/instruments/';
@@ -567,8 +568,13 @@
                             audioAPI.updateTempo(4, tempo, 4, 4);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('setKeySignature','command','music','set key signature %s', ['C'], function(key) {
-                        return "Done";
+                    new Extension.Block('setKeySignature','command','music','set key signature %keySignatures', ['DMajor'], function(key) {
+                        if (!availableKeySignatures[key]) throw Error(`unknown key signature: '${key}'`);
+                        const currentKeySignature = audioAPI.getKeySignature();
+                        if(currentKeySignature != key){
+                            audioAPI.updateKeySignature(availableKeySignatures[key]);
+                        }
+                        console.log(availableKeySignatures[key]);
                     }),
                     new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
                         if (appliedEffects.length === 0) {
@@ -858,6 +864,12 @@
                         null, // text
                         false, // numeric
                         identityMap(Object.keys(availableAnalysisTypes)),
+                        true, // readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('keySignatures', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
+                        identityMap(Object.keys(availableKeySignatures)),
                         true, // readonly (no arbitrary text)
                     )),
                 ];
