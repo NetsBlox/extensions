@@ -202,7 +202,7 @@
             let ret = Infinity;
             let beatMultiplier = getBPM()/60;
             for (const note of notes) {
-                ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, beats, mod));
+                ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, -[beatMultiplier*beats], mod));
             }
             return ret;
         }
@@ -371,6 +371,7 @@
                     new Extension.Palette.Block('playSampleForDuration'),
                     new Extension.Palette.Block('stopClips'),
                     '-',
+                    new Extension.Palette.Block('noteModifiers'),
                     new Extension.Palette.Block('soundMetaData'),
                     '-',
                     new Extension.Palette.Block('playFrequency'),
@@ -465,7 +466,7 @@
                     new Extension.Block('playNoteBeats', 'command', 'music', 'play note(s) %s for beat(s) %n', ['C3', 1], function (notes, beats) {
                         playNoteCommonBeats.apply(this, [beats, notes]); // internally does await instrumentPrefetch
                     }),
-                    new Extension.Block('playNoteBeatsWithMods', 'command', 'music', 'play note(s) %s mod %noteModifiers for beat(s) %n', ['C3', 'Velocity',1 ], function (notes,mod, beats) {
+                    new Extension.Block('playNoteBeatsWithMods', 'command', 'music', 'play note(s) %s for beat(s) %n mod %noteModifiers value %n', ['C3', 1, 'Velocity', 100], function (notes,beats,mod,value) {
                         playNoteCommonBeats.apply(this, [beats, notes, availableNoteModifiers[mod]]); // internally does await instrumentPrefetch
                     }),
                     new Extension.Block('restBeats', 'command', 'music', 'rest for beat(s) %n', [1], function (beats) {
@@ -565,6 +566,9 @@
                                 return 'samples';
                         }
                         return "OK";
+                    }),
+                    new Extension.Block('noteModifiers', 'reporter', 'music', 'note modifiers %noteModifiers', ['Velocity'], function(mod){
+                        return availableNoteModifiers[mod]
                     }),
                     new Extension.Block('playFrequency', 'command', 'music', 'play frequency %n Hz', [440], function(freq){
                         this.receiver.playFreq(freq)
