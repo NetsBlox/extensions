@@ -1,13 +1,14 @@
 (function () {
     const script = document.createElement('script');
+    const devRootScript = 'http://localhost:9090/extensions/BeatBlox/webAudioAPI.js';
+    const releaseRootScript = 'https://extensions.netsblox.org/extensions/BeatBlox/webAudioAPI.js';
     script.type = 'module';
-    script.src = 'https://hedgecrw.github.io/WebAudioAPI/lib/webAudioAPI.js';
+    script.src = window.origin.includes('localhost') ? devRootScript : releaseRootScript;
     script.async = false;
     script.onload = () => {
         let lastRecordedClip = null;
         let currentDeviceType = null;
         let appliedEffects = [];
-
         const audioAPI = new window.WebAudioAPI();
         const I32_MAX = 2147483647;
         const SCHEDULING_WINDOW = 0.02; // seconds
