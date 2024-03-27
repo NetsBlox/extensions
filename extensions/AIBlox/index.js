@@ -1803,6 +1803,26 @@ Context.prototype.updateEmptySlots = function () {
                         return await generateCode(code);
                     }, {timeout: 15000}) }
                 ).for(SpriteMorph, StageMorph),
+                new Extension.Block(
+                    'pseudocodeCommand',
+                    'command',
+                    'control',
+                    '%code',
+                    [],
+                    function(code) { return this.runAsyncFn(async () => {
+                        return await generateCode(code);
+                    }, {timeout: 15000}) }
+                ).for(SpriteMorph, StageMorph),
+                new Extension.Block(
+                    'pseudocodeReporter',
+                    'reporter',
+                    'control',
+                    '%code',
+                    [],
+                    function(code) { return this.runAsyncFn(async () => {
+                        return await generateCode(code);
+                    }, {timeout: 15000}) }
+                ).for(SpriteMorph, StageMorph),
             ];
         }
 
@@ -1930,10 +1950,127 @@ Context.prototype.updateEmptySlots = function () {
     
     async function generateCode(code) {
         // Make request to OpenAI API
+        let request = gptrequest(code);
+
+        return request.then(response => response.json()).then(data => {
+            let response = data.choices[0].message.content;
+
+            if(response.indexOf('```') > -1 && response.split('```').length > 1){
+                response = response.split('```')[1];
+            } else {
+                throw Error('Invalid response');
+            }
+
+            // Check if response is valid
+            if(response.length < 1) {
+                throw Error('Invalid response');
+            }
+
+            return response;
+        }).catch(err => {
+            console.error(err);
+            throw Error('Error generating code');
+        }).then(response => {
+            let lex = lexCode(response);
+
+            console.log(lex);
+
+            // Then, we'll convert the lexed code to an abstract syntax tree object
+            let ast = parseCode(lex);               
+
+            console.log(ast);
+            
+            // Finally, we'll convert the AST to a list of blocks
+            for(let i = 0; i < ast.length; i++) {
+                ast[i] = new CommandBlockMorph(ast[i]);
+            }
+
+            return ast;
+        }).catch(err => {
+            console.error(err);
+            throw Error('Error converting code');
+        });
+    }
+
+    NetsBloxExtensions.register(AIBlox);
+
+    window.externalVariables['generateCode'] = generateCode;
+    window.externalVariables['blocksToCode'] = blocksToCode;
+    window.externalVariables['codeToBlocks'] = codeToBlocks;
+
+    function lexCode(response) {
+        let c = '';
+        let inString = false;
+        let lex = [];
+
+        // Remove intro "lisp"
+        response = response.trim().replace(/^lisp/, '');
+
+        for (let i = 0; i < response.length; i++) {
+            if (response[i] === '"' && response[i - 1] !== '\\') {
+                inString = !inString;
+            }
+
+            if (response[i] != '\n') {
+                c += response[i];
+            }
+
+            if (!inString) {
+                if (response[i] === '(') {
+                    if (c.length > 1) {
+                        lex.push(c.slice(0, -1));
+                    }
+                    lex.push('(');
+
+                    c = '';
+                } else if (response[i] === ')') {
+                    if (c.length > 1) {
+                        lex.push(c.slice(0, -1));
+                    }
+                    lex.push(')');
+
+                    c = '';
+                } else if (response[i] === ' ') {
+                    if (c.length > 1) {
+                        lex.push(c.slice(0, -1));
+                    }
+                    c = '';
+                }
+            }
+        }
+
+        if (c.trim().length > 0) {
+            lex.push(c.trim());
+        }
+
+        return lex;
+    }
+
+    function parseCode(lex) {
+        let ast = [];
+        let stack = [];
+        let current = ast;
+
+        for (let i = 0; i < lex.length; i++) {
+            if (lex[i] === '(') {
+                let newBlock = [];
+                current.push(newBlock);
+                stack.push(current);
+                current = newBlock;
+            } else if (lex[i] === ')') {
+                current = stack.pop();
+            } else {
+                current.push(lex[i]);
+            }
+        }
+
+        return ast;
+    }
+
+    function gptrequest(code) {
         let apiKey = localStorage.getItem('openai-api-key');
         let model = localStorage.getItem('openai-model');
-        let prompt = 
-`The following pseudocode block was made by a user:
+        let prompt = `The following pseudocode block was made by a user:
 
 \`\`\`
 ${code}
@@ -1954,54 +2091,30 @@ You do not need to define a main function or anything similar. Do not define var
 
 You may respond with some quick thoughts to help yourself before the code. Make sure the code is in a code block marked with \`\`\`. Do not forget to include the code block. You will only be graded on the code block and only have one chance to submit.`;
 
-        if(!apiKey) {
+        if (!apiKey) {
             throw Error('OpenAI API Key not set');
         }
 
-        if(!model) {
+        if (!model) {
             model = 'gpt-3.5-turbo';
         }
 
         let request = fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + apiKey
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey
             },
             body: JSON.stringify({
-            model: model,
-            messages: [
-                {
-                role: 'system',
-                content: prompt
-                }
-            ]
+                model: model,
+                messages: [
+                    {
+                        role: 'system',
+                        content: prompt
+                    }
+                ]
             })
         });
-
-        return request.then(response => response.json()).then(data => {
-            let response = data.choices[0].message.content;
-
-            if(response.indexOf('```') > -1) {
-                response = response.split('```')[1];
-            } else {
-                throw Error('Invalid response');
-            }
-
-            // Check if response is valid
-            if(response.length < 1) {
-                throw Error('Invalid response');
-            }
-
-            return response;
-        }).catch(err => {
-            throw Error('Error generating code');
-        });
+        return request;
     }
-
-    NetsBloxExtensions.register(AIBlox);
-
-    window.externalVariables['generateCode'] = generateCode;
-    window.externalVariables['blocksToCode'] = blocksToCode;
-    window.externalVariables['codeToBlocks'] = codeToBlocks;
 })();
