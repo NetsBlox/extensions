@@ -1789,7 +1789,7 @@ Context.prototype.updateEmptySlots = function () {
                     'codeToBlocks',
                     'reporter',
                     'operators',
-                    'code to blocks %code',
+                    'code to blocks %mlt',
                     [],
                     codeToBlocks
                 ).for(SpriteMorph, StageMorph),
@@ -1797,30 +1797,50 @@ Context.prototype.updateEmptySlots = function () {
                     'aiGenerateCode',
                     'reporter',
                     'control',
-                    'generate %code',
+                    'generate %mlt',
                     [],
-                    function(code) { return this.runAsyncFn(async () => {
-                        return await generateCode(code);
-                    }, {timeout: 15000}) }
+                    function(code) { 
+                        let proc = this;
+                        return this.runAsyncFn(async () => { return await generateCode(code, proc); }, {timeout: 15000}) }
                 ).for(SpriteMorph, StageMorph),
                 new Extension.Block(
                     'pseudocodeCommand',
                     'command',
                     'control',
-                    '%code',
+                    '%mlt',
                     [],
                     function(code) { return this.runAsyncFn(async () => {
-                        return await generateCode(code);
+                        return; // await generateCode(code);
                     }, {timeout: 15000}) }
                 ).for(SpriteMorph, StageMorph),
                 new Extension.Block(
                     'pseudocodeReporter',
                     'reporter',
                     'control',
-                    '%code',
+                    '%mlt',
                     [],
                     function(code) { return this.runAsyncFn(async () => {
-                        return await generateCode(code);
+                        return; //await generateCode(code);
+                    }, {timeout: 15000}) }
+                ).for(SpriteMorph, StageMorph),
+                new Extension.Block(
+                    'pseudocodeIf',
+                    'command',
+                    'control',
+                    'if %mlt %c',
+                    [],
+                    function(code) { return this.runAsyncFn(async () => {
+                        return;// await generateCode(code);
+                    }, {timeout: 15000}) }
+                ).for(SpriteMorph, StageMorph),
+                new Extension.Block(
+                    'pseudocodeIfElse',
+                    'command',
+                    'control',
+                    'if %mlt %c else %c',
+                    [],
+                    function(code) { return this.runAsyncFn(async () => {
+                        return;// await generateCode(code);
                     }, {timeout: 15000}) }
                 ).for(SpriteMorph, StageMorph),
             ];
@@ -1828,18 +1848,6 @@ Context.prototype.updateEmptySlots = function () {
 
         getLabelParts() {
             return [
-                new Extension.LabelPart(
-                    '%code',
-                    () => {
-                        const part = new InputSlotMorph(
-                            null, // text
-                            false, // non-numeric
-                            null,
-                            false
-                        );
-                        return part;
-                    }
-                ),
                 new Extension.LabelPart(
                     '%blocks',
                     () => {
@@ -1948,7 +1956,7 @@ Context.prototype.updateEmptySlots = function () {
         throw Error("Invalid code");
     }
     
-    async function generateCode(code) {
+    async function generateCode(code, proc) {
         // Make request to OpenAI API
         let request = gptrequest(code);
 
@@ -1980,12 +1988,57 @@ Context.prototype.updateEmptySlots = function () {
 
             console.log(ast);
             
-            // Finally, we'll convert the AST to a list of blocks
-            for(let i = 0; i < ast.length; i++) {
-                ast[i] = new CommandBlockMorph(ast[i]);
+            // Reformat AST to use defined custom blocks where possible
+            for(i = 0; i < ast.length; i++) {
+                let block = ast[i];
+
+                ast[i] = parse2(block);
             }
 
-            return ast;
+            // Initial test, re-LISP the code
+            let code = '(' + toTextSyntax(ast) + ')';
+            console.log(code);
+
+            return codeToBlocks.call(proc, code);
+
+            function parse2(block) {
+                if (block[0] == 'if') {
+                    block[0] = 'pseudocodeIf';
+
+                    if (Array.isArray(block[1])) {
+                        block[1] = ['pseudocodeReporter', ...block[1]];
+                    }
+
+                    if (block[2] == 'then') {
+                        block.splice(2, 1);
+                    }
+
+                    if (typeof block[2] == 'string') {
+                        block[2] = parse2(block[2]);
+                    } else {
+                        block[2].unshift('pseudocodeCommand');
+                    }
+
+                    if (block.length > 3) {
+                        block[0] = 'pseudocodeIfElse';
+
+                        if (block[3] == 'else') {
+                            block.splice(3, 1);
+                        }
+
+                        if (typeof block[3] == 'string') {
+                            block[3] = parse2(block[3]);
+                        } else {
+                            block[3].unshift('pseudocodeCommand');
+                        }
+                    }
+
+                } else {
+                    block.unshift('pseudocodeCommand');
+                }
+
+                return block;
+            }
         }).catch(err => {
             console.error(err);
             throw Error('Error converting code');
@@ -2005,6 +2058,12 @@ Context.prototype.updateEmptySlots = function () {
 
         // Remove intro "lisp"
         response = response.trim().replace(/^lisp/, '');
+
+        // Remove intro "pseudo"
+        response = response.trim().replace(/^pseudo/, '');
+
+        // Remove intro "plaintext"
+        response = response.trim().replace(/^plain(text)?/, '');
 
         for (let i = 0; i < response.length; i++) {
             if (response[i] === '"' && response[i - 1] !== '\\') {
@@ -2065,6 +2124,20 @@ Context.prototype.updateEmptySlots = function () {
         }
 
         return ast;
+    }
+
+    function toTextSyntax(ast) {
+        let code = '';
+
+        for (let i = 0; i < ast.length; i++) {
+            if (Array.isArray(ast[i])) {
+                code += '(' + toTextSyntax(ast[i]) + ')';
+            } else {
+                code += ast[i] + ' ';
+            }
+        }
+
+        return code.trim();
     }
 
     function gptrequest(code) {
