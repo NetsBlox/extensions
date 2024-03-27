@@ -334,6 +334,7 @@
                     new Extension.Palette.Block('setInstrument'),
                     new Extension.Palette.Block('playNote'),
                     new Extension.Palette.Block('playNoteWithAmp'),
+                    new Extension.Palette.Block('playNoteWithArticulation'),
                     new Extension.Palette.Block('rest'),
                     '-',
                     new Extension.Palette.Block('playAudioClip'),
@@ -412,6 +413,9 @@
                     }),
                     new Extension.Block('playNoteWithAmp', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %s amp %n %', ['Quarter', '', 'C3', '100'], function (duration, durationSpecial, notes, amp) {
                         playNoteCommon.apply(this, [durationSpecial + duration, notes, amp]); // internally does await instrumentPrefetch
+                    }),
+                    new Extension.Block('playNoteWithArticulation', 'command', 'music', 'articulation %articulations %c', [''], function (articulation, script) {
+                        // TODO
                     }),
                     new Extension.Block('rest', 'command', 'music', 'rest %noteDurations %noteDurationsSpecial', ['Quarter',''], function (duration, durationSpecial) {
                         playNoteCommon.apply(this, [durationSpecial + duration, 'Rest']); // internally does await instrumentPrefetch
@@ -870,6 +874,12 @@
                         null, // text
                         false, // numeric
                         identityMap(Object.keys(availableKeySignatures)),
+                        true, // readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('articulations', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
+                        identityMap(['staccato', 'accent', 'trill']),
                         true, // readonly (no arbitrary text)
                     )),
                 ];
