@@ -465,7 +465,6 @@
                     // }),
                     new Extension.Block('playNoteBeats', 'command', 'music', 'play note(s) %s for beat(s) %n', ['C3', 1], function (notes, beats) {
                         if (typeof notes === 'object'){
-                            // playNoteCommonBeats.apply(this,[beats,])
                             var noteName = notes.noteName;
                             var modifier = notes.modifier;
                             playNoteCommonBeats.apply(this, [beats, noteName, audioAPI.getModification(modifier,1)]); // internally does await instrumentPrefetch
