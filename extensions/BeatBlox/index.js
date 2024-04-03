@@ -373,6 +373,7 @@
                     new Extension.Palette.Block('playSampleForDuration'),
                     new Extension.Palette.Block('stopClips'),
                     '-',
+                    new Extension.Palette.Block('durationToBeats'),
                     new Extension.Palette.Block('noteModifiers'),
                     new Extension.Palette.Block('soundMetaData'),
                     '-',
@@ -576,6 +577,101 @@
                                 return 'samples';
                         }
                         return "OK";
+                    }),
+                    new Extension.Block('durationToBeats', 'reporter', 'music', '%noteDurations %noteDurationsSpecial to beats', ['Quarter', ''], function(duration, durationSpecial){
+                        let playDuration = availableNoteDurations[duration];
+                        switch(playDuration){
+                            case 1:
+                                //Whole
+                                playDuration = 4;
+                                break;
+                            case 2:
+                                //Half
+                                playDuration = 2;
+                                break;
+                            case 4:
+                                //Quarter
+                                playDuration = 1;
+                                break;
+                            case 8:
+                                //Eighth
+                                playDuration = 0.5;
+                                break;
+                            case 16:
+                                //Sixteenth
+                                playDuration = 0.25;
+                                break;
+                            case 32:
+                                //Thirty-Secondth
+                                playDuration = 0.125;
+                                break;
+                            case 64:
+                                //Sixty-Fourth
+                                playDuration = 0.0625;
+                                break;
+                        }
+                        if (durationSpecial != '') {
+                            playDuration =  availableNoteDurations[durationSpecial+duration];
+                            switch(playDuration){
+                                case (2.0/3.0):
+                                  //  "Dotted Whole"
+                                    playDuration = 6;
+                                    break;
+                                case (4.0 / 7.0):
+                                    //  "Dotted Dotted Whole"
+                                    playDuration = 7;
+                                    break;
+                                case (4.0 / 3.0):
+                                   // "Dotted Half"
+                                    playDuration = 3;
+                                    break;
+                                case (8.0 / 7.0):
+                                    // "Dotted Dotted Half"
+                                    playDuration = 3.5;
+                                    break;
+                                case (8.0 / 3.0):
+                                  //  "Dotted Quarter"
+                                    playDuration = 1.5;
+                                    break;
+                                case (16.0 / 7.0):
+                                   //  "Dotted Dotted Quarter"
+                                    playDuration = 1.75;
+                                    break;
+                                case (16.0 / 3.0):
+                                  //  "Dotted Eighth"
+                                    playDuration =  0.75;
+                                    break;
+                                case (32.0 / 7.0):
+                                    //  "Dotted Dotted Eighth"
+                                    playDuration =  0.875;
+                                    break;
+                                case (32.0 / 3.0):
+                                   // "Dotted Sixteenth"
+                                    playDuration = 0.375;
+                                    break;
+                                case (64.0 / 7.0):
+                                    // "Dotted Dotted Sixteenth"
+                                    playDuration = 0.4375;
+                                    break;
+                                case (64.0 / 3.0):
+                                   // "Dotted Thirty Secondth"
+                                    playDuration = 0.1875;
+                                    break;
+                                case (128.0 / 7.0):
+                                    // "Dotted Dotted Thirty Secondth"
+                                    playDuration = 0.21875;
+                                    break;
+                                case (128.0 / 3.0):
+                                   // "Dotted SixtyFourth"
+                                    playDuration = 0.09375;
+                                    break;
+                                case (256.0 / 7.0):
+                                    // "Dotted Dotted SixtyFourth"
+                                    playDuration = 0.109375;
+                                    break;
+                            }
+                        }
+                        return playDuration;
                     }),
                     new Extension.Block('noteModifiers', 'reporter', 'music', 'note %s modifiers %noteModifiers', ['C3','Piano'], function(note,mod){
                         var modifiedNote = {
