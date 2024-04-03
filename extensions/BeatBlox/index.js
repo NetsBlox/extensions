@@ -397,7 +397,7 @@
                     new Extension.Palette.Block('lastRecordedClip'),
                     '-',
                     new Extension.Palette.Block('noteNew'),
-                    new Extension.Palette.Block('notes'),
+                    // new Extension.Palette.Block('notes'),
                     new Extension.Palette.Block('chords'),
                     new Extension.Palette.Block('scales'),
                 ];
@@ -408,27 +408,27 @@
             }
 
             getBlocks() {
-                function playNoteCommon(duration, notes, amp = 100) {
-                    if (duration === '') throw Error('Please select a valid note duration');
-                    duration = availableNoteDurations[duration];
-                    if (!duration) throw Error('unknown note duration');
+                // function playNoteCommon(duration, notes, amp = 100) {
+                //     if (duration === '') throw Error('Please select a valid note duration');
+                //     duration = availableNoteDurations[duration];
+                //     if (!duration) throw Error('unknown note duration');
 
-                    notes = parseNote(notes);
-                    if (!Array.isArray(notes)) notes = [notes];
-                    if (notes.length === 0) return;
+                //     notes = parseNote(notes);
+                //     if (!Array.isArray(notes)) notes = [notes];
+                //     if (notes.length === 0) return;
 
-                    amp = parseFloat(amp) / 100;
-                    if (!amp || amp < 0 || amp > 1) throw Error('amp must be a number between 0 and 100');
+                //     amp = parseFloat(amp) / 100;
+                //     if (!amp || amp < 0 || amp > 1) throw Error('amp must be a number between 0 and 100');
 
-                    setupProcess(this);
-                    this.runAsyncFn(async () => {
-                        await instrumentPrefetch; // wait for all instruments to be loaded
-                        const trackName = this.receiver.id;
-                        const t = await playChord(trackName, notes, this.musicInfo.t, duration, amp);
-                        this.musicInfo.t += t;
-                        await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                    }, { args: [], timeout: I32_MAX });
-                }
+                //     setupProcess(this);
+                //     this.runAsyncFn(async () => {
+                //         await instrumentPrefetch; // wait for all instruments to be loaded
+                //         const trackName = this.receiver.id;
+                //         const t = await playChord(trackName, notes, this.musicInfo.t, duration, amp);
+                //         this.musicInfo.t += t;
+                //         await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                //     }, { args: [], timeout: I32_MAX });
+                // }
                 function playNoteCommonBeats(beats, notes, mods) {
                     if (beats === '') throw Error('Please select a valid beat duration');
                     
@@ -578,7 +578,8 @@
                         }
                         return "OK";
                     }),
-                    new Extension.Block('durationToBeats', 'reporter', 'music', '%noteDurations %noteDurationsSpecial to beats', ['Quarter', ''], function(duration, durationSpecial){
+                    new Extension.Block('durationToBeats', 'reporter', 'music', 'duration %noteDurations %noteDurationsSpecial to beats', ['Quarter', ''], function(duration, durationSpecial){
+                        if(duration == '') throw Error('duration cannot be empty');
                         let playDuration = availableNoteDurations[duration];
                         switch(playDuration){
                             case 1:
@@ -688,13 +689,13 @@
                         this.receiver.stopFreq()
                     }),
                     new Extension.Block('noteNew', 'reporter', 'music', 'note %note', [60], parseNote),
-                    new Extension.Block('notes', 'reporter', 'music', 'note %noteNames %octaves %accidentals', ['C', '3', ''], function (noteName, octave, accidental) {
-                        const note = noteName + octave;
-                        if (accidental === '\u266F') note = noteName + octave + 's';
-                        if (accidental === '\u266D') note = noteName + octave + 'b';
-                        return parseNote(note);
+                    // new Extension.Block('notes', 'reporter', 'music', 'note %noteNames %octaves %accidentals', ['C', '3', ''], function (noteName, octave, accidental) {
+                    //     const note = noteName + octave;
+                    //     if (accidental === '\u266F') note = noteName + octave + 's';
+                    //     if (accidental === '\u266D') note = noteName + octave + 'b';
+                    //     return parseNote(note);
 
-                    }),
+                    // }),
                     new Extension.Block('scales', 'reporter', 'music', 'scale %midiNote type %scaleTypes', ['C3', 'Major'], function (rootNote, type) {
                         rootNote = parseNote(rootNote);
 
