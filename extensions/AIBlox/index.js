@@ -1754,45 +1754,27 @@ Context.prototype.updateEmptySlots = function () {
         getPalette() {
             return [
                 new Extension.PaletteCategory(
-                    'operators',
+                    'control',
                     [
-                        new Extension.Palette.Block('blocksToCode'),
-                        new Extension.Palette.Block('codeToBlocks'),
                         new Extension.Palette.Block('aiGenerateCode'),
+                        new Extension.Palette.Block('pseudocodeCommand'),
                     ],
                     SpriteMorph
                 ),
                 new Extension.PaletteCategory(
-                    'operators',
+                    'control',
                     [
-                        new Extension.Palette.Block('blocksToCode'),
-                        new Extension.Palette.Block('codeToBlocks'),
                         new Extension.Palette.Block('aiGenerateCode'),
+                        new Extension.Palette.Block('pseudocodeCommand'),
                     ],
                     StageMorph
-                )
+                ),
             ];
         }
 
         getBlocks() {
             
             return [
-                new Extension.Block(
-                    'blocksToCode',
-                    'reporter',
-                    'operators',
-                    'blocks to code %blocks',
-                    [],
-                    blocksToCode
-                ).for(SpriteMorph, StageMorph),
-                new Extension.Block(
-                    'codeToBlocks',
-                    'reporter',
-                    'operators',
-                    'code to blocks %mlt',
-                    [],
-                    codeToBlocks
-                ).for(SpriteMorph, StageMorph),
                 new Extension.Block(
                     'aiGenerateCode',
                     'reporter',
@@ -1890,6 +1872,32 @@ Context.prototype.updateEmptySlots = function () {
         onRenameSprite(spriteID, name) {
             console.log('sprite ' + spriteID + ' new name: ' + name);    
         } 
+
+        getUserMenu(target, proc) {
+            let items = [];
+
+            if(target instanceof BlockMorph) {
+                if(target.selector.startsWith('pseudocode')) {
+                    items.push(["Generate...", function() {
+                        let code = target.inputs()[0].children[0].text;
+                        
+                        console.log(target);
+                        
+                        (async function() {
+                            let response = await generateCode(code, new Process(null, target.scriptTarget(), null, null));
+                            console.log(response);
+
+                            let resultBlock = response.expression;
+                            let p = target.position();
+                            resultBlock.setPosition(p.add(new Point(target.width() + 16, 0)));
+                            target.parent.addBlock(resultBlock);                            
+                        })();
+                    }]);
+                }
+            }
+
+            return items;
+        }
     }
 
     function processToCode(tempProcess) {
