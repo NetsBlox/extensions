@@ -127,6 +127,7 @@
             contentElement.style['justify-content'] = 'flex-end';
             contentElement.appendChild(canvas);
             setupDialog(element);
+            element.onfocus = function() { world.keyboardHandler.focus(); };
             
             window.externalVariables['roboscapedialog'] = element;
 
@@ -218,5 +219,4 @@
 	};
 	scriptElement.setAttribute('src', 'https://preview.babylonjs.com/babylon.js');
 	document.head.appendChild(scriptElement);
-	disableRetinaSupport();
 })();
