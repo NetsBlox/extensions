@@ -314,6 +314,25 @@
             await wait(t - audioAPI.getCurrentTime());
         }
 
+    
+        function parseBlock(block) {
+            if (block === null)
+                return null;
+            if (block.selector !== 'playNoteBeats' && block.selector !== 'playNoteBeatsWithAmp')
+                return null;
+            return {
+                note: block.cachedInputs[0].lastValue,
+                beats: block.cachedInputs[1].lastValue,
+                nextBlock: parseBlock(getNextBlock(block))
+            };
+        }
+
+        function getNextBlock(block) {
+            if (block.children[block.children.length - 1] instanceof CommandBlockMorph)
+                return block.children[block.children.length - 1];
+            return null;
+        }
+
 
         // ----------------------------------------------------------------------
         class MusicApp extends Extension {
@@ -375,6 +394,7 @@
                     '-',
                     new Extension.Palette.Block('durationToBeats'),
                     new Extension.Palette.Block('noteModifiers'),
+                    new Extension.Palette.Block('noteModifierC'),
                     new Extension.Palette.Block('soundMetaData'),
                     '-',
                     new Extension.Palette.Block('playFrequency'),
@@ -680,6 +700,21 @@
                         }
                         console.log(modifiedNote);
                         return modifiedNote;
+                    }),
+                    new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Piano'], function (mod, raw_block) {
+                        if (raw_block === null)
+                            throw Error('must contain a block');
+
+                        let block = parseBlock(raw_block);
+
+                        while (block != null) {
+                            console.log(block);
+                            playNoteCommonBeats.apply(this, [block.beats, block.note, audioAPI.
+                        getModification(availableNoteModifiers[mod], 1)]);
+                            block = block.nextBlock;
+                        }
+                        
+                        return;
                     }),
                     new Extension.Block('playFrequency', 'command', 'music', 'play frequency %n Hz', [440], function(freq){
                         this.receiver.playFreq(freq)
@@ -1043,7 +1078,7 @@
                     new Extension.LabelPart('noteModifiers', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
-                        identityMap(['Piano','Forte','Accent','Staccato','Tie','Triplet']),
+                        identityMap(Object.keys(availableNoteModifiers)),
                         true, // readonly (no arbitrary text)
                     )),
                 ];
