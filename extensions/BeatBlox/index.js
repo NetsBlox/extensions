@@ -461,8 +461,22 @@
                     new Extension.Block('playNoteWithAmp', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %s amp %n %', ['Quarter', '', 'C3', '100'], function (duration, durationSpecial, notes, amp) {
                         playNoteCommon.apply(this, [durationSpecial + duration, notes, amp]); // internally does await instrumentPrefetch
                     }),
-                    new Extension.Block('playNoteWithArticulation', 'command', 'music', 'articulation %articulations %c', [''], function (articulation, script) {
-                        // TODO
+                    new Extension.Block('playNoteWithArticulation', 'command', 'music', 'modifier %noteModifiers %c', [''], function (articulation, first_block) {
+                        let cur_block = first_block, has_next, last_index;
+                        do {
+                            console.log(cur_block.selector);
+                            if (cur_block.selector === 'playNoteBeats') {
+                                const notes = cur_block.children[2].lastValue;
+                                const beats = cur_block.children[5].lastValue;
+                                playNoteCommonBeats.apply(
+                                    this, [beats, notes, availableNoteModifiers[articulation]]
+                                );
+                            }
+                            last_index = cur_block.children.length - 1;
+                            has_next = cur_block.children[last_index] instanceof CommandBlockMorph;
+                            if (has_next)
+                                cur_block = cur_block.children[last_index];
+                        } while (has_next);
                     }),
                     new Extension.Block('rest', 'command', 'music', 'rest %noteDurations %noteDurationsSpecial', ['Quarter',''], function (duration, durationSpecial) {
                         playNoteCommon.apply(this, [durationSpecial + duration, 'Rest']); // internally does await instrumentPrefetch
