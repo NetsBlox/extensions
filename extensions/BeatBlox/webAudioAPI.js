@@ -7,7 +7,7 @@
 
 /**
  * Object representing a mapping between the notational name of a musical note and its MIDI value.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 const Note = {  Rest: 0,
    C0: 12,             D0bb: 12,  C0s: 13,              D0b: 13,   D0: 14,  C0ss: 14,  E0bb: 14,
@@ -72,7 +72,7 @@ const Frequency = [
 
 /**
  * Object representing a mapping between the notational name of a musical duration and its associated beat scaling factor.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 const Duration = {
           Whole: 1.0,         DottedWhole: 2.0 / 3.0,          DottedDottedWhole: 4.0 / 7.0,
@@ -85,8 +85,21 @@ const Duration = {
 };
 
 /**
+ * Object representing a mapping between the notational name of a key signature and its position on the circle of fifths.
+ * @constant {Object<string, number>}
+ */
+const KeySignature = {
+   CMajor: 0, DMajor: 2, EMajor: 4, FMajor: -1, GMajor: 1, AMajor: 3,
+   BMajor: 5, CSharpMajor: 7, FSharpMajor: 6, CFlatMajor: -7, DFlatMajor: -5,
+   EFlatMajor: -3, GFlatMajor: -6, AFlatMajor: -4, BFlatMajor: -2,
+   CMinor: -3, DMinor: -1, EMinor: 1, FMinor: -4, GMinor: -2, AMinor: 0,
+   BMinor: 2, CSharpMinor: 4, DSharpMinor: 6, FSharpMinor: 3, GSharpMinor: 5,
+   ASharpMinor: 7, EFlatMinor: -6, AFlatMinor: -7, BFlatMinor: -5
+};
+
+/**
  * Object representing a mapping between an effect type and its unique internal code.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 const EffectType = {
    Reverb: 11, Delay: 12, Echo: 13, PitchShift: 14, Doppler: 15,                    // Time-Based Effects
@@ -97,8 +110,25 @@ const EffectType = {
 };
 
 /**
+ * Object representing a mapping between a note modification and its unique internal code.
+ * @constant {Object<string, number>}
+ */
+const ModificationType = {
+   Velocity: 1, Piano: 2, Forte: 3, MezzoPiano: 4, MezzoForte: 5,                         // Loudness modifications
+   Pianissimo: 6, Fortissimo: 7, Pianississimo: 8, Fortississimo: 9,
+   Slur: 20, Crescendo: 21, Decrescendo: 22, Diminuendo: 23,                              // Multi-note articulations
+   Accent: 40, Marcato: 41, Staccato: 42, Staccatissimo: 43, Tenuto: 44, Sforzando: 45,   // Single-note articulations
+   Tie: 60, OctaveShiftUp: 61, OctaveShiftDown: 62, Natural: 63,                          // Miscellaneous modifications
+   GraceAcciaccatura: 80, GraceAppoggiatura: 81,                                          // Explicit ornamentations (alters single note)
+   Tuplet: 100, Triplet: 101, Quintuplet: 102, Sextuplet: 103,                            // Duration modifications
+   Septuplet: 104, Fermata: 105,
+   TrillUpper: 120, TrillLower: 121, MordentUpper: 122, MordentLower: 123,                // Implicit ornamentations (adds notes)
+   TurnUpper: 124, TurnLower: 125, Glissando: 126, Portamento: 127
+};
+
+/**
  * Object representing a mapping between an acoustic analysis type and its unique internal code.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 const AnalysisType = {
    TimeSeries: 1, PowerSpectrum: 2, TotalPower: 3
@@ -106,7 +136,7 @@ const AnalysisType = {
 
 /**
  * Object representing a mapping between an encoding file type and its unique internal code.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 const EncodingType = {
    WAV: 1
@@ -114,58 +144,70 @@ const EncodingType = {
 
 /**
  * Object representing a mapping between an instrument file encoding type and its unique internal code.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 const InstrumentEncodingType = {
    PCM: 0, WEBM_OPUS: 1
 };
 
-/**
- * Module containing all MIDI constants and functionality available in the {@link WebAudioAPI} library.
- * 
- * @module Midi
- */
+/** Class representing a set of details for playing an individual note */
+class NoteDetails {
 
-/**
- * Object representing a mapping between a General MIDI command and its protocol value.
- * @constant {Object.<string, number>}
- */
-const MidiCommand = {
-   Unknown: 0x00, NoteOff: 0x80, NoteOn: 0x90, Aftertouch: 0xA0, ContinuousController: 0xB0,
-   ProgramChange: 0xC0, ChannelPressure: 0xD0, PitchBend: 0xE0, SystemMessage: 0xF0
-};
+   /** @type {number} */
+   note;
+   /** @type {number} */
+   velocity;
+   /** @type {number} */
+   duration;
+   /** @type {number} */
+   startTimeOffset;
+   /** @type {number} */
+   usedDuration;
+   /** @type {boolean} */
+   wasWaitingNote;
 
-/**
- * Returns a value representing the MIDI command in the specified `midiData`.
- * 
- * @param {number[]} midiData - Data array containing raw MIDI event data
- * @returns {number} MIDI command specified in the corresponding `midiData`
- * @see {@link module:Midi.MidiCommand MidiCommand}
- */
-function getMidiCommand(midiData) {
-   return midiData[0] & 0xF0;
+   constructor(note, velocity, duration, startTimeOffset, usedDuration) {
+      this.note = note;
+      this.velocity = velocity;
+      this.duration = duration;
+      this.startTimeOffset = (startTimeOffset === undefined) ? 0.0 : startTimeOffset;
+      this.usedDuration = (usedDuration === undefined) ? duration : usedDuration;
+      this.wasWaitingNote = false;
+   }
 }
 
-/**
- * Returns the MIDI note corresponding to the `NoteOn` or `NoteOff` command in the specified
- * `midiData` parameter.
- * 
- * @param {number[]} midiData - Data array containing raw MIDI event data
- * @returns {number} MIDI note corresponding to the relevant `midiData` command
- */
-function getMidiNote(midiData) {
-   return midiData[1] & 0x7F;
-}
+/** Class representing all base-level {@link WebAudioAPI} note modifications */
+class ModificationBase {
 
-/**
- * Returns the note velocity corresponding to the `NoteOn` or `NoteOff` command in the
- * specified `midiData` parameter. This velocity will be in the range from [0.0, 1.0].
- * 
- * @param {number[]} midiData - Data array containing raw MIDI event data
- * @returns {number} Note velocity for a MIDI note in the range [0.0, 1.0]
- */
-function getMidiVelocity(midiData) {
-   return (midiData[2] & 0x7F) / 127.0;
+   // Reference to the original unmodified note and duration
+   /** @type {Tempo} */
+   tempo = null;
+   /** @type {Key} */
+   key = null;
+   /** @type {NoteDetails} */
+   unmodifiedDetails = null;
+
+   /**
+    * Called by a concrete modification instance to initialize the inherited {@link ModificationBase}
+    * data structure.
+    * 
+    * @param {Tempo} tempo - Reference to the current global {@link Tempo}
+    * @param {NoteDetails} details - Original unmodified details about the note to be played
+    */
+   constructor(tempo, key, details) {
+      this.tempo = tempo;
+      this.key = key;
+      this.unmodifiedDetails = details;
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * @param {Object|null} [details] - Optional details used to refine the requested modification
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details) { return undefined; }
 }
 
 /**
@@ -230,115 +272,1831 @@ class WebAudioInstrumentError extends Error {
    }
 }
 
-/** Class representing all built-in {@link WebAudioAPI} audio encoders */
-class EncoderBase {
+/**
+ * Class representing an Accent modification.
+ * 
+ * An Accent modification causes a note to be played slightly louder with a quicker attack
+ * and more rapid taper than normal.
+ * 
+ * @extends ModificationBase
+ */
+class Accent extends ModificationBase {
 
    /**
-    * Called by a concrete encoder instance to initialize the inherited {@link EncoderBase} data
-    * structure.
+    * Constructs a new {@link Accent} modification object.
     */
-   constructor() { /* Empty constructor */ }
+   constructor(tempo, key, details) {
+      super(tempo, key, details);
+   }
 
    /**
-    * Encodes the corresponding audio buffer, and returns a
-    * {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly
-    * encoded data.
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
     * 
-    * @param {AudioBuffer} audioData - {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer AudioBuffer} containing the data to encode
-    * @param {Object} [encodingOptions] - Optional encoding-specific options such as 'bitRate'
-    * @returns {Promise<Blob>} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio
-    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer AudioBuffer}
-    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
     */
-   async encode(audioData, encodingOptions) { return undefined; }
-}
-
-/**
- * Class containing all WAV file encoding functionality.
- * @extends EncoderBase
- */
-class WavFileEncoder extends EncoderBase {
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
 
    /**
-    * Constructs a new {@link WavFileEncoder} object.
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
     */
-   constructor() {
-      super();
+   static canModifySequence() {
+      return false;
    }
 
-   async encode(audioData) {
-      // Code taken from https://russellgood.com/how-to-convert-audiobuffer-to-audio-file/
-      const numChannels = audioData.numberOfChannels, length = audioData.length * numChannels * 2 + 44;
-      const buffer = new ArrayBuffer(length), channels = [];
-      const view = new DataView(buffer);
-      let offset = 0, pos = 0;
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "Accent" modification cannot infer any parameters from a sequence of notes');
+   }
 
-      // Nested helper functions
-      function setUint16(data) {
-         view.setUint16(pos, data, true);
-         pos += 2;
-      }
-
-      function setUint32(data) {
-         view.setUint32(pos, data, true);
-         pos += 4;
-      }
-
-      // Write WAVE header
-      setUint32(0x46464952);                              // "RIFF"
-      setUint32(length - 8);                              // file length - 8
-      setUint32(0x45564157);                              // "WAVE"
-
-      setUint32(0x20746d66);                              // "fmt " chunk
-      setUint32(16);                                      // length = 16
-      setUint16(1);                                       // PCM (uncompressed)
-      setUint16(numChannels);
-      setUint32(audioData.sampleRate);
-      setUint32(audioData.sampleRate * 2 * numChannels);  // avg. bytes/sec
-      setUint16(numChannels * 2);                         // block-align
-      setUint16(16);                                      // 16-bit (hardcoded in this demo)
-
-      setUint32(0x61746164);                              // "data" - chunk
-      setUint32(length - pos - 4);                        // chunk length
-
-      // Write interleaved data
-      for (let i = 0; i < audioData.numberOfChannels; ++i)
-         channels.push(audioData.getChannelData(i));
-      while (pos < length) {
-         for (let i = 0; i < numChannels; ++i) {
-            let sample = Math.max(-1, Math.min(1, channels[i][offset]));          // clamp
-            sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;    // scale to 16-bit signed int
-            view.setInt16(pos, sample, true);                                     // write 16-bit sample
-            pos += 2;
-         }
-         ++offset;                                                                // next source sample
-      }
-      return new Blob([view.buffer], { type: 'audio/wav' });
+   getModifiedNoteDetails() {
+      // TODO: Need to pick instrument option with quick attack / alter attack and taper/release components of returned note
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity * 2.0,
+         this.unmodifiedDetails.duration
+      )];
    }
 }
 
 /**
- * Module containing functionality to create and utilize {@link WebAudioAPI} data encoders.
- * @module Encoder
+ * Class representing a Crescendo modification.
+ * 
+ * A Crescendo modification causes a sequence of notes to be played with increasing loudness
+ * over time.
+ * 
+ * @extends ModificationBase
+ */
+class Crescendo extends ModificationBase {
+
+   // Effect-specific private variables
+   /** @type {boolean} */
+   #isDecrescendo;
+
+   /**
+    * Constructs a new {@link Crescendo} modification object.
+    * 
+    * @param {boolean} isDecrescendo - Whether this modification represents a decrescendo/diminuendo
+    */
+   constructor(isDecrescendo, tempo, key, details) {
+      super(tempo, key, details);
+      this.#isDecrescendo = isDecrescendo;
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: ['noteIndex', 'totalNumNotes', 'endingDynamic'],
+            sequence: ['endingDynamic']
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return true;
+   }
+
+   static inferParametersFromSequence(sequence, index, params) {
+      if (!params || !('endingDynamic' in params))
+         throw new WebAudioValueError('The "endingDynamic" parameter cannot be automatically inferred from a note sequence');
+      return {
+         'noteIndex': index,
+         'totalNumNotes': sequence.length,
+         'endingDynamic': params.endingDynamic
+      };
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * The `details` variable must contain the following two keys:
+    * 
+    * `noteIndex`: Which note this modification applies to within the total modified phrase (starting at 0)
+    * `totalNumNotes`: Total number of notes present in the modified phrase
+    * `endingDynamic`: Desired dynamic at the end of the modified phrase
+    * 
+    * @param {Object<string, number>} details - Information about the total modified phrase and this note's place in it
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details) {
+      if (!('noteIndex' in details) || !('totalNumNotes' in details) || !('endingDynamic' in details))
+         throw new WebAudioValueError('The "details" variable must contain the following keys: noteIndex, totalNumNotes, endingDynamic');
+      else if (!Number.isInteger(details.noteIndex) || (Number(details.noteIndex) < 1))
+         throw new WebAudioValueError(`The "noteIndex" value (${details.noteIndex}) must be a positive integer > 0`);
+      else if (!Number.isInteger(details.totalNumNotes) || (Number(details.totalNumNotes) < 2) || (Number(details.totalNumNotes) < Number(details.noteIndex)))
+         throw new WebAudioValueError(`The "totalNumNotes" value (${details.totalNumNotes}) must be a positive integer >= noteIndex and > 1`);
+      else if (!Number.isInteger(details.endingDynamic) || (Number(details.endingDynamic) < ModificationType.Piano) || (Number(details.endingDynamic) > ModificationType.Fortississimo))
+         throw new WebAudioValueError(`The "endingDynamic" value (${details.endingDynamic}) must be a valid dynamic value (e.g., ModificationType.Piano)`);
+      const endingVelocity = loadModification(details.endingDynamic, this.tempo, this.key, new NoteDetails(null, null, null)).getModifiedNoteDetails()[0].velocity;
+      const velocityModification = (endingVelocity - this.unmodifiedDetails.velocity) / (1 + details.totalNumNotes - details.noteIndex);
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity + ((details.noteIndex == 1) ? 0 : velocityModification),
+         this.unmodifiedDetails.duration
+      )];
+   }
+}
+
+/**
+ * Class representing a Fermata modification.
+ * 
+ * A Fermata modification causes a note to be played for a longer duration than specified.
+ * By default, the duration will be twice what is originally specified.
+ * 
+ * @extends ModificationBase
+ */
+class Fermata extends ModificationBase {
+
+   /**
+    * Constructs a new {@link Fermata} modification object.
+    */
+   constructor(tempo, key, details) {
+      super(tempo, key, details);
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: ['relativeDelayExtension'],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return false;
+   }
+
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "Fermata" modification cannot infer any parameters from a sequence of notes');
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * The `details` variable may contain the following optional key:
+    * 
+    * `relativeDelayExtension`: How much longer than the original duration the note should be
+    * held. A value of 1.0 means to hold the note for its exact duration, whereas a value of
+    * 2.0 means to hold the note for twice as long. If no value is specified, this parameter
+    * will default to 2.0.
+    * 
+    * @param {Object<string, number>} details - Information about the length of the fermata
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details={relativeDelayExtension: 2.0}) {
+      if (!('relativeDelayExtension' in details))
+         details.relativeDelayExtension = (('implicit' in details) ? details.implicit : 2.0);
+      if (Number(details.relativeDelayExtension) < 1.0)
+         throw new WebAudioValueError(`The relative delay extension (${details.relativeDelayExtension}) must be at least 1.0`);
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity,
+         this.unmodifiedDetails.duration / Number(details.relativeDelayExtension)
+      )];
+   }
+}
+
+/**
+ * Class representing a Glissando modification.
+ * 
+ * A Glissando modification causes an implicit sequence of notes to be played rapidly and
+ * individually between a starting note and the next printed note. The duration of a
+ * glissando spans the entire printed duration of the starting note.
+ * 
+ * @extends ModificationBase
+ */
+class Glissando extends ModificationBase {
+
+   /**
+    * Constructs a new {@link Glissando} modification object.
+    */
+   constructor(tempo, key, details) {
+      super(tempo, key, details);
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: ['nextNoteValue'],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return true;
+   }
+
+   static inferParametersFromSequence(sequence, index) {
+      return (index < sequence.length) ?
+         { 'nextNoteValue': (Array.isArray(sequence[index][0]) ? sequence[index][0][0] : sequence[index][0]) } :
+         null;
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * The `details` variable may contain the following optional key:
+    * 
+    * `nextNoteValue`:  MIDI number of the note that follows this note
+    * 
+    * @param {Object<string, number>} details - Information about the ending note of the glissando
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details) {
+      if (!('nextNoteValue' in details)) {
+         if (!('implicit' in details))
+            throw new WebAudioValueError('The "details" variable must contain the following keys: nextNoteValue');
+         details.nextNoteValue = details.implicit;
+      }
+      if (!Number.isInteger(details.nextNoteValue))
+         throw new WebAudioValueError(`The next note value (${details.nextNoteValue}) must be a positive integer representing a valid MIDI note`);
+      else if (Number(details.nextNoteValue) <= this.unmodifiedDetails.note)
+         throw new WebAudioValueError(`The next note (${details.nextNoteValue}) must be higher than the current note (${this.unmodifiedDetails.note})`);
+      const glissando = [];
+      const totalDurationSeconds = (this.unmodifiedDetails.duration < 0) ?
+         -this.unmodifiedDetails.duration : (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute));
+      const noteDuration = totalDurationSeconds / (Number(details.nextNoteValue) - this.unmodifiedDetails.note);
+      for (let i = 0, note = this.unmodifiedDetails.note; note < Number(details.nextNoteValue); ++note, ++i)
+         glissando.push(new NoteDetails(
+            note,
+            this.unmodifiedDetails.velocity,
+            -noteDuration,
+            i * noteDuration
+         ));
+      return glissando;
+   }
+}
+
+/**
+ * Class representing a Global Dynamic modification.
+ * 
+ * A Global Dynamic modification causes all subsequent notes to be played either softer
+ * or louder than average.
+ * 
+ * @extends ModificationBase
+ */
+class GlobalDynamic extends ModificationBase {
+
+   // Effect-specific private variables
+   /** @type {number} */
+   #degreeOfDynamic;
+
+   // Conversion from degrees to velocity
+   static degreesConversion = [
+      0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.45, 0.5,
+      0.55, 0.6, 0.6, 0.75, 0.75, 0.85, 0.85, 0.95, 0.95 ];
+
+   /**
+    * Constructs a new {@link GlobalDynamic} modification object.
+    * 
+    * @param {number} degreeOfDynamic - Number of dynamic symbols to apply (0.5 for mezzo-dynamics, negative for pianos)
+    */
+   constructor(degreeOfDynamic, tempo, key, details) {
+      super(tempo, key, details);
+      this.#degreeOfDynamic = degreeOfDynamic;
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return false;
+   }
+
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "GlobalDynamic" modification cannot infer any parameters from a sequence of notes');
+   }
+
+   getModifiedNoteDetails() {
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         GlobalDynamic.degreesConversion[(this.#degreeOfDynamic * 2) + 8],
+         this.unmodifiedDetails.duration
+      )];
+   }
+}
+
+/**
+ * Class representing a Grace note modification.
+ * 
+ * A Grace note modification causes a note to either begin sounding earlier than anticipated (an
+ * acciaccatura) or to rob time from the duration of the next note (an appoggiatura). An
+ * appoggiatura will also be lightly accented in loudness, while an accacciatura will be slightly
+ * deaccented.
+ * 
+ * @extends ModificationBase
+ */
+class Grace extends ModificationBase {
+
+   // Effect-specific private variables
+   /** @type {boolean} */
+   #isAppoggiatura;
+
+   /**
+    * Constructs a new {@link Grace} modification object.
+    * 
+    * @param {boolean} isAppoggiatura - Whether this modification represents an appoggiatura (vs. an accacciatura)
+    */
+   constructor(isAppoggiatura, tempo, key, details) {
+      super(tempo, key, details);
+      this.#isAppoggiatura = isAppoggiatura;
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: ['graceNoteValue'],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return false;
+   }
+
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "Grace" modification cannot infer any parameters from a sequence of notes');
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * The `details` variable must contain the following key:
+    * 
+    * `graceNoteValue`:  MIDI note number of the grace note
+    * 
+    * @param {Object<string, number>} details - Information about the grace note value
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details) {
+      if (!('graceNoteValue' in details)) {
+         if (!('implicit' in details))
+            throw new WebAudioValueError('The "details" variable must contain the following keys: graceNoteValue');
+         details.graceNoteValue = details.implicit;
+      }
+      if (!Number.isInteger(details.graceNoteValue) || (Number(details.graceNoteValue) < 1))
+         throw new WebAudioValueError(`The grace note value (${details.graceNoteValue}) must be a positive integer representing a valid MIDI note`);
+      let primaryNoteStartTimeOffset = 0.0;
+      const fullDuration = ((this.unmodifiedDetails.duration < 0) ?
+         this.unmodifiedDetails.duration : (-60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute)));
+      const graceDuration = -60.0 / ((16.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute);
+      const graceNote = new NoteDetails(Number(details.graceNoteValue), this.unmodifiedDetails.velocity, Math.max(graceDuration, fullDuration / 3.0), 0.0, 0.0);
+      if (this.#isAppoggiatura) {
+         primaryNoteStartTimeOffset -= graceNote.duration;
+         graceNote.velocity *= 1.5;
+      }
+      else {
+         graceNote.startTimeOffset = graceNote.duration;
+         graceNote.velocity *= 0.75;
+      }
+      const primaryNote = new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity,
+         fullDuration - (this.#isAppoggiatura ? graceNote.duration : 0.0),
+         primaryNoteStartTimeOffset,
+         this.unmodifiedDetails.duration
+      );
+      return [graceNote, primaryNote];
+   }
+}
+
+/**
+ * Class representing a Marcato modification.
+ * 
+ * A Marcato modification causes a note to be played as if it were modified by both an
+ * {@link Accent} and a {@link Staccato}.
+ * 
+ * @extends ModificationBase
+ */
+class Marcato extends ModificationBase {
+
+   /**
+    * Constructs a new {@link Marcato} modification object.
+    */
+   constructor(tempo, key, details) {
+      super(tempo, key, details);
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return false;
+   }
+
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "Marcato" modification cannot infer any parameters from a sequence of notes');
+   }
+
+   getModifiedNoteDetails() {
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity * 2.0,
+         this.unmodifiedDetails.duration * 2.0,
+         this.unmodifiedDetails.startTimeOffset,
+         this.unmodifiedDetails.duration
+      )];
+   }
+}
+
+/**
+ * Class representing a Mordent modification.
+ * 
+ * A Mordent modification causes an implicit set of notes to be played after the primary
+ * printed note. In the case of an upper mordent, the notes to be played are the principle
+ * note, the note above it, then the principle note again. In the case of a lower mordent,
+ * the notes to be played are the principle note, the note below it, and the principle note
+ * again. The total cumulative duration of all notes in the mordent is the same as the
+ * printed duration of the principle note.
+ * 
+ * @extends ModificationBase
+ */
+class Mordent extends ModificationBase {
+
+   // Effect-specific private variables
+   /** @type {boolean} */
+   #isUpper;
+
+   // Major scale intervals
+   static upperOffsetsMajor = [2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1, 1];
+   static lowerOffsetsMajor = [1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1];
+
+   /**
+    * Constructs a new {@link Mordent} modification object.
+    * 
+    * @param {boolean} isUpper - Whether this modification represents an upper mordent
+    */
+   constructor(isUpper, tempo, key, details) {
+      super(tempo, key, details);
+      this.#isUpper = isUpper;
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: ['offset'],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return false;
+   }
+
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "Mordent" modification cannot infer any parameters from a sequence of notes');
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * The `details` variable may contain the following optional key:
+    * 
+    * `offset`:  Integer offset of the mordent from the primary note
+    * 
+    * @param {Object<string, number>} details - Information about the note value of the mordent
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details) {
+      let mordentNote = this.unmodifiedDetails.note;
+      if (details && (('offset' in details) || ('implicit' in details))) {
+         mordentNote += ('offset' in details) ?
+            (this.#isUpper ? Number(details.offset) : -Number(details.offset)) :
+            (this.#isUpper ? Number(details.implicit) : -Number(details.implicit));
+      }
+      else {
+         mordentNote += (this.#isUpper ? Mordent.upperOffsetsMajor[mordentNote % 12] : -Mordent.lowerOffsetsMajor[mordentNote % 12]);
+         mordentNote += this.key.offsets[mordentNote % 12];
+      }
+      if (!Number.isInteger(mordentNote) || (Number(mordentNote) < 1))
+         throw new WebAudioValueError(`The offset value (${mordentNote}) must be a positive integer > 0`);
+      const mordentNoteDuration = 60.0 / ((32.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute);
+      const primaryNoteDuration = ((this.unmodifiedDetails.duration < 0) ?
+         -this.unmodifiedDetails.duration : (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute))) -
+         (2 * mordentNoteDuration);
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity,
+         -mordentNoteDuration,
+         0.0
+      ),
+      new NoteDetails(
+         mordentNote,
+         this.unmodifiedDetails.velocity,
+         -mordentNoteDuration,
+         mordentNoteDuration
+      ),
+      new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity,
+         -primaryNoteDuration,
+         2 * mordentNoteDuration
+      )];
+   }
+}
+
+/**
+ * Class representing a Natural modification.
+ * 
+ * A Natural modification removes any accidentals from a note, causing it to be played
+ * as if in the key of C.
+ * 
+ * @extends ModificationBase
+ */
+class Natural extends ModificationBase {
+
+   /**
+    * Constructs a new {@link Natural} modification object.
+    */
+   constructor(tempo, key, details) {
+      super(tempo, key, details);
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return false;
+   }
+
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "Natural" modification cannot infer any parameters from a sequence of notes');
+   }
+
+   getModifiedNoteDetails() {
+      const offset = ([1, 3, 6, 8, 10].includes(this.unmodifiedDetails.note % 12) ? ((this.key.signature > 0) ? -1 : 1) : 0);
+      return [new NoteDetails(
+         this.unmodifiedDetails.note + offset,
+         this.unmodifiedDetails.velocity,
+         this.unmodifiedDetails.duration
+      )];
+   }
+}
+
+/**
+ * Class representing an Octave Shift modification.
+ * 
+ * An Octave Shift modification causes a note to be played a full octave higher or lower than written.
+ * 
+ * @extends ModificationBase
+ */
+class OctaveShift extends ModificationBase {
+
+   // Effect-specific private variables
+   /** @type {boolean} */
+   #shiftUp;
+
+   /**
+    * Constructs a new {@link OctaveShift} modification object.
+    * 
+    * @param {boolean} shiftUp - Whether this is an octave shift up or down
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   constructor(shiftUp, tempo, key, details) {
+      super(tempo, key, details);
+      this.#shiftUp = shiftUp;
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return true;
+   }
+
+   static inferParametersFromSequence(_sequence, _index, params) {
+      return params;
+   }
+
+   getModifiedNoteDetails() {
+      return [new NoteDetails(
+         this.unmodifiedDetails.note + (this.#shiftUp ? 12 : -12),
+         this.unmodifiedDetails.velocity,
+         this.unmodifiedDetails.duration
+      )];
+   }
+}
+
+/**
+ * Class representing a Portamento modification.
+ * 
+ * A Portamento modification causes a starting note to glide smoothly into the next printed
+ * note, with no individual notes being discernible. The duration of a portamento spans the
+ * entire printed duration of the starting note.
+ * 
+ * @extends ModificationBase
+ */
+class Portamento extends ModificationBase {
+
+   /**
+    * Constructs a new {@link Portamento} modification object.
+    */
+   constructor(tempo, key, details) {
+      super(tempo, key, details);
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: ['nextNoteValue'],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return true;
+   }
+
+   static inferParametersFromSequence(sequence, index) {
+      return (index < sequence.length) ?
+         { 'nextNoteValue': (Array.isArray(sequence[index][0]) ? sequence[index][0][0] : sequence[index][0]) } :
+         null;
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * The `details` variable may contain the following optional key:
+    * 
+    * `nextNoteValue`:  MIDI number of the note that follows this note
+    * 
+    * @param {Object<string, number>} details - Information about the ending note of the portamento
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details) {
+      if (!('nextNoteValue' in details)) {
+         if (!('implicit' in details))
+            throw new WebAudioValueError('The "details" variable must contain the following keys: nextNoteValue');
+         details.nextNoteValue = details.implicit;
+      }
+      if (!Number.isInteger(details.nextNoteValue))
+         throw new WebAudioValueError(`The next note value (${details.nextNoteValue}) must be a positive integer representing a valid MIDI note`);
+      else if (Number(details.nextNoteValue) <= this.unmodifiedDetails.note)
+         throw new WebAudioValueError(`The next note (${details.nextNoteValue}) must be higher than the current note (${this.unmodifiedDetails.note})`);
+      // TODO: CHANGE THIS SO THAT IT DETUNES OVER THE DURATION TO THE "NEXT NOTE VALUE" (ONLY FOR INSTRUMENTS THAT ALLOW FOR CONTINUOUS SLIDES)
+      const portamento = [];
+      const totalDurationSeconds = (this.unmodifiedDetails.duration < 0) ?
+         -this.unmodifiedDetails.duration : (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute));
+      const noteDuration = totalDurationSeconds / (Number(details.nextNoteValue) - this.unmodifiedDetails.note);
+      for (let i = 0, note = this.unmodifiedDetails.note; note < Number(details.nextNoteValue); ++note, ++i)
+         portamento.push(new NoteDetails(
+            note,
+            this.unmodifiedDetails.velocity,
+            -noteDuration,
+            i * noteDuration
+         ));
+      return portamento;
+   }
+}
+
+/**
+ * Class representing a Sforzando modification.
+ * 
+ * A Sforzando modification causes a note to be played in the same was as a note with an
+ * {@link Accent} modification.
+ * 
+ * @extends ModificationBase
+ */
+class Sforzando extends ModificationBase {
+
+   /**
+    * Constructs a new {@link Sforzando} modification object.
+    */
+   constructor(tempo, key, details) {
+      super(tempo, key, details);
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return false;
+   }
+
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "Sforzando" modification cannot infer any parameters from a sequence of notes');
+   }
+
+   getModifiedNoteDetails() {
+      // TODO: Need to pick instrument option with quick attack / alter attack and taper/release components of returned note
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity * 2.0,
+         this.unmodifiedDetails.duration
+      )];
+   }
+}
+
+/**
+ * Class representing a Slur modification.
+ * 
+ * A Slur modification causes a sequence of notes to be played as if belonging to a
+ * single phrase. This translates to a slight crescendo/descrescendo over the course
+ * of the sequence, as well as a somewhat early release of the final note.
+ * 
+ * @extends ModificationBase
+ */
+class Slur extends ModificationBase {
+
+   /**
+    * Constructs a new {@link Slur} modification object.
+    */
+   constructor(tempo, key, details) {
+      super(tempo, key, details);
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: ['noteIndex', 'totalNumNotes'],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return true;
+   }
+
+   static inferParametersFromSequence(sequence, index) {
+      return {
+         'noteIndex': index,
+         'totalNumNotes': sequence.length
+      };
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * The `details` variable must contain the following two keys:
+    * 
+    * `noteIndex`: Which note this modification applies to within the total modified phrase (starting at 1)
+    * `totalNumNotes`: Total number of notes present in the modified phrase
+    * 
+    * @param {Object<string, number>} details - Information about the total modified phrase and this note's place in it
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details) {
+      if (!('noteIndex' in details) || !('totalNumNotes' in details))
+         throw new WebAudioValueError('The "details" variable must contain the following keys: noteIndex, totalNumNotes');
+      else if (!Number.isInteger(details.noteIndex) || (Number(details.noteIndex) < 1))
+         throw new WebAudioValueError(`The "noteIndex" value (${details.noteIndex}) must be a positive integer > 0`);
+      else if (!Number.isInteger(details.totalNumNotes) || (Number(details.totalNumNotes) < 1) ||
+              (Number(details.totalNumNotes) < Number(details.noteIndex)))
+         throw new WebAudioValueError(`The "totalNumNotes" value (${details.totalNumNotes}) must be a positive integer >= noteIndex`);
+      const velocityModification = 1.0 + Math.sin(Math.PI * Number(details.noteIndex) / Number(details.totalNumNotes));
+      const duration = (this.unmodifiedDetails.duration < 0) ? -this.unmodifiedDetails.duration :
+         (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute));
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity * velocityModification,
+         (Number(details.noteIndex) < Number(details.totalNumNotes)) ? this.unmodifiedDetails.duration : -duration + (60.0 / ((32.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute)),
+         0.0,
+         this.unmodifiedDetails.duration
+      )];
+   }
+}
+
+/**
+ * Class representing a Staccato modification.
+ * 
+ * A Staccato modification causes a note to be played with a rapid attack for one-half of the
+ * printed duration, such that there is silence for the second half of the duration. If a
+ * staccatissimo modification is requested, the note will only sound for one-quarter of the
+ * printed duration.
+ * 
+ * @extends ModificationBase
+ */
+class Staccato extends ModificationBase {
+
+   // Effect-specific private variables
+   /** @type {boolean} */
+   #isStaccatissimo;
+
+   /**
+    * Constructs a new {@link Staccato} modification object.
+    * 
+    * @param {boolean} isStaccatissimo - Whether this modification represents a staccatissimo duration shortening
+    */
+   constructor(isStaccatissimo, tempo, key, details) {
+      super(tempo, key, details);
+      this.#isStaccatissimo = isStaccatissimo;
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return false;
+   }
+
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "Staccato" modification cannot infer any parameters from a sequence of notes');
+   }
+
+   getModifiedNoteDetails() {  // TODO: Need to pick instrument option with quick attack / alter attack and taper/release components of returned note
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity,
+         this.unmodifiedDetails.duration * (this.#isStaccatissimo ? 4.0 : 2.0),
+         0.0,
+         this.unmodifiedDetails.duration
+      )];
+   }
+}
+
+/**
+ * Class representing a Tenuto modification.
+ * 
+ * A Tenuto modification forces a note to played for its full duration, regardless of its
+ * location in a phrase or any other modifications, implicit or explicit.
+ * 
+ * @extends ModificationBase
+ */
+class Tenuto extends ModificationBase {
+
+   /**
+    * Constructs a new {@link Tenuto} modification object.
+    */
+   constructor(tempo, key, details) {
+      super(tempo, key, details);
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return false;
+   }
+
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "Tenuto" modification cannot infer any parameters from a sequence of notes');
+   }
+
+   getModifiedNoteDetails() {
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity,
+         this.unmodifiedDetails.duration
+      )];
+   }
+}
+
+/**
+ * Class representing a Tie modification.
+ * 
+ * A Tie modification causes a note to continue to play for both its own duration and
+ * the duration of the note to which it is tied.
+ * 
+ * @extends ModificationBase
+ */
+class Tie extends ModificationBase {
+
+   /**
+    * Constructs a new {@link Tie} modification object.
+    */
+   constructor(tempo, key, details) {
+      super(tempo, key, details);
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: ['tiedDuration'],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return true;
+   }
+
+   static inferParametersFromSequence(sequence, index) {
+      const params = { 'tiedDuration': 0 };
+      for (let i = index; i < sequence.length; ++i)
+         params.tiedDuration = 1.0 / ((params.tiedDuration ? (1.0 / params.tiedDuration) : 0.0) + (1.0 / (Array.isArray(sequence[i][0]) ? sequence[i][0][1] : sequence[i][1])));
+      return params;
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * The `details` variable may contain the following key:
+    * 
+    * `tiedDuration`: The duration of the note to which this note is tied
+    * 
+    * @param {Object<string, number>} details - Information about the tied phrase
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details) {
+      if (!('tiedDuration' in details)) {
+         if (!('implicit' in details))
+            throw new WebAudioValueError('The "details" variable must contain the following keys: tiedDuration');
+         details.tiedDuration = details.implicit;
+      }
+      if (Number(details.tiedDuration) < 0.0)
+         throw new WebAudioValueError(`The target tied duration (${details.tiedDuration}) cannot be negative`);
+      const duration = (this.unmodifiedDetails.duration < 0) ? -this.unmodifiedDetails.duration : (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute));
+      const tiedDuration = (Number(details.tiedDuration) > 0) ? (60.0 / ((Number(details.tiedDuration) / this.tempo.beatBase) * this.tempo.beatsPerMinute)) : 0.0;
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity,
+         -(duration + tiedDuration),
+         0.0,
+         this.unmodifiedDetails.duration
+      )];
+   }
+}
+
+/**
+ * Class representing a Trill modification.
+ * 
+ * A Trill modification causes an implicit set of notes to be played after the primary
+ * printed note. In the case of an upper trill, the notes to be played are the principle
+ * note and the note above it, repeated for the printed duration of the principle note.
+ * In the case of a lower trill, the notes to be played are the principle note and the
+ * note below it, repeated for the printed duration of the principle note.
+ * 
+ * @extends ModificationBase
+ */
+class Trill extends ModificationBase {
+
+   // Effect-specific private variables
+   /** @type {boolean} */
+   #isUpper;
+
+   // Major scale intervals
+   static upperOffsetsMajor = [2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1, 1];
+   static lowerOffsetsMajor = [1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1];
+
+   /**
+    * Constructs a new {@link Trill} modification object.
+    * 
+    * @param {boolean} isUpper - Whether this modification represents an upper trill
+    */
+   constructor(isUpper, tempo, key, details) {
+      super(tempo, key, details);
+      this.#isUpper = isUpper;
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: ['offset'],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return false;
+   }
+
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "Trill" modification cannot infer any parameters from a sequence of notes');
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * The `details` variable may contain the following optional key:
+    * 
+    * `offset`:  Integer offset of the trill from the primary note
+    * 
+    * @param {Object<string, number>} details - Information about the note value of the trill
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details) {
+      let trillNote = this.unmodifiedDetails.note;
+      if (details && (('offset' in details) || ('implicit' in details))) {
+         trillNote += ('offset' in details) ?
+            (this.#isUpper ? Number(details.offset) : -Number(details.offset)) :
+            (this.#isUpper ? Number(details.implicit) : -Number(details.implicit));
+      }
+      else {
+         trillNote += (this.#isUpper ? Trill.upperOffsetsMajor[trillNote % 12] : -Trill.lowerOffsetsMajor[trillNote % 12]);
+         trillNote += this.key.offsets[trillNote % 12];
+      }
+      if (!Number.isInteger(trillNote) || (Number(trillNote) < 1))
+         throw new WebAudioValueError(`The offset value (${trillNote}) must be a positive integer > 0`);
+      const trill = [];
+      const fullNoteDuration = (this.unmodifiedDetails.duration < 0) ?
+         -this.unmodifiedDetails.duration : (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute));
+      const trillNoteDuration = 60.0 / ((32.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute);
+      const numNotes = Math.floor(fullNoteDuration / trillNoteDuration);
+      for (let i = 0; i < numNotes; ++i)
+         trill.push(new NoteDetails(
+            (i % 2) ? trillNote : this.unmodifiedDetails.note,
+            this.unmodifiedDetails.velocity * ((i == 0) ? 1.0 : 0.75),
+            -trillNoteDuration,
+            i * trillNoteDuration
+         ));
+      if ((numNotes * trillNoteDuration) < fullNoteDuration)
+         trill.push(new NoteDetails(
+            (numNotes % 2) ? trillNote : 0,
+            this.unmodifiedDetails.velocity,
+            -(fullNoteDuration - (numNotes * trillNoteDuration)),
+            numNotes * trillNoteDuration
+         ));
+      return trill;
+   }
+}
+
+/**
+ * Class representing a Tuplet modification.
+ * 
+ * A Tuplet modification causes a note to play for only 1/N of the duration of the next
+ * longest standard note duration. For example, three eighth notes in a triplet would
+ * take the same amount of time to play as a single quarter note. As an alternate
+ * formulation, an N-tuplet-modified note would play for 2/N of its printed duration.
+ * 
+ * @extends ModificationBase
+ */
+class Tuplet extends ModificationBase {
+
+   /**
+    * Constructs a new {@link Tuplet} modification object.
+    */
+   constructor(tempo, key, details) {
+      super(tempo, key, details);
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: ['numNotes', 'intoNumNotes'],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return true;
+   }
+
+   static inferParametersFromSequence(sequence) {
+      return { 'numNotes': sequence.length, 'intoNumNotes': ((sequence.length == 3) ? 2 : 4) };
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * The `details` variable must contain the following two keys:
+    * 
+    * `numNotes`: Number of notes taking part in the tuplet
+    * `intoNumNotes`: Number of notes of the same duration that should total the full duration of the tuplet
+    * 
+    * @param {Object<string, number>} details - Timing information about the triplet
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details) {
+      if (!('numNotes' in details) || !('intoNumNotes' in details))
+         throw new WebAudioValueError('The "details" variable must contain the following keys: numNotes, intoNumNotes');
+      else if ((Number(details.numNotes) < 0) || (Number(details.intoNumNotes) < 0))
+         throw new WebAudioValueError('The "numNotes" and "intoNumNotes" parameters must be positive');
+      else if (Number(details.numNotes) < Number(details.intoNumNotes))
+         throw new WebAudioValueError('The "numNotes" parameters must be greater than the "intoNumNotes" parameter');
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity,
+         this.unmodifiedDetails.duration * (Number(details.numNotes) / Number(details.intoNumNotes))
+      )];
+   }
+}
+
+/**
+ * Class representing a TupletNote modification.
+ * 
+ * A TupletNote modification causes a note to play for only 1/N of the duration of
+ * the next longest standard note duration. For example, three eighth notes in a triplet
+ * would take the same amount of time to play as a single quarter note. As an alternate
+ * formulation, an N-tuplet-modified note would play for 2/N of its printed duration.
+ * 
+ * @extends ModificationBase
+ */
+class TupletNote extends ModificationBase {
+
+   // Effect-specific private variables
+   /** @type {number} */
+   #degree;
+
+   /**
+    * Constructs a new {@link TupletNote} modification object.
+    */
+   constructor(degree, tempo, key, details) {
+      super(tempo, key, details);
+      this.#degree = degree;
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return true;
+   }
+
+   static inferParametersFromSequence(_sequence, _index, params) {
+      return params;
+   }
+
+   getModifiedNoteDetails() {
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity,
+         this.unmodifiedDetails.duration * (this.#degree / ((this.#degree == 3) ? 2 : 4))
+      )];
+   }
+}
+
+/**
+ * Class representing a Turn modification.
+ * 
+ * A Turn modification causes an implicit set of notes to be played after the primary
+ * printed note. In the case of an upper turn, the notes to be played are the principle
+ * note, the note above it, the principle note, the note below it, then finally the
+ * principle note again. In the case of a lower turn, the notes to be played are the
+ * principle note, the note below it, the principle note, the note above it, then finally
+ * the principle note again. The total cumulative duration of all notes in the turn is
+ * the same as the printed duration of the principle note.
+ * 
+ * @extends ModificationBase
+ */
+class Turn extends ModificationBase {
+
+   // Effect-specific private variables
+   /** @type {boolean} */
+   #isUpper;
+
+   // Major scale intervals
+   static upperOffsetsMajor = [2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1, 1];
+   static lowerOffsetsMajor = [1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1];
+
+   /**
+    * Constructs a new {@link Turn} modification object.
+    * 
+    * @param {boolean} isUpper - Whether this modification represents an upper turn
+    */
+   constructor(isUpper, tempo, key, details) {
+      super(tempo, key, details);
+      this.#isUpper = isUpper;
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: [],
+            sequence: []
+         },
+         optional: {
+            singleNote: ['upperOffset', 'lowerOffset'],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return false;
+   }
+
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "Turn" modification cannot infer any parameters from a sequence of notes');
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * The `details` variable may contain the following two keys:
+    * 
+    * `upperOffset`: Upper offset value of the turn from the primary note
+    * `lowerOffset`: Lower offset value of the turn from the primary note
+    * 
+    * @param {Object<string, number>} [details] - Details about the notes in the turn
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details) {
+      let upperNote = this.unmodifiedDetails.note, lowerNote = this.unmodifiedDetails.note;
+      if (details && ('upperOffset' in details))
+         upperNote += Number(details.upperOffset);
+      else {
+         upperNote += Turn.upperOffsetsMajor[upperNote % 12];
+         upperNote += this.key.offsets[upperNote % 12];
+      }
+      if (details && ('lowerOffset' in details))
+         lowerNote -= Number(details.lowerOffset);
+      else {
+         lowerNote -= Turn.lowerOffsetsMajor[lowerNote % 12];
+         lowerNote += this.key.offsets[lowerNote % 12];
+      }
+      const turnNoteDuration = 60.0 / ((32.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute);
+      const primaryNoteDuration = ((this.unmodifiedDetails.duration < 0) ?
+         -this.unmodifiedDetails.duration : (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute))) -
+         (4 * turnNoteDuration);
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity,
+         -turnNoteDuration,
+         0.0
+      ),
+      new NoteDetails(
+         this.#isUpper ? upperNote : lowerNote,
+         this.unmodifiedDetails.velocity * 0.75,
+         -turnNoteDuration,
+         turnNoteDuration
+      ),
+      new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity * 0.75,
+         -turnNoteDuration,
+         2 * turnNoteDuration
+      ),
+      new NoteDetails(
+         this.#isUpper ? lowerNote : upperNote,
+         this.unmodifiedDetails.velocity * 0.75,
+         -turnNoteDuration,
+         3 * turnNoteDuration
+      ),
+      new NoteDetails(
+         this.unmodifiedDetails.note,
+         this.unmodifiedDetails.velocity,
+         -primaryNoteDuration,
+         4 * turnNoteDuration
+      )];
+   }
+}
+
+/**
+ * Class representing a Velocity modification.
+ * 
+ * A Velocity modification causes a note to be played at an absolute velocity between [0.0, 1.0].
+ * 
+ * @extends ModificationBase
+ */
+class Velocity extends ModificationBase {
+
+   /**
+    * Constructs a new {@link Velocity} modification object.
+    */
+   constructor(tempo, key, details) {
+      super(tempo, key, details);
+   }
+
+   /**
+    * Returns a list of all parameters available for use in this modification, including whether
+    * the parameter is required or optional when playing back either a "sequence" or just a
+    * single "note".
+    * 
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    */
+   static getParameters() {
+      return {
+         required: {
+            singleNote: ['velocity'],
+            sequence: []
+         },
+         optional: {
+            singleNote: [],
+            sequence: []
+         }
+      };
+   }
+
+   /**
+    * Returns whether this modification can be used to modify a sequence of notes.
+    * 
+    * @returns {boolean} Whether this modification can be used to modify a sequence of notes
+    */
+   static canModifySequence() {
+      return false;
+   }
+
+   static inferParametersFromSequence() {
+      throw new WebAudioValueError('The "Velocity" modification cannot infer any parameters from a sequence of notes');
+   }
+
+   /**
+    * Returns a list of all modified notes, durations, and velocities as generated by the
+    * corresponding modification class.
+    * 
+    * The `details` variable must contain the following key:
+    * 
+    * `velocity`:  Intensity at which to play the note between [0.0, 1.0]
+    * 
+    * @param {Object<string, number>} details - Information about the intensity of the note
+    * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
+    */
+   getModifiedNoteDetails(details) {
+      if (!('velocity' in details)) {
+         if (!('implicit' in details))
+            throw new WebAudioValueError('The "details" variable must contain the following keys: velocity');
+         details.velocity = details.implicit;
+      }
+      if ((Number(details.velocity) < 0.0) || (Number(details.velocity) > 1.0))
+         throw new WebAudioValueError(`The target velocity value (${details.velocity}) is outside of the available range: [0.0, 1.0]`);
+      return [new NoteDetails(
+         this.unmodifiedDetails.note,
+         Number(details.velocity),
+         this.unmodifiedDetails.duration
+      )];
+   }
+}
+
+/**
+ * Module containing functionality to apply {@link WebAudioAPI} note modifications.
+ * @module Modification
  */
 
 
-const EncoderClasses = {
-   [EncodingType.WAV]: WavFileEncoder,
+const ModificationClasses = {
+   [ModificationType.Accent]: [Accent, Accent],
+   [ModificationType.Marcato]: [Marcato, Marcato],
+   [ModificationType.Staccato]: [Staccato, Staccato.bind(null, false)],
+   [ModificationType.Staccatissimo]: [Staccato, Staccato.bind(null, true)],
+   [ModificationType.Tenuto]: [Tenuto, Tenuto],
+   [ModificationType.Sforzando]: [Sforzando, Sforzando],
+   [ModificationType.Slur]: [Slur, Slur],
+   [ModificationType.Portamento]: [Portamento, Portamento],
+   [ModificationType.Crescendo]: [Crescendo, Crescendo.bind(null, false)],
+   [ModificationType.Decrescendo]: [Crescendo, Crescendo.bind(null, true)],
+   [ModificationType.Diminuendo]: [Crescendo, Crescendo.bind(null, true)],
+   [ModificationType.TrillUpper]: [Trill, Trill.bind(null, true)],
+   [ModificationType.TrillLower]: [Trill, Trill.bind(null, false)],
+   [ModificationType.MordentUpper]: [Mordent, Mordent.bind(null, true)],
+   [ModificationType.MordentLower]: [Mordent, Mordent.bind(null, false)],
+   [ModificationType.TurnUpper]: [Turn, Turn.bind(null, true)],
+   [ModificationType.TurnLower]: [Turn, Turn.bind(null, false)],
+   [ModificationType.Glissando]: [Glissando, Glissando],
+   [ModificationType.GraceAcciaccatura]: [Grace, Grace.bind(null, false)],
+   [ModificationType.GraceAppoggiatura]: [Grace, Grace.bind(null, true)],
+   [ModificationType.Tie]: [Tie, Tie],
+   [ModificationType.Velocity]: [Velocity, Velocity],
+   [ModificationType.Natural]: [Natural, Natural],
+   [ModificationType.Piano]: [GlobalDynamic, GlobalDynamic.bind(null, -1)],
+   [ModificationType.MezzoPiano]: [GlobalDynamic, GlobalDynamic.bind(null, -0.5)],
+   [ModificationType.OctaveShiftUp]: [OctaveShift, OctaveShift.bind(null, true)],
+   [ModificationType.OctaveShiftDown]: [OctaveShift, OctaveShift.bind(null, false)],
+   [ModificationType.Pianissimo]: [GlobalDynamic, GlobalDynamic.bind(null, -2)],
+   [ModificationType.Pianississimo]: [GlobalDynamic, GlobalDynamic.bind(null, -3)],
+   [ModificationType.Forte]: [GlobalDynamic, GlobalDynamic.bind(null, 1)],
+   [ModificationType.MezzoForte]: [GlobalDynamic, GlobalDynamic.bind(null, 0.5)],
+   [ModificationType.Fortissimo]: [GlobalDynamic, GlobalDynamic.bind(null, 2)],
+   [ModificationType.Fortississimo]: [GlobalDynamic, GlobalDynamic.bind(null, 3)],
+   [ModificationType.Tuplet]: [Tuplet, Tuplet],
+   [ModificationType.Triplet]: [TupletNote, TupletNote.bind(null, 3)],
+   [ModificationType.Quintuplet]: [TupletNote, TupletNote.bind(null, 5)],
+   [ModificationType.Sextuplet]: [TupletNote, TupletNote.bind(null, 6)],
+   [ModificationType.Septuplet]: [TupletNote, TupletNote.bind(null, 7)],
+   [ModificationType.Fermata]: [Fermata, Fermata]
 };
 
+
 /**
- * Returns a concrete encoder implementation for the specified file type. The value passed
- * to the `fileType` parameter must be the **numeric value** associated with a certain
- * {@link module:Constants.EncodingType EncodingType}, not a string-based key.
+ * Returns whether the corresponding {@link module:Constants.ModificationType ModificationType}
+ * can be used to modify a sequence of notes.
  * 
- * @param {number} encodingType - Numeric value corresponding to the desired file {@link module:Constants.EncodingType EncodingType}
- * @returns {EncoderBase} Concrete encoder implementation for the specified {@link module:Constants.EncodingType EncodingType}
- * @see {@link module:Constants.EncodingType EncodingType}
- * @see {@link EncoderBase}
+ * @param {number} modificationType - The {@link module:Constants.ModificationType ModificationType} about which to query
+ * @returns {boolean} Whether the corresponding modification type can be used to modify a sequence of notes
+ * @see {@link module:Constants.ModificationType ModificationType}
  */
-function getEncoderFor(encodingType) {
-   return new EncoderClasses[encodingType]();
+function canModifySequence(modificationType) {
+   return ModificationClasses[modificationType][0].canModifySequence();
+}
+
+/**
+ * Returns a list of modification-specific parameters for use with the corresponding
+ * {@link module:Constants.ModificationType ModificationType}.
+ * 
+ * Note that the `modificationType` parameter must be the **numeric value** associated
+ * with a certain {@link module:Constants.ModificationType ModificationType}, not a
+ * string-based key.
+ * 
+ * The object returned from this function will contain 2 keys: 'required' and 'optional'.
+ * These keys can be used to access sub-objects with 2 keys: 'singleNote' and 'sequence'.
+ * These keys hold arrays containing the string-based names of parameters that are available
+ * for manipulation within the given modification.
+ * 
+ * Parameter values within the "sequence" array indicate parameters that have meaning when
+ * used with the {@link WebAudioAPI#playSequence playSequence()} function. Parameter values
+ * within the "singleNote" array indicate parameters that have meaning when used with the 
+ * {@link WebAudioAPI#playNote playNote()} function.
+ * 
+ * @param {number} modificationType - The {@link module:Constants.ModificationType ModificationType} for which to return a parameter list
+ * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+ * @see {@link module:Constants.ModificationType ModificationType}
+ */
+function getModificationParameters(modificationType) {
+   return ModificationClasses[modificationType][0].getParameters();
+}
+
+/**
+ * Attempts to infer the required modification parameter values from a given sequence of notes.
+ * 
+ * @param {number} modificationType - Numeric value corresponding to the desired {@link module:Constants.ModificationType ModificationType}
+ * @param {Array<Array|Array<Array>>} sequence - Array of `[note, duration]` and/or chords corresponding to the sequence to be played
+ * @param {number} index - Index of the current note in the sequence
+ * @param {Object|null} params - Object containing the currently known parameter values
+ * @returns {Object} Object containing the inferred and known parameter values
+ * @see {@link module:Constants.ModificationType ModificationType}
+ */
+function inferModificationParametersFromSequence(modificationType, sequence, index, params) {
+   return ModificationClasses[modificationType][0].inferParametersFromSequence(sequence, index, params);
+}
+
+/**
+ * Loads a concrete {@link ModificationBase} instance capable of modifying an individual note
+ * and duration.
+ * 
+ * @param {number} modificationType - Numeric value corresponding to the desired {@link module:Constants.ModificationType ModificationType}
+ * @param {Tempo} tempo - Reference to the current global {@link Tempo} object
+ * @param {Key} key - Reference to the current global {@link Key} object
+ * @param {NoteDetails} details - Unmodified details about the note to be played
+ * @returns {ModificationBase} Newly created note {@link ModificationBase} object
+ * @see {@link module:Constants.ModificationType ModificationType}
+ * @see {@link ModificationBase}
+ * @see {@link NoteDetails}
+ * @see {@link Tempo}
+ */
+function loadModification(modificationType, tempo, key, details) {
+
+   // Load the requested concrete modification type
+   return new ModificationClasses[modificationType][1](tempo, key, details);
 }
 
 /** Class representing all base-level {@link WebAudioAPI} effects */
@@ -2992,6 +4750,165 @@ async function loadEffect(audioContext, effectName, effectType) {
 }
 
 /**
+ * Module containing all MIDI constants and functionality available in the {@link WebAudioAPI} library.
+ * 
+ * @module Midi
+ */
+
+/**
+ * Object representing a mapping between a General MIDI command and its protocol value.
+ * @constant {Object<string, number>}
+ */
+const MidiCommand = {
+   Unknown: 0x00, NoteOff: 0x80, NoteOn: 0x90, Aftertouch: 0xA0, ContinuousController: 0xB0,
+   ProgramChange: 0xC0, ChannelPressure: 0xD0, PitchBend: 0xE0, SystemMessage: 0xF0
+};
+
+/**
+ * Returns a value representing the MIDI command in the specified `midiData`.
+ * 
+ * @param {number[]} midiData - Data array containing raw MIDI event data
+ * @returns {number} MIDI command specified in the corresponding `midiData`
+ * @see {@link module:Midi.MidiCommand MidiCommand}
+ */
+function getMidiCommand(midiData) {
+   return midiData[0] & 0xF0;
+}
+
+/**
+ * Returns the MIDI note corresponding to the `NoteOn` or `NoteOff` command in the specified
+ * `midiData` parameter.
+ * 
+ * @param {number[]} midiData - Data array containing raw MIDI event data
+ * @returns {number} MIDI note corresponding to the relevant `midiData` command
+ */
+function getMidiNote(midiData) {
+   return midiData[1] & 0x7F;
+}
+
+/**
+ * Returns the note velocity corresponding to the `NoteOn` or `NoteOff` command in the
+ * specified `midiData` parameter. This velocity will be in the range from [0.0, 1.0].
+ * 
+ * @param {number[]} midiData - Data array containing raw MIDI event data
+ * @returns {number} Note velocity for a MIDI note in the range [0.0, 1.0]
+ */
+function getMidiVelocity(midiData) {
+   return (midiData[2] & 0x7F) / 127.0;
+}
+
+/** Class representing all built-in {@link WebAudioAPI} audio encoders */
+class EncoderBase {
+
+   /**
+    * Called by a concrete encoder instance to initialize the inherited {@link EncoderBase} data
+    * structure.
+    */
+   constructor() { /* Empty constructor */ }
+
+   /**
+    * Encodes the corresponding audio buffer, and returns a
+    * {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly
+    * encoded data.
+    * 
+    * @param {AudioBuffer} audioData - {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer AudioBuffer} containing the data to encode
+    * @param {Object} [encodingOptions] - Optional encoding-specific options such as 'bitRate'
+    * @returns {Promise<Blob>} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio
+    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer AudioBuffer}
+    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+    */
+   async encode(audioData, encodingOptions) { return undefined; }
+}
+
+/**
+ * Class containing all WAV file encoding functionality.
+ * @extends EncoderBase
+ */
+class WavFileEncoder extends EncoderBase {
+
+   /**
+    * Constructs a new {@link WavFileEncoder} object.
+    */
+   constructor() {
+      super();
+   }
+
+   async encode(audioData) {
+      // Code taken from https://russellgood.com/how-to-convert-audiobuffer-to-audio-file/
+      const numChannels = audioData.numberOfChannels, length = audioData.length * numChannels * 2 + 44;
+      const buffer = new ArrayBuffer(length), channels = [];
+      const view = new DataView(buffer);
+      let offset = 0, pos = 0;
+
+      // Nested helper functions
+      function setUint16(data) {
+         view.setUint16(pos, data, true);
+         pos += 2;
+      }
+
+      function setUint32(data) {
+         view.setUint32(pos, data, true);
+         pos += 4;
+      }
+
+      // Write WAVE header
+      setUint32(0x46464952);                              // "RIFF"
+      setUint32(length - 8);                              // file length - 8
+      setUint32(0x45564157);                              // "WAVE"
+
+      setUint32(0x20746d66);                              // "fmt " chunk
+      setUint32(16);                                      // length = 16
+      setUint16(1);                                       // PCM (uncompressed)
+      setUint16(numChannels);
+      setUint32(audioData.sampleRate);
+      setUint32(audioData.sampleRate * 2 * numChannels);  // avg. bytes/sec
+      setUint16(numChannels * 2);                         // block-align
+      setUint16(16);                                      // 16-bit (hardcoded in this demo)
+
+      setUint32(0x61746164);                              // "data" - chunk
+      setUint32(length - pos - 4);                        // chunk length
+
+      // Write interleaved data
+      for (let i = 0; i < audioData.numberOfChannels; ++i)
+         channels.push(audioData.getChannelData(i));
+      while (pos < length) {
+         for (let i = 0; i < numChannels; ++i) {
+            let sample = Math.max(-1, Math.min(1, channels[i][offset]));          // clamp
+            sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;    // scale to 16-bit signed int
+            view.setInt16(pos, sample, true);                                     // write 16-bit sample
+            pos += 2;
+         }
+         ++offset;                                                                // next source sample
+      }
+      return new Blob([view.buffer], { type: 'audio/wav' });
+   }
+}
+
+/**
+ * Module containing functionality to create and utilize {@link WebAudioAPI} data encoders.
+ * @module Encoder
+ */
+
+
+const EncoderClasses = {
+   [EncodingType.WAV]: WavFileEncoder,
+};
+
+/**
+ * Returns a concrete encoder implementation for the specified file type. The value passed
+ * to the `fileType` parameter must be the **numeric value** associated with a certain
+ * {@link module:Constants.EncodingType EncodingType}, not a string-based key.
+ * 
+ * @param {number} encodingType - Numeric value corresponding to the desired file {@link module:Constants.EncodingType EncodingType}
+ * @returns {EncoderBase} Concrete encoder implementation for the specified {@link module:Constants.EncodingType EncodingType}
+ * @see {@link module:Constants.EncodingType EncodingType}
+ * @see {@link EncoderBase}
+ */
+function getEncoderFor(encodingType) {
+   return new EncoderClasses[encodingType]();
+}
+
+/**
  * Module containing functionality to create new {@link WebAudioAPI} tracks.
  * @module Track
  */
@@ -3003,18 +4920,21 @@ async function loadEffect(audioContext, effectName, effectType) {
  * @param {string} name - Name of the track to create
  * @param {AudioContext} audioContext - Reference to the global browser {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
  * @param {Tempo} tempo - Reference to the {@link Tempo} object stored in the global {@link WebAudioAPI} object
+ * @param {Key} keySignature - Reference to the {@link Key} object stored in the global {@link WebAudioAPI} object
  * @param {AudioNode} trackAudioSink - Reference to the {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode} to which the output of this track should be connected
  * @returns {Track} Newly created audio {@link Track}
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
+ * @see {@link Key}
  * @see {@link Track}
  * @see {@link Tempo}
  */
-function createTrack(name, audioContext, tempo, trackAudioSink) {
+function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
 
    // Track-local variable definitions
    let instrument = null, midiDevice = null, audioDeviceInput = null;
-   const audioSources = [], asyncAudioSources = [], effects = [];
+   let currentVelocity = 0.5, chordIndex = 0, chordDynamicUpdated = false;
+   const audioSources = [], asyncAudioSources = [], effects = [], notesInWaiting = {}, waitingTies = [];
    const audioSink = new AnalyserNode(audioContext, { fftSize: 1024, maxDecibels: -10.0, smoothingTimeConstant: 0.5 });
    const analysisBuffer = new Uint8Array(audioSink.frequencyBinCount);
    audioSink.connect(trackAudioSink);
@@ -3217,11 +5137,11 @@ function createTrack(name, audioContext, tempo, trackAudioSink) {
    function playNoteAsync(note, velocity) {
       if (!instrument)
          throw new WebAudioTrackError(`The current track (${name}) cannot play a note without first setting up an instrument`);
-      const noteSource = instrument.getNote(note); // TODO: Method to getNoteContinuous so it loops
+      const noteSource = instrument.getNote(note);
       const noteVolume = new GainNode(audioContext, { gain: velocity });
       noteSource.connect(noteVolume).connect(audioSink);
       const noteStorage = createAsyncNote(note, noteSource, noteVolume);
-      noteSource.onended = stopNoteAsync.bind(this, noteStorage); // TODO: Don't need this if continuous instrument
+      noteSource.onended = stopNoteAsync.bind(this, noteStorage);
       asyncAudioSources.push(noteStorage);
       noteSource.start(audioContext.currentTime);
       return noteStorage;
@@ -3235,26 +5155,184 @@ function createTrack(name, audioContext, tempo, trackAudioSink) {
     * {@link WebAudioAPI#getAvailableNoteDurations getAvailableNoteDurations()}.
     * Likewise, the `note` parameter should correspond to a valid MIDI note number.
     * 
+    * The `modifications` parameter may either be a single {@link ModificationDetails}
+    * structure or a list of such structures.
+    * 
     * @param {number} note - MIDI {@link module:Constants.Note Note} number to be played
-    * @param {number} velocity - Intensity of the note being played between [0.0, 1.0]
     * @param {number} startTime - Global API time at which to start playing the note
     * @param {number} duration - {@link module:Constants.Duration Duration} for which to continue playing the note
+    * @param {ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the note
+    * @param {boolean} [fromChord=false] - Whether this note is being played from the {@link playChord playChord()} function
     * @returns {number} Duration (in seconds) of the note being played
     * @memberof Track
     * @instance
     */
-   function playNote(note, velocity, startTime, duration) {
+   function playNote(note, startTime, duration, modifications, fromChord=false) {
       if (!instrument)
          throw new WebAudioTrackError(`The current track (${name}) cannot play a note without first setting up an instrument`);
-      const durationSeconds = (duration < 0) ? -duration : (60.0 / ((duration / tempo.beatBase) * tempo.beatsPerMinute));
-      const noteSource = instrument.getNote(note);
-      const noteVolume = new GainNode(audioContext, { gain: velocity });
-      noteSource.connect(noteVolume).connect(audioSink);
-      noteVolume.gain.setTargetAtTime(0.0, startTime + durationSeconds, 0.03);
-      noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
-      audioSources.push(noteSource);
-      noteSource.start(startTime, 0, durationSeconds + 0.200);
-      return durationSeconds;
+
+      // Infer missing modification details for any notes in waiting
+      const waitingNoteDetails = [], newTies = [];
+      for (const noteInWaitingPitch in notesInWaiting) {
+         const noteInWaiting = notesInWaiting[noteInWaitingPitch];
+         if (!fromChord || (noteInWaiting.chordIndex != chordIndex)) {
+            let noteDetails = [new NoteDetails(noteInWaiting.note, currentVelocity, noteInWaiting.duration)];
+            const sequence = [[noteInWaiting.note, noteInWaiting.duration], [note, duration]];
+            for (const modification of noteInWaiting.pendingModifications)
+               modification.value = inferModificationParametersFromSequence(modification.type, sequence, 1, modification.value);
+            for (const modification of noteInWaiting.modifications) {
+               const modClass = loadModification(modification.type, tempo, keySignature, noteDetails[0]);
+               noteDetails = modClass.getModifiedNoteDetails(modification.value);
+               if (modification.type == ModificationType.Tie)
+                  newTies.push(noteDetails[0].note);
+               for (const noteDetail of noteDetails) {
+                  noteDetail.startTimeOffset -= (startTime - noteInWaiting.startTime);
+                  noteDetail.wasWaitingNote = true;
+               }
+            }
+            delete notesInWaiting[noteInWaitingPitch];
+            waitingNoteDetails.push(...noteDetails);
+         }
+      }
+
+      // Remove any duplicate modifications, keeping only the last one
+      const exists = [];
+      for (let i = modifications.length - 1; i >= 0; --i)
+         if (exists.includes(modifications[i].type))
+            modifications.splice(i, 1);
+         else
+            exists.push(modifications[i].type);
+
+      // Order modifications by type so that they make sense when applied: GlobalDynamic < Loudness < Start Time Offsets < Durations < Adds notes
+      modifications.sort((a, b) => { return a.type - b.type; });
+
+      // Get concrete note details based on any applied modifications
+      let requiresWaiting = false, totalDurationSeconds = 0.0;
+      let noteDetails = [new NoteDetails(note, currentVelocity, duration)];
+      for (const modification of modifications) {
+
+         // Determine if the modification requires that we wait for the next note to infer missing details
+         let modRequiresWaiting = false;
+         const neededParams = getModificationParameters(modification.type).optional.singleNote;
+         if (neededParams.length && canModifySequence(modification.type)) {
+            for (const neededParam of neededParams)
+               if (!('value' in modification) || !(neededParam in modification.value) && ((neededParams.length > 1) || !('implicit' in modification.value))) {
+                  if (!(note in notesInWaiting))
+                     notesInWaiting[note] = { note: note, duration: duration, startTime: startTime, chordIndex: chordIndex, modifications: modifications, pendingModifications: [] };
+                  notesInWaiting[note].pendingModifications.push(modification);
+                  requiresWaiting = modRequiresWaiting = true;
+               }
+         }
+
+         // Update the concrete note details based on the current modification
+         if (!modRequiresWaiting) {
+            const modClass = loadModification(modification.type, tempo, keySignature, noteDetails[0]);
+            noteDetails = modClass.getModifiedNoteDetails(modification.value);
+            if (((modification.type == ModificationType.Crescendo) || (modification.type == ModificationType.Decrescendo) ||
+                 (modification.type == ModificationType.Diminuendo) || (modClass instanceof GlobalDynamic)) &&
+                (!fromChord || !chordDynamicUpdated)) {
+               currentVelocity = noteDetails[0].velocity;
+               chordDynamicUpdated = fromChord;
+            }
+            else if (modification.type == ModificationType.Tie)
+               newTies.push(noteDetails[0].note);
+         }
+         else
+            totalDurationSeconds = (noteDetails[0].usedDuration < 0) ? -noteDetails[0].usedDuration : (60.0 / ((noteDetails[0].usedDuration / tempo.beatBase) * tempo.beatsPerMinute));
+      }
+
+      // Schedule all notes for playback
+      noteDetails = (requiresWaiting ? waitingNoteDetails : waitingNoteDetails.concat(noteDetails));
+      for (const note of noteDetails) {
+         const durationSeconds = (note.duration < 0) ? -note.duration : (60.0 / ((note.duration / tempo.beatBase) * tempo.beatsPerMinute));
+         if (waitingTies.includes(note.note))
+            waitingTies.splice(waitingTies.indexOf(note.note), 1);
+         else {
+            const noteSource = instrument.getNote(note.note);
+            const noteVolume = new GainNode(audioContext, { gain: note.velocity });
+            noteSource.connect(noteVolume).connect(audioSink);
+            noteVolume.gain.setTargetAtTime(0.0, startTime + note.startTimeOffset + durationSeconds, 0.03);
+            noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
+            audioSources.push(noteSource);
+            noteSource.start(startTime + note.startTimeOffset, 0, durationSeconds + 0.200);
+         }
+         if (newTies.includes(note.note))
+            waitingTies.push(newTies.splice(newTies.indexOf(note.note), 1)[0]);
+         if (!note.wasWaitingNote)
+            totalDurationSeconds += (note.usedDuration <= 0) ? -note.usedDuration : (60.0 / ((note.usedDuration / tempo.beatBase) * tempo.beatsPerMinute));
+      }
+      return totalDurationSeconds;
+   }
+
+   /**
+    * Schedules a chord of notes to be played on the current track.
+    * 
+    * Note that the `chord` parameter should be an array of `[note, duration, mods]` tuples,
+    * where the `note` parameter should correspond to a valid MIDI note number, the `duration`
+    * parameter should correspond to the beat scaling factor associated with one of the note
+    * durations from {@link WebAudioAPI#getAvailableNoteDurations getAvailableNoteDurations()},
+    * and `mods` may either be a single modification to the chord, a list of modifications, or
+    * omitted completely.
+    * 
+    * The `modifications` parameter may either be a single {@link ModificationDetails}
+    * structure or a list of such structures.
+    * 
+    * @param {Array<Array>}} chord - Array of `[note, duration, mods]` corresponding to the chord to be played
+    * @param {number} startTime - Global API time at which to start playing the chord
+    * @param {ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the chord
+    * @returns {number} Duration (in seconds) of the chord being played
+    * @memberof Track
+    * @instance
+    */
+   function playChord(chord, startTime, modifications) {
+      chordIndex = (chordIndex + 1) % 2;
+      let minDuration = Number.POSITIVE_INFINITY;
+      for (const chordItem of chord) {
+         const [note, duration, noteMods] = chordItem;
+         const mods = modifications.concat(noteMods ? (Array.isArray(noteMods) ? noteMods : [noteMods]) : []);
+         minDuration = Math.min(minDuration, playNote(Number(note), startTime, Number(duration), mods, true));
+      }
+      chordDynamicUpdated = false;
+      return minDuration;
+   }
+
+   /**
+    * Schedules a musical sequence to be played on the current track.
+    * 
+    * Note that the `sequence` parameter should be an array containing either chords (as
+    * defined in the {@link playChord playChord()} function) or `[note, duration, mods]` tuples,
+    * where the `note` parameter should correspond to a valid MIDI note number, the `duration`
+    * parameter should correspond to the beat scaling factor associated with one of the note
+    * durations from {@link WebAudioAPI#getAvailableNoteDurations getAvailableNoteDurations()},
+    * and `mods` may either be a single modification that affects the whole sequence, a list of
+    * modifications, or omitted completely.
+    * 
+    * The `modifications` parameter may either be a single {@link ModificationDetails}
+    * structure or a list of such structures.
+    * 
+    * @param {Array<Array|Array<Array>>} sequence - Array of `[note, duration, mods]` and/or chords corresponding to the sequence to be played
+    * @param {number} startTime - Global API time at which to start playing the sequence
+    * @param {ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the sequence
+    * @returns {number} Duration (in seconds) of the sequence being played
+    * @memberof Track
+    * @instance
+    */
+   function playSequence(sequence, startTime, modifications) {
+      let noteIndex = 0;
+      const originalStartTime = startTime;
+      for (const sequenceItem of sequence) {
+         ++noteIndex;
+         for (const modification of modifications)
+            modification.value = inferModificationParametersFromSequence(modification.type, sequence, noteIndex, modification.value);
+         if (Array.isArray(sequenceItem[0]))
+            startTime += playChord(sequenceItem, startTime, modifications);
+         else {
+            const [note, duration, noteMods] = sequenceItem;
+            const mods = (noteMods ? (Array.isArray(noteMods) ? noteMods : [noteMods]) : []).concat(modifications);
+            startTime += playNote(Number(note), startTime, Number(duration), mods);
+         }
+      }
+      return startTime - originalStartTime;
    }
 
    /**
@@ -3304,13 +5382,13 @@ function createTrack(name, audioContext, tempo, trackAudioSink) {
                   unmatchedNotes[note] = [ Number(noteTime), getMidiVelocity(midiData) ];
                else if ((command === MidiCommand.NoteOff) && (note in unmatchedNotes)) {
                   const noteDuration = ((!duration || (Number(noteTime) <= duration)) ? Number(noteTime) : duration) - unmatchedNotes[note][0];
-                  playNote(note, unmatchedNotes[note][1], startTime + unmatchedNotes[note][0], -noteDuration);
+                  playNote(note, startTime + unmatchedNotes[note][0], -noteDuration, [{ type: ModificationType.Velocity, value: unmatchedNotes[note][1] }]);
                   delete unmatchedNotes[note];
                }
             }
          for (const [note, noteData] of Object.entries(unmatchedNotes)) {
             const noteDuration = audioClip.getDuration() - noteData[0];
-            playNote(note, noteData[1], startTime + noteData[0], -noteDuration);
+            playNote(note, startTime + noteData[0], -noteDuration, [{ type: ModificationType.Velocity, value: noteData[1] }]);
          }
          expectedDuration = (duration && (duration < audioClip.getDuration())) ? duration : audioClip.getDuration();
       }
@@ -3934,8 +6012,9 @@ function createTrack(name, audioContext, tempo, trackAudioSink) {
        */
       name,
       updateInstrument, removeInstrument, applyEffect, updateEffect, getCurrentEffectParameters, removeEffect, stopNoteAsync,
-      playNoteAsync, playNote, playClip, playFile, recordMidiClip, recordAudioClip, recordOutput, connectToMidiDevice,
-      disconnectFromMidiDevice, connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack, clearTrack, getAnalysisBuffer
+      playNoteAsync, playNote, playChord, playSequence, playClip, playFile, recordMidiClip, recordAudioClip, recordOutput,
+      connectToMidiDevice, disconnectFromMidiDevice, connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack,
+      clearTrack, getAnalysisBuffer
    };
 }
 
@@ -4059,7 +6138,7 @@ async function loadInstrument(audioContext, name, url) {
    }
    
    async function loadInstrument(url) {
-      const foundData = [], missingData = [];
+      const noteData = [], foundData = [], missingData = [];
       const response = await fetch(url);
       const resource = await response.arrayBuffer();
       const instrumentData = new Uint8Array(resource);
@@ -4068,8 +6147,8 @@ async function loadInstrument(audioContext, name, url) {
          throw new WebAudioInstrumentError(`The specified instrument file at ${url} is corrupt or of an unexpected type`);
       await loadNotesAndInterpolate(new Uint8Array(instrumentData.buffer, metadata.metadataLength), foundData, missingData, metadata);
       for (let i = 0; i < foundData.length; ++i)
-         (foundData[i] === undefined) ? missingData[i] : foundData[i];
-      return metadata;
+         noteData[i] = (foundData[i] === undefined) ? missingData[i] : foundData[i];
+      return [noteData, metadata];
    }
 
    // Create an instance of the Instrument object
@@ -4120,12 +6199,12 @@ async function loadInstrument(audioContext, name, url) {
    else {
       const [noteData, metadata] = await loadInstrument(url);
       instrumentInstance.getNote = function (note) {
-         if ((note < metadata.minValidNote) || (note > metadata.maxValidNote))
+         if (note && (note < metadata.minValidNote) || (note > metadata.maxValidNote))
             throw new WebAudioInstrumentError(`The specified note (${note}) is unplayable on this instrument. Valid notes are [${metadata.minValidNote}, ${metadata.maxValidNote}]`);
          return new AudioBufferSourceNode(audioContext, noteData[note]);
       };
       instrumentInstance.getNoteOffline = function (offlineContext, note) {
-         if ((note < metadata.minValidNote) || (note > metadata.maxValidNote))
+         if (note && (note < metadata.minValidNote) || (note > metadata.maxValidNote))
             throw new WebAudioInstrumentError(`The specified note (${note}) is unplayable on this instrument. Valid notes are [${metadata.minValidNote}, ${metadata.maxValidNote}]`);
          return new AudioBufferSourceNode(offlineContext, noteData[note]);
       };
@@ -4241,7 +6320,7 @@ function getAnalyzerFor(analysisType) {
    return AnalysisClasses[analysisType];
 }
 
-var version = "0.3.0";
+var version = "0.5.0";
 
 /**
  * Required function prototype to use when registering a MIDI device callback.
@@ -4272,6 +6351,14 @@ var version = "0.3.0";
  */
 
 /**
+ * Composite object type for holding all key-related information.
+ * 
+ * @typedef {Object} Key
+ * @property {number} signature - Numerical {@link module:Constants.KeySignature KeySignature} indicator based on its circle of fifths position
+ * @property {Array<number>} offsets - Array containing all pitch offsets in the current key signature where the offset for C is at index 0
+ */
+
+/**
  * Composite object type for holding a set of concrete {@link Effect} parameter details.
  * 
  * @typedef {Object} EffectParameter
@@ -4280,6 +6367,37 @@ var version = "0.3.0";
  * @property {Array<string|number>} validValues - For "string" types, a listing of all valid values; for "number" types, the min/max values
  * @property {string|number} defaultValue - Default effect value before any updates
  */
+
+/**
+ * Composite object type for holding a set of note modification details.
+ * 
+ * @typedef {Object} ModificationDetails
+ * @property {number} type - Underlying {@link module:Constants.ModificationType ModificationType}
+ * @property {Object} [value] - Modification-specific values (i.e., slur length, glissando ending note)
+ * @see {@link module:Constants.ModificationType ModificationType}
+ */
+
+// Private helper functions
+function checkModifications(mods, forSingleNote) {
+   for (const modification of mods) {
+      if (!(modification instanceof(Object)) || !('type' in modification))
+         throw new WebAudioValueError('The "modifications" parameter must either be unspecified or as returned from the "getModification()" function');
+      else if (!forSingleNote && !canModifySequence(modification.type))
+         throw new WebAudioValueError(`The "${modification.type}" modification type cannot be used to modify a sequence of notes`);
+      const requiredParams = forSingleNote ? getModificationParameters(modification.type).required.singleNote : getModificationParameters(modification.type).required.sequence;
+      if (requiredParams.length) {
+         if (!('value' in modification))
+            throw new WebAudioValueError(`The "modifications" parameter ({type: ${modification.type}}) is missing a required value.`);
+         else if (!(modification.value instanceof(Object)))
+            throw new WebAudioValueError('The "modifications" parameter must be created with the "getModification()" function using a "modificationOptions" parameter of type Object containing required parameter keys and values');
+         else {
+            for (const requiredParam of requiredParams)
+               if (!(requiredParam in modification.value) && ((requiredParams.length > 1) || !('implicit' in modification.value)))
+                  throw new WebAudioValueError(`The "modifications" parameter ({type: ${modification.type}}) is missing the following required value: ${requiredParam}`);
+         }
+      }
+   }
+}
 
 /** Contains all WebAudioAPI top-level functionality. */
 class WebAudioAPI {
@@ -4290,23 +6408,25 @@ class WebAudioAPI {
    // WebAudioAPI private variable definitions
    #started = false;
    #audioContext = new AudioContext({ latencyHint: 'interactive', sampleRate: 44100 });
-   /** @type {Object.<string, Object>} */
+   /** @type {Object<string, Object>} */
    #midiCallbacks = {};
-   /** @type {Object.<string, Track>} */
+   /** @type {Object<string, Track>} */
    #tracks = {};
    /** @type {Effect[]} */
    #effects = [];
-   /** @type {Object.<string, string>} */
+   /** @type {Object<string, string>} */
    #instrumentListing = {};
-   /** @type {Object.<string, Instrument>} */
+   /** @type {Object<string, Instrument>} */
    #loadedInstruments = {};
    /** @type {Tempo} */
    #tempo = { measureLengthSeconds: (4 * 60.0 / 100.0), beatBase: 4, beatsPerMinute: 100, timeSignatureNumerator: 4, timeSignatureDenominator: 4 };
+   /** @type {Key} */
+   #key = { signature: 0, offsets: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] };
    /** @type {MIDIAccess|null} */
    #midiDeviceAccess = null;
-   /** @type {Object.<string, string>} */
+   /** @type {Object<string, string>} */
    #audioInputDevices = {};
-   /** @type {Object.<string, string>} */
+   /** @type {Object<string, string>} */
    #audioOutputDevices = {};
    /** @type {DynamicsCompressorNode} */
    #compressorNode;
@@ -4354,6 +6474,22 @@ class WebAudioAPI {
    }
 
    /**
+    * Returns a full listing of recognized key signatures by the {@link WebAudioAPI} library.
+    * 
+    * This function can be used to enumerate available key signatures for displaying on a web page.
+    * Note, however, that the `keySignature` parameter passed to the
+    * {@link WebAudioAPI#updateKeySignature updateKeySignature()} function must be the location of
+    * the desired key on the circle of fifths associated with a certain
+    * {@link module:Constants.KeySignature KeySignature}, not a string-based key signature.
+    * 
+    * @returns {Object<string, number>} Listing of recognized key signatures by the {@link WebAudioAPI} library
+    * @see {@link module:Constants.KeySignature KeySignature}
+    */
+   getAvailableKeySignatures() {
+      return KeySignature;
+   }
+
+   /**
     * Returns a full listing of recognized musical notes by the {@link WebAudioAPI} library.
     * 
     * This function can be used to enumerate available note options for displaying on a web page.
@@ -4361,7 +6497,7 @@ class WebAudioAPI {
     * function must be the **numeric MIDI value** associated with a certain
     * {@link module:Constants.Note Note}, not a string-based key.
     * 
-    * @returns {Object.<string, number>} Listing of recognized musical notes by the {@link WebAudioAPI} library
+    * @returns {Object<string, number>} Listing of recognized musical notes by the {@link WebAudioAPI} library
     * @see {@link module:Constants.Note Note}
     */
    getAvailableNotes() {
@@ -4376,11 +6512,27 @@ class WebAudioAPI {
     * {@link WebAudioAPI#playNote playNote()} function must be the **numeric value** associated
     * with a certain {@link module:Constants.Duration Duration}, not a string-based key.
     * 
-    * @returns {Object.<string, number>} Listing of recognized note durations by the {@link WebAudioAPI} library
+    * @returns {Object<string, number>} Listing of recognized note durations by the {@link WebAudioAPI} library
     * @see {@link module:Constants.Duration Duration}
     */
    getAvailableNoteDurations() {
       return Duration;
+   }
+
+   /**
+    * Returns a listing of all available note modifications in the {@link WebAudioAPI} library.
+    * 
+    * This function can be used to enumerate available note modification options for displaying
+    * on a web page. Note, however, that the modification `type` parameter passed to the
+    * {@link WebAudioAPI#getModification getModification()} function must include the **numeric
+    * value** associated with a certain {@link module:Constants.ModificationType ModificationType},
+    * not a string-based key.
+    * 
+    * @returns {Object<string, number>} Listing of all available note modifications in the {@link WebAudioAPI} library
+    * @see {@link module:Constants.ModificationType ModificationType}
+    */
+   getAvailableNoteModifications() {
+      return ModificationType;
    }
 
    /**
@@ -4393,7 +6545,7 @@ class WebAudioAPI {
     * **numeric value** associated with a certain {@link module:Constants.EffectType EffectType},
     * not a string-based key.
     * 
-    * @returns {Object.<string, number>} Listing of all available effect types in the {@link WebAudioAPI} library
+    * @returns {Object<string, number>} Listing of all available effect types in the {@link WebAudioAPI} library
     * @see {@link module:Constants.EffectType EffectType}
     */
    getAvailableEffects() {
@@ -4410,7 +6562,7 @@ class WebAudioAPI {
     * associated with a certain {@link module:Constants.EffectType EffectType}, not a
     * string-based key.
     * 
-    * @param {number} effectType - {@link module:Constants.EffectType EffectType} for which to return a parameter list
+    * @param {number} effectType - The {@link module:Constants.EffectType EffectType} for which to return a parameter list
     * @returns {EffectParameter[]} List of effect-specific parameters available for updating
     * @see {@link module:Constants.EffectType EffectType}
     * @see {@link EffectParameter}
@@ -4422,12 +6574,42 @@ class WebAudioAPI {
    }
 
    /**
+    * Returns a list of modification-specific parameters for use in the `modificationOptions`
+    * parameter of the {@link WebAudioAPI#getModification getModification()} function or
+    * an empty list if the specified modification does not require any parameters.
+    * 
+    * This function can be used to enumerate available modification parameters for displaying
+    * on a web page. Note, however, that the `modificationType` parameter must be the **numeric
+    * value** associated with a certain {@link module:Constants.ModificationType ModificationType},
+    * not a string-based key.
+    * 
+    * The object returned from this function will contain 2 keys: 'required' and 'optional'.
+    * These keys can be used to access sub-objects with 2 keys: 'singleNote' and 'sequence'.
+    * These keys hold arrays containing the string-based names of parameters that are available
+    * for manipulation within the given modification.
+    * 
+    * Parameter values within the "sequence" array indicate parameters that have meaning when
+    * used with the {@link WebAudioAPI#playSequence playSequence()} function. Parameter values
+    * within the "singleNote" array indicate parameters that have meaning when used with the 
+    * {@link WebAudioAPI#playNote playNote()} function.
+    * 
+    * @param {number} modificationType - The {@link module:Constants.ModificationType ModificationType} for which to return a parameter list
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    * @see {@link module:Constants.ModificationType ModificationType}
+    */
+   getAvailableModificationParameters(modificationType) {
+      if (!Object.values(ModificationType).includes(Number(modificationType)))
+         throw new WebAudioTargetError(`The target modification type identifier (${modificationType}) does not exist`);
+      return getModificationParameters(modificationType);
+   }
+
+   /**
     * Returns a listing of all available encoders in the {@link WebAudioAPI} library.
     * 
     * This function can be used to enumerate available encoding options for displaying on a
     * web page.
     * 
-    * @returns {Object.<string, number>} Listing of all available encoding types in the {@link WebAudioAPI} library
+    * @returns {Object<string, number>} Listing of all available encoding types in the {@link WebAudioAPI} library
     * @see {@link module:Constants.EncodingType EncodingType}
     */
    getAvailableEncoders() {
@@ -4440,7 +6622,7 @@ class WebAudioAPI {
     * This function can be used to enumerate available analysis options for displaying on a
     * web page.
     * 
-    * @returns {Object.<string, number>} Listing of all available audio analysis types in the {@link WebAudioAPI} library
+    * @returns {Object<string, number>} Listing of all available audio analysis types in the {@link WebAudioAPI} library
     * @see {@link module:Constants.AnalysisType AnalysisType}
     */
    getAvailableAnalysisTypes() {
@@ -4609,6 +6791,32 @@ class WebAudioAPI {
    }
 
    /**
+    * Returns a properly formatted structure containing the relevant musical modification and
+    * parameters passed into this function.
+    * 
+    * Note that the `modificationOptions` parameter should normally be either omitted/undefined
+    * or an `Object` containing the required keys as returned by the
+    * {@link WebAudioAPI#getAvailableModificationParameters getAvailableModificationParameters()}
+    * function; however, if there is only one required key, you may simply pass a numerical
+    * value to `modificationOptions` instead of explicitly enumerating an Object with the single
+    * required key.
+    * 
+    * @param {number} modificationType - Number corresponding to the {@link module:Constants.ModificationType ModificationType} to generate
+    * @param {Object|number} [modificationOptions] - Potential modification-specific options as returned by {@link WebAudioAPI#getAvailableModificationParameters getAvailableModificationParameters()}
+    * @returns {ModificationDetails} A structure containing the relevant musical modification details passed into this function
+    * @see {@link module:Constants.ModificationType ModificationType}
+    */
+   getModification(modificationType, modificationOptions) {
+      if (!Object.values(ModificationType).includes(Number(modificationType)))
+         throw new WebAudioTargetError(`The target modification type identifier (${modificationType}) does not exist`);
+      else if (modificationOptions && Array.isArray(modificationOptions))
+         throw new WebAudioValueError('The "modificationOptions" parameter must be either a number or an "Object" with keys as specified in getAvailableModificationParameters()');
+      const options = (!modificationOptions || ((typeof(modificationOptions) === 'object') && ('value' in modificationOptions))) ? modificationOptions : 
+         { value: ((typeof(modificationOptions) === 'object') ? modificationOptions : { implicit: modificationOptions }) };
+      return { type: modificationType, ...options };
+   }
+
+   /**
     * Creates a track capable of playing sequential audio. A single track can only utilize a
     * single instrument at a time.
     * 
@@ -4616,7 +6824,7 @@ class WebAudioAPI {
     */
    createTrack(name) {
       this.removeTrack(name);
-      this.#tracks[name] = createTrack(name, this.#audioContext, this.#tempo, this.#sourceSinkNode);
+      this.#tracks[name] = createTrack(name, this.#audioContext, this.#tempo, this.#key, this.#sourceSinkNode);
    }
 
    /**
@@ -4698,6 +6906,15 @@ class WebAudioAPI {
    }
 
    /**
+    * Returns the current global {@link Key} parameters for all audio tracks.
+    * 
+    * @returns {Key} Global {@link Key} parameters and settings
+    */
+   getKeySignature() {
+      return {...this.#key};
+   }
+
+   /**
     * Converts a note {@link module:Constants.Duration Duration} into a corresponding number of seconds given the
     * current {@link Tempo} settings.
     * 
@@ -4740,6 +6957,40 @@ class WebAudioAPI {
       this.#tempo.timeSignatureNumerator = timeSignatureNumerator ? Number(timeSignatureNumerator) : this.#tempo.timeSignatureNumerator;
       this.#tempo.timeSignatureDenominator = timeSignatureDenominator ? Number(timeSignatureDenominator) : this.#tempo.timeSignatureDenominator;
       this.#tempo.measureLengthSeconds = (60.0 / this.#tempo.beatsPerMinute) * this.#tempo.beatBase * this.#tempo.timeSignatureNumerator / this.#tempo.timeSignatureDenominator;
+   }
+
+   /**
+    * Updates the global key signature parameters for all audio tracks.
+    * 
+    * The `keySignature` parameter should correspond to the location of the desired key on the
+    * circle of fifths as returned by the {@link WebAudioAPI#getAvailableKeySignatures getAvailableKeySignatures()}
+    * function. Alternately, you can specify the number of sharps as a positive value or the
+    * number of flats as a negative value.
+    * 
+    * @param {number} keySignature - Numerical {@link module:Constants.KeySignature KeySignature} indicator based on its circle of fifths position
+    */
+   updateKeySignature(keySignature) {
+      if (!Object.values(KeySignature).includes(Number(keySignature)))
+         throw new WebAudioTargetError(`The target key signature (${keySignature}) does not exist`);
+      const noteOffsets = {
+         [KeySignature.CMajor]: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+         [KeySignature.DMajor]: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+         [KeySignature.EMajor]: [1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+         [KeySignature.FMajor]: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
+         [KeySignature.GMajor]: [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+         [KeySignature.AMajor]: [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+         [KeySignature.BMajor]: [1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0],
+         [KeySignature.CSharpMajor]: [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1],
+         [KeySignature.FSharpMajor]: [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0],
+         [KeySignature.CFlatMajor]: [-1, 0, -1, 0, -1, -1, 0, -1, 0, -1, 0, -1],
+         [KeySignature.DFlatMajor]: [0, 0, -1, 0, -1, 0, 0, -1, 0, -1, 0, -1],
+         [KeySignature.EFlatMajor]: [0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, -1],
+         [KeySignature.GFlatMajor]: [-1, 0, -1, 0, -1, 0, 0, -1, 0, -1, 0, -1],
+         [KeySignature.AFlatMajor]: [0, 0, -1, 0, -1, 0, 0, 0, 0, -1, 0, -1],
+         [KeySignature.BFlatMajor]: [0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, -1]
+      };
+      this.#key.signature = Number(keySignature);
+      this.#key.offsets = noteOffsets[Number(keySignature)];
    }
 
    /**
@@ -5038,21 +7289,110 @@ class WebAudioAPI {
     * associated with one of the notes returned from
     * {@link WebAudioAPI#getAvailableNotes getAvailableNotes()}.
     * 
+    * The `modifications` parameter is optional, and if included, may either be a single
+    * {@link ModificationDetails} structure or a list of such structures. This structure should
+    * be obtained from the {@link WebAudioAPI#getModification getModification()} function.
+    * 
     * @param {string} trackName - Name of the track on which to play the note
     * @param {number} note - MIDI {@link module:Constants.Note Note} number to be played
     * @param {number} startTime - Global API time at which to start playing the note
     * @param {number} duration - {@link module:Constants.Duration Duration} for which to continue playing the note
-    * @param {number} [velocity=0.75] - Intensity of the note being played between [0.0, 1.0]
+    * @param {ModificationDetails|ModificationDetails[]} [modifications] - Optional individual or list of modifications to apply to the note
     * @returns {Promise<number>} Duration (in seconds) of the note being played
     * @see {@link module:Constants.Note Note}
     * @see {@link module:Constants.Duration Duration}
+    * @see {@link module:Constants.ModificationType ModificationType}
+    * @see {@link WebAudioAPI#getModification getModification()}
     */
-   async playNote(trackName, note, startTime, duration, velocity=0.75) {
+   async playNote(trackName, note, startTime, duration, modifications=[]) {
+      const mods = (modifications ? (Array.isArray(modifications) ? modifications : [modifications]) : []);
       if (!(trackName in this.#tracks))
          throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
-      if ((Number(velocity) < 0.0) || (Number(velocity) > 1.0))
-         throw new WebAudioValueError(`The target velocity value (${velocity}) is outside of the available range: [0.0, 1.0]`);
-      return await this.#tracks[trackName].playNote(Number(note), Number(velocity), Number(startTime), Number(duration));
+      else
+         checkModifications(mods, true);
+      const noteInKey = note ? (Number(note) + this.#key.offsets[Number(note) % 12]) : 0;
+      return await this.#tracks[trackName].playNote(noteInKey, Number(startTime), Number(duration), mods);
+   }
+
+   /**
+    * Schedules a chord of notes to be played on a specific track.
+    * 
+    * Note that the `chord` parameter should be an array of `[note, duration, mods]` tuples,
+    * where the `note` parameter should correspond to a valid MIDI note number, the `duration`
+    * parameter should correspond to the beat scaling factor associated with one of the note
+    * durations from {@link WebAudioAPI#getAvailableNoteDurations getAvailableNoteDurations()},
+    * and `mods` may either be a single modification to the chord, a list of modifications, or
+    * omitted completely.
+    * 
+    * The `modifications` parameter is optional, and if included, may either be a single
+    * {@link ModificationDetails} structure or a list of such structures. This structure should
+    * be obtained from the {@link WebAudioAPI#getModification getModification()} function.
+    * 
+    * @param {string} trackName - Name of the track on which to play the note
+    * @param {Array<Array>} chord - Array of `[note, duration, mods]` corresponding to the chord to be played
+    * @param {number} startTime - Global API time at which to start playing the chord
+    * @param {ModificationDetails[]} [modifications] - Optional individual or list of modifications to apply to the chord
+    * @returns {Promise<number>} Duration (in seconds) of the chord being played
+    * @see {@link module:Constants.Note Note}
+    * @see {@link module:Constants.Duration Duration}
+    * @see {@link module:Constants.ModificationType ModificationType}
+    * @see {@link WebAudioAPI#getModification getModification()}
+    */
+   async playChord(trackName, chord, startTime, modifications=[]) {
+      const mods = (modifications ? (Array.isArray(modifications) ? modifications : [modifications]) : []);
+      if (!(trackName in this.#tracks))
+         throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      else if (!Array.isArray(chord) || !Array.isArray(chord[0]))
+         throw new WebAudioValueError('The "chord" parameter must be an array of tuples');
+      else
+         checkModifications(mods, true);
+      for (const chordItem of chord)
+         chordItem[0] = chordItem[0] ? (Number(chordItem[0]) + this.#key.offsets[Number(chordItem[0]) % 12]) : 0;
+      return await this.#tracks[trackName].playChord(chord, Number(startTime), mods);
+   }
+
+   /**
+    * Schedules a musical sequence to be played on a specific track.
+    * 
+    * Note that the `sequence` parameter should be an array containing either chords (as
+    * defined in the {@link playChord playChord()} function) or `[note, duration, mods]` tuples,
+    * where the `note` parameter should correspond to a valid MIDI note number, the `duration`
+    * parameter should correspond to the beat scaling factor associated with one of the note
+    * durations from {@link WebAudioAPI#getAvailableNoteDurations getAvailableNoteDurations()},
+    * and `mods` may either be a single modification that affects the whole sequence, a list of
+    * modifications, or omitted completely.
+    * 
+    * The `modifications` parameter is optional, and if included, may either be a single
+    * {@link ModificationDetails} structure or a list of such structures. This structure should
+    * be obtained from the {@link WebAudioAPI#getModification getModification()} function.
+    * 
+    * @param {string} trackName - Name of the track on which to play the note
+    * @param {Array<Array|Array<Array>>} sequence - Array of `[note, duration, mods]` and/or chords corresponding to the sequence to be played
+    * @param {number} startTime - Global API time at which to start playing the sequence
+    * @param {ModificationDetails[]} [modifications] - Optional individual or list of modifications to apply to the sequence
+    * @returns {Promise<number>} Duration (in seconds) of the sequence being played
+    * @see {@link module:Constants.Note Note}
+    * @see {@link module:Constants.Duration Duration}
+    * @see {@link module:Constants.ModificationType ModificationType}
+    * @see {@link WebAudioAPI#getModification getModification()}
+    */
+   async playSequence(trackName, sequence, startTime, modifications=[]) {
+      const mods = (modifications ? (Array.isArray(modifications) ? modifications : [modifications]) : []);
+      if (!(trackName in this.#tracks))
+         throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      else if (!Array.isArray(sequence) || !Array.isArray(sequence[0]))
+         throw new WebAudioValueError('The "sequence" parameter must be either an array of tuples or an array of an array of tuples');
+      else
+         checkModifications(mods, false);
+      for (const sequenceItem of sequence) {
+         if (Array.isArray(sequenceItem[0])) {
+            for (const chordItem of sequenceItem)
+               chordItem[0] = chordItem[0] ? (Number(chordItem[0]) + this.#key.offsets[Number(chordItem[0]) % 12]) : 0;
+         }
+         else
+            sequenceItem[0] = sequenceItem[0] ? (Number(sequenceItem[0]) + this.#key.offsets[Number(sequenceItem[0]) % 12]) : 0;
+      }
+      return await this.#tracks[trackName].playSequence(sequence, Number(startTime), mods);
    }
 
    /**
