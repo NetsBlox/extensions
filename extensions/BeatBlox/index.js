@@ -197,12 +197,12 @@
         * @param {Number} velocity - volume of note to be played
         * @returns An Array Buffer
         */
-        async function playChordBeats(trackName, notes, startTime, beats) {
+        async function playChordBeats(trackName, notes, startTime, beats, mod=undefined) {
             if (notes.length === 0) return 0;
             let ret = Infinity;
             let beatMultiplier = getBPM()/60;
             for (const note of notes) {
-                ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, -[beatMultiplier*beats]));
+                ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, -[beatMultiplier*beats],mod));
             }
             return ret;
         }
@@ -1081,7 +1081,8 @@
                     new Extension.LabelPart('noteModifiers', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
-                        identityMap(['Piano','Forte','Accent','Staccato','Tie','Triplet']),
+                        // identityMap(Object.keys(availableNoteModifiers)),
+                        identityMap(['Piano','Forte','Accent','Staccato','Tie','Triplet','TurnUpper','TurnLower']),
                         true, // readonly (no arbitrary text)
                     )),
                 ];
