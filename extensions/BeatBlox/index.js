@@ -465,6 +465,21 @@
                         await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                     }, { args: [], timeout: I32_MAX });
                 }
+                function playScaleBeats(beats, notes, mod) {
+                    notes = parseNote(notes);
+                    if (!Array.isArray(notes)) notes = [notes];
+                    if (notes.length === 0) return;
+                    setupProcess(this);
+                    this.runAsyncFn(async () => {
+                        await instrumentPrefetch; // wait for all instruments to be loaded
+                        const trackName =  this.receiver.id;
+                        for (let i = 0; i < notes.length; i++) {
+                            const t = await playChordBeats(trackName, [notes[i]], this.musicInfo.t, [beats[i]], mod);
+                            this.musicInfo.t += t;
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                        }
+                    }, { args: [], timeout: I32_MAX });
+                }
                 return [
                     new Extension.Block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', ['Synthesizer'], function (instrument) {
                         if (instrument === '') throw Error(`instrument cannot be empty`);
@@ -706,13 +721,17 @@
                             throw Error('must contain a block');
 
                         let block = parseBlock(raw_block);
+                        let notes = [];
+                        let beats = [];
 
                         while (block != null) {
-                            console.log(block);
-                            playNoteCommonBeats.apply(this, [block.beats, block.note, audioAPI.
-                        getModification(availableNoteModifiers[mod], 1)]);
+                            notes.push(block.note);
+                            beats.push(block.beats);
                             block = block.nextBlock;
                         }
+
+                        playScaleBeats.apply(this, [beats, notes, audioAPI.
+                        getModification(availableNoteModifiers[mod], 1)]);
                         
                         return;
                     }),
