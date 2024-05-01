@@ -17,7 +17,9 @@
         const availableNoteDurations = audioAPI.getAvailableNoteDurations();
         const availableNotes = audioAPI.getAvailableNotes();
         const availableAnalysisTypes = audioAPI.getAvailableAnalysisTypes();
+        const availableKeySignatures = audioAPI.getAvailableKeySignatures();
         const availableEncoders = audioAPI.getAvailableEncoders();
+        const availableNoteModifiers = audioAPI.getAvailableNoteModifications()
 
         const devRoot = 'http://localhost:9090/extensions/BeatBlox/instruments/';
         const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatBlox/instruments/';
@@ -174,15 +176,33 @@
         * @param {List} notes - notes to be played
         * @param {Number} startTime - API time at which to start playback
         * @param {Number} noteDuration - duration of note to be played
-        * @param {Number} velocity - volume of note to be played
         * @returns An Array Buffer
         */
-        async function playChord(trackName, notes, startTime, noteDuration, velocity = undefined) {
+        async function playChord(trackName, notes, startTime, noteDuration, mod=undefined) {
             if (notes.length === 0) return 0;
 
             let ret = Infinity;
             for (const note of notes) {
-                ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, noteDuration, velocity));
+                ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, noteDuration, mod));
+            }
+            return ret;
+        }
+
+        /**
+        * Plays an audio clip
+        * @param {String} trackName - name of CurrentTrack
+        * @param {List} notes - notes to be played
+        * @param {Number} startTime - API time at which to start playback
+        * @param {Number} beats - duration of note to be played
+        * @param {Number} velocity - volume of note to be played
+        * @returns An Array Buffer
+        */
+        async function playChordBeats(trackName, notes, startTime, beats, mod=undefined) {
+            if (notes.length === 0) return 0;
+            let ret = Infinity;
+            let beatMultiplier = getBPM()/60;
+            for (const note of notes) {
+                ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, -[beatMultiplier*beats],mod));
             }
             return ret;
         }
@@ -238,6 +258,12 @@
             await audioAPI.updateTrackEffect(trackName, effectName, effectOptions);
         }
 
+        function getBPM(){
+            var tempoObject = audioAPI.getTempo();
+            var bpm = tempoObject.beatsPerMinute
+            return bpm;
+        }
+
         function getEffectValues(trackName,appliedEffects){
             const res = [];
             for(let i = 0; i < appliedEffects.length; i++){
@@ -275,7 +301,7 @@
         function setupProcess(proc) {
             if (proc.musicInfo) return;
             proc.musicInfo = {
-                t: audioAPI.getCurrentTime(),
+                t: audioAPI.getCurrentTime() +0.001,
             };
         }
 
@@ -286,6 +312,25 @@
         }
         async function waitUntil(t) {
             await wait(t - audioAPI.getCurrentTime());
+        }
+
+    
+        function parseBlock(block) {
+            if (block === null)
+                return null;
+            if (block.selector !== 'playNoteBeats' && block.selector !== 'playNoteBeatsWithAmp')
+                return null;
+            return {
+                note: block.cachedInputs[0].lastValue,
+                beats: block.cachedInputs[1].lastValue,
+                nextBlock: parseBlock(getNextBlock(block))
+            };
+        }
+
+        function getNextBlock(block) {
+            if (block.children[block.children.length - 1] instanceof CommandBlockMorph)
+                return block.children[block.children.length - 1];
+            return null;
         }
 
 
@@ -332,20 +377,31 @@
             getPalette() {
                 const blocks = [
                     new Extension.Palette.Block('setInstrument'),
+                    new Extension.Palette.Block('setKeySignature'),
+                    new Extension.Palette.Block('makeTempo'),
+                    '-',
                     new Extension.Palette.Block('playNote'),
                     new Extension.Palette.Block('playNoteWithAmp'),
                     new Extension.Palette.Block('rest'),
+                    // new Extension.Palette.Block('playNoteBeats'),
+                    // new Extension.Palette.Block('playNoteBeatsWithAmp'),
+                    // new Extension.Palette.Block('restBeats'),
                     '-',
                     new Extension.Palette.Block('playAudioClip'),
                     new Extension.Palette.Block('playAudioClipForDuration'),
                     new Extension.Palette.Block('playSampleForDuration'),
                     new Extension.Palette.Block('stopClips'),
                     '-',
+                    new Extension.Palette.Block('durationToBeats'),
+                    new Extension.Palette.Block('noteModifierC'),
+                    new Extension.Palette.Block('soundMetaData'),
+                    '-',
+                    new Extension.Palette.Block('playFrequency'),
+                    new Extension.Palette.Block('stopFrequency'),
+                    '-',
                     new Extension.Palette.Block('presetEffect'),
                     new Extension.Palette.Block('setTrackEffect'),
                     new Extension.Palette.Block('clearTrackEffects'),
-                    '-',
-                    new Extension.Palette.Block('makeTempo'),
                     '-',
                     new Extension.Palette.Block('audioAnalysis'),
                     '-',
@@ -360,7 +416,7 @@
                     new Extension.Palette.Block('lastRecordedClip'),
                     '-',
                     new Extension.Palette.Block('noteNew'),
-                    new Extension.Palette.Block('notes'),
+                    // new Extension.Palette.Block('notes'),
                     new Extension.Palette.Block('chords'),
                     new Extension.Palette.Block('scales'),
                 ];
@@ -371,7 +427,7 @@
             }
 
             getBlocks() {
-                function playNoteCommon(duration, notes, amp = 100) {
+                function playNoteCommon(duration, notes, mod=undefined) {
                     if (duration === '') throw Error('Please select a valid note duration');
                     duration = availableNoteDurations[duration];
                     if (!duration) throw Error('unknown note duration');
@@ -380,16 +436,44 @@
                     if (!Array.isArray(notes)) notes = [notes];
                     if (notes.length === 0) return;
 
-                    amp = parseFloat(amp) / 100;
-                    if (!amp || amp < 0 || amp > 1) throw Error('amp must be a number between 0 and 100');
+                    setupProcess(this);
+                    this.runAsyncFn(async () => {
+                        await instrumentPrefetch; // wait for all instruments to be loaded
+                        const trackName = this.receiver.id;
+                        const t = await playChord(trackName, notes, this.musicInfo.t, duration,mod);
+                        this.musicInfo.t += t;
+                        await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                    }, { args: [], timeout: I32_MAX });
+                }
+                function playNoteCommonBeats(beats, notes, mod=undefined) {
+                    if (beats === '') throw Error('Please select a valid beat duration');
+                    
+                    notes = parseNote(notes);
+                    if (!Array.isArray(notes)) notes = [notes];
+                    if (notes.length === 0) return;
 
                     setupProcess(this);
                     this.runAsyncFn(async () => {
                         await instrumentPrefetch; // wait for all instruments to be loaded
                         const trackName = this.receiver.id;
-                        const t = await playChord(trackName, notes, this.musicInfo.t, duration, amp);
+                        const t = await playChordBeats(trackName, notes, this.musicInfo.t, beats, mod);
                         this.musicInfo.t += t;
                         await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                    }, { args: [], timeout: I32_MAX });
+                }
+                function playScaleBeats(beats, notes, mod) {
+                    notes = parseNote(notes);
+                    if (!Array.isArray(notes)) notes = [notes];
+                    if (notes.length === 0) return;
+                    setupProcess(this);
+                    this.runAsyncFn(async () => {
+                        await instrumentPrefetch; // wait for all instruments to be loaded
+                        const trackName =  this.receiver.id;
+                        for (let i = 0; i < notes.length; i++) {
+                            const t = await playChordBeats(trackName, [notes[i]], this.musicInfo.t, [beats[i]], mod);
+                            this.musicInfo.t += t;
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                        }
                     }, { args: [], timeout: I32_MAX });
                 }
                 return [
@@ -405,11 +489,25 @@
                         playNoteCommon.apply(this, [durationSpecial + duration, notes]); // internally does await instrumentPrefetch
                     }),
                     new Extension.Block('playNoteWithAmp', 'command', 'music', 'play %noteDurations %noteDurationsSpecial note(s) %s amp %n %', ['Quarter', '', 'C3', '100'], function (duration, durationSpecial, notes, amp) {
-                        playNoteCommon.apply(this, [durationSpecial + duration, notes, amp]); // internally does await instrumentPrefetch
+                        var amp = parseFloat(amp) / 100;
+                        if (!amp || amp < 0 || amp > 1) throw Error('amp must be a number between 0 and 100');
+                        playNoteCommon.apply(this, [durationSpecial + duration, notes, audioAPI.getModification(availableNoteModifiers['Velocity'],amp)]); // internally does await instrumentPrefetch
                     }),
                     new Extension.Block('rest', 'command', 'music', 'rest %noteDurations %noteDurationsSpecial', ['Quarter',''], function (duration, durationSpecial) {
                         playNoteCommon.apply(this, [durationSpecial + duration, 'Rest']); // internally does await instrumentPrefetch
                     }),
+                    // new Extension.Block('playNoteBeats', 'command', 'music', 'play note(s) %s for beat(s) %n', ['C3', 1], function (notes, beats) {
+                    //     playNoteCommonBeats.apply(this, [beats, notes]); // internally does await instrumentPrefetch
+    
+                    // }),
+                    // new Extension.Block('playNoteBeatsWithAmp', 'command', 'music', 'play note(s) %s for beat(s) %n with amp %n %', ['C3', 1, 100], function (notes,beats,velocity) {
+                    //     var amp = parseFloat(velocity) / 100;
+                    //     if (!amp || amp < 0 || amp > 1) throw Error('amp must be a number between 0 and 100');
+                    //     playNoteCommonBeats.apply(this, [beats, notes, audioAPI.getModification(availableNoteModifiers['Velocity'],amp)]); // internally does await instrumentPrefetch
+                    // }),
+                    // new Extension.Block('restBeats', 'command', 'music', 'rest for beat(s) %n', [1], function (beats) {
+                    //     playNoteCommonBeats.apply(this, [beats, 'Rest']); // internally does await instrumentPrefetch
+                    // }),
                     new Extension.Block('playAudioClip', 'command', 'music', 'play sound %snd', [null], function (clip) {
                         setupProcess(this);
                         if (clip === '') throw Error(`sound cannot be empty`);
@@ -430,7 +528,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play sound %snd duration %n', [null, 0], function (clip, duration) {
+                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play sound %snd for duration %n', [null, 0], function (clip, duration) {
                         setupProcess(this);
                         if (clip === '') throw Error(`sound cannot be empty`);
                         if (this.receiver.sounds.contents.length){
@@ -450,7 +548,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play sound %snd duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration,durationSpecial) {
+                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play sound %snd for duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration,durationSpecial) {
                         setupProcess(this);
                         let playDuration = availableNoteDurations[duration];
                         if (durationSpecial != '') {
@@ -478,14 +576,162 @@
                         stopAudio();
                         this.doStopAll();
                     }),
-                    new Extension.Block('noteNew', 'reporter', 'music', 'note %note', [60], parseNote),
-                    new Extension.Block('notes', 'reporter', 'music', 'note %noteNames %octaves %accidentals', ['C', '3', ''], function (noteName, octave, accidental) {
-                        const note = noteName + octave;
-                        if (accidental === '\u266F') note = noteName + octave + 's';
-                        if (accidental === '\u266D') note = noteName + octave + 'b';
-                        return parseNote(note);
-
+                    new Extension.Block('soundMetaData', 'reporter', 'music', '%soundMetaData of sound %snd', ['duration', ''], function (option, sound){
+                        if (sound === '') throw Error(`sound cannot be empty`);
+                        if (this.receiver.sounds.contents.length){
+                            for (let i = 0; i< this.receiver.sounds.contents.length; i++){
+                                if (sound === this.receiver.sounds.contents[i].name){
+                                    sound = this.receiver.sounds.contents[i];
+                                    break;
+                                }
+                            }
+                        }
+                        else{
+                            sound = clipToSnap(sound);
+                        }
+                        switch(option){
+                            case 'name':
+                                return sound.name;
+                            case 'duration':
+                                console.log(sound);
+                                console.log(sound.audio.draggable);
+                                return sound.audio.duration;
+                            case 'beats':
+                                return 'beats';
+                            case 'samples':
+                                return 'samples';
+                        }
+                        return "OK";
                     }),
+                    new Extension.Block('durationToBeats', 'reporter', 'music', 'duration %noteDurations %noteDurationsSpecial to beats', ['Quarter', ''], function(duration, durationSpecial){
+                        if(duration == '') throw Error('duration cannot be empty');
+                        let playDuration = availableNoteDurations[duration];
+                        switch(playDuration){
+                            case 1:
+                                //Whole
+                                playDuration = 4;
+                                break;
+                            case 2:
+                                //Half
+                                playDuration = 2;
+                                break;
+                            case 4:
+                                //Quarter
+                                playDuration = 1;
+                                break;
+                            case 8:
+                                //Eighth
+                                playDuration = 0.5;
+                                break;
+                            case 16:
+                                //Sixteenth
+                                playDuration = 0.25;
+                                break;
+                            case 32:
+                                //Thirty-Secondth
+                                playDuration = 0.125;
+                                break;
+                            case 64:
+                                //Sixty-Fourth
+                                playDuration = 0.0625;
+                                break;
+                        }
+                        if (durationSpecial != '') {
+                            playDuration =  availableNoteDurations[durationSpecial+duration];
+                            switch(playDuration){
+                                case (2.0/3.0):
+                                  //  "Dotted Whole"
+                                    playDuration = 6;
+                                    break;
+                                case (4.0 / 7.0):
+                                    //  "Dotted Dotted Whole"
+                                    playDuration = 7;
+                                    break;
+                                case (4.0 / 3.0):
+                                   // "Dotted Half"
+                                    playDuration = 3;
+                                    break;
+                                case (8.0 / 7.0):
+                                    // "Dotted Dotted Half"
+                                    playDuration = 3.5;
+                                    break;
+                                case (8.0 / 3.0):
+                                  //  "Dotted Quarter"
+                                    playDuration = 1.5;
+                                    break;
+                                case (16.0 / 7.0):
+                                   //  "Dotted Dotted Quarter"
+                                    playDuration = 1.75;
+                                    break;
+                                case (16.0 / 3.0):
+                                  //  "Dotted Eighth"
+                                    playDuration =  0.75;
+                                    break;
+                                case (32.0 / 7.0):
+                                    //  "Dotted Dotted Eighth"
+                                    playDuration =  0.875;
+                                    break;
+                                case (32.0 / 3.0):
+                                   // "Dotted Sixteenth"
+                                    playDuration = 0.375;
+                                    break;
+                                case (64.0 / 7.0):
+                                    // "Dotted Dotted Sixteenth"
+                                    playDuration = 0.4375;
+                                    break;
+                                case (64.0 / 3.0):
+                                   // "Dotted Thirty Secondth"
+                                    playDuration = 0.1875;
+                                    break;
+                                case (128.0 / 7.0):
+                                    // "Dotted Dotted Thirty Secondth"
+                                    playDuration = 0.21875;
+                                    break;
+                                case (128.0 / 3.0):
+                                   // "Dotted SixtyFourth"
+                                    playDuration = 0.09375;
+                                    break;
+                                case (256.0 / 7.0):
+                                    // "Dotted Dotted SixtyFourth"
+                                    playDuration = 0.109375;
+                                    break;
+                            }
+                        }
+                        return playDuration;
+                    }),
+                    new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Piano'], function (mod, raw_block) {
+                        if (raw_block === null)
+                            throw Error('must contain a block');
+
+                        let block = parseBlock(raw_block);
+                        let notes = [];
+                        let beats = [];
+
+                        while (block != null) {
+                            notes.push(block.note);
+                            beats.push(block.beats);
+                            block = block.nextBlock;
+                        }
+
+                        playScaleBeats.apply(this, [beats, notes, audioAPI.
+                        getModification(availableNoteModifiers[mod], 1)]);
+                        
+                        return;
+                    }),
+                    new Extension.Block('playFrequency', 'command', 'music', 'play frequency %n Hz', [440], function(freq){
+                        this.receiver.playFreq(freq)
+                    }),
+                    new Extension.Block('stopFrequency', 'command', 'music', 'stop frequency', [], function(){
+                        this.receiver.stopFreq()
+                    }),
+                    new Extension.Block('noteNew', 'reporter', 'music', 'note %note', [60], parseNote),
+                    // new Extension.Block('notes', 'reporter', 'music', 'note %noteNames %octaves %accidentals', ['C', '3', ''], function (noteName, octave, accidental) {
+                    //     const note = noteName + octave;
+                    //     if (accidental === '\u266F') note = noteName + octave + 's';
+                    //     if (accidental === '\u266D') note = noteName + octave + 'b';
+                    //     return parseNote(note);
+
+                    // }),
                     new Extension.Block('scales', 'reporter', 'music', 'scale %midiNote type %scaleTypes', ['C3', 'Major'], function (rootNote, type) {
                         rootNote = parseNote(rootNote);
 
@@ -529,6 +775,14 @@
                             audioAPI.updateTempo(4, tempo, 4, 4);
                         }, { args: [], timeout: I32_MAX });
                     }),
+                    new Extension.Block('setKeySignature','command','music','set key signature %keySignatures', ['DMajor'], function(key) {
+                        if (!availableKeySignatures[key]) throw Error(`unknown key signature: '${key}'`);
+                        const currentKeySignature = audioAPI.getKeySignature();
+                        if(currentKeySignature != key){
+                            audioAPI.updateKeySignature(availableKeySignatures[key]);
+                        }
+                        console.log(availableKeySignatures[key]);
+                    }),
                     new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
                         if (appliedEffects.length === 0) {
                             return new List();
@@ -538,9 +792,7 @@
                         return getEffectValues(trackName, appliedEffects);
                     }).for(SpriteMorph,StageMorph),
                     new Extension.Block('tempo', 'reporter', 'music', 'tempo', [], function () {
-                        var tempoObject = audioAPI.getTempo();
-                        var tempo = tempoObject.beatsPerMinute
-                        return tempo;
+                        return getBPM();
                     }).for(SpriteMorph,StageMorph),
                     new Extension.Block('presetEffect', 'command', 'music', 'preset effects %fxPreset %onOff', ['', 'on'], function (effect, status) {
                         const trackName = this.receiver.id;
@@ -789,6 +1041,12 @@
                         identityMap(['on', 'off']),
                         true, // readonly (no arbitrary text)
                     )),
+                    new Extension.LabelPart('soundMetaData', () => new InputSlotMorph(
+                        null, // text
+                        false, //numeric
+                        identityMap(['name', 'duration','beats','samples']),
+                        true, // readonly (no arbitrary text)
+                    )),
                     new Extension.LabelPart('webMidiInstrument', () => new InputSlotMorph(
                         null, // text
                         false, //numeric
@@ -811,6 +1069,19 @@
                         null, // text
                         false, // numeric
                         identityMap(Object.keys(availableAnalysisTypes)),
+                        true, // readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('keySignatures', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
+                        identityMap(Object.keys(availableKeySignatures)),
+                        true, // readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('noteModifiers', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
+                        // identityMap(Object.keys(availableNoteModifiers)),
+                        identityMap(['Piano','Forte','Accent','Staccato','Tie','Triplet','TurnUpper','TurnLower']),
                         true, // readonly (no arbitrary text)
                     )),
                 ];
