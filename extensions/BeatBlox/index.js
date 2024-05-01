@@ -197,12 +197,12 @@
         * @param {Number} velocity - volume of note to be played
         * @returns An Array Buffer
         */
-        async function playChordBeats(trackName, notes, startTime, beats, mod = undefined) {
+        async function playChordBeats(trackName, notes, startTime, beats) {
             if (notes.length === 0) return 0;
             let ret = Infinity;
             let beatMultiplier = getBPM()/60;
             for (const note of notes) {
-                ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, -[beatMultiplier*beats], mod));
+                ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, -[beatMultiplier*beats]));
             }
             return ret;
         }
@@ -393,7 +393,6 @@
                     new Extension.Palette.Block('stopClips'),
                     '-',
                     new Extension.Palette.Block('durationToBeats'),
-                    new Extension.Palette.Block('noteModifiers'),
                     new Extension.Palette.Block('noteModifierC'),
                     new Extension.Palette.Block('soundMetaData'),
                     '-',
@@ -449,7 +448,7 @@
                 //         await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                 //     }, { args: [], timeout: I32_MAX });
                 // }
-                function playNoteCommonBeats(beats, notes, mods) {
+                function playNoteCommonBeats(beats, notes) {
                     if (beats === '') throw Error('Please select a valid beat duration');
                     
                     notes = parseNote(notes);
@@ -460,7 +459,7 @@
                     this.runAsyncFn(async () => {
                         await instrumentPrefetch; // wait for all instruments to be loaded
                         const trackName = this.receiver.id;
-                        const t = await playChordBeats(trackName, notes, this.musicInfo.t, beats, mods);
+                        const t = await playChordBeats(trackName, notes, this.musicInfo.t, beats);
                         this.musicInfo.t += t;
                         await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                     }, { args: [], timeout: I32_MAX });
@@ -499,15 +498,8 @@
                     //     playNoteCommon.apply(this, [durationSpecial + duration, 'Rest']); // internally does await instrumentPrefetch
                     // }),
                     new Extension.Block('playNoteBeats', 'command', 'music', 'play note(s) %s for beat(s) %n', ['C3', 1], function (notes, beats) {
-                        if (typeof notes === 'object'){
-                            var noteName = notes.noteName;
-                            var modifier = notes.modifier;
-                            playNoteCommonBeats.apply(this, [beats, noteName, audioAPI.getModification(modifier,1)]); // internally does await instrumentPrefetch
-
-
-                        }else {
                         playNoteCommonBeats.apply(this, [beats, notes]); // internally does await instrumentPrefetch
-                        }
+    
                     }),
                     new Extension.Block('playNoteBeatsWithAmp', 'command', 'music', 'play note(s) %s for beat(s) %n with amp %n %', ['C3', 1, 100], function (notes,beats,velocity) {
                         var amp = parseFloat(velocity) / 100;
@@ -707,14 +699,6 @@
                             }
                         }
                         return playDuration;
-                    }),
-                    new Extension.Block('noteModifiers', 'reporter', 'music', 'note %s modifiers %noteModifiers', ['C3','Piano'], function(note,mod){
-                        var modifiedNote = {
-                            noteName: note,
-                            modifier: availableNoteModifiers[mod]
-                        }
-                        console.log(modifiedNote);
-                        return modifiedNote;
                     }),
                     new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Piano'], function (mod, raw_block) {
                         if (raw_block === null)
@@ -1097,7 +1081,7 @@
                     new Extension.LabelPart('noteModifiers', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
-                        identityMap(Object.keys(availableNoteModifiers)),
+                        identityMap(['Piano','Forte','Accent','Staccato','Tie','Triplet']),
                         true, // readonly (no arbitrary text)
                     )),
                 ];
