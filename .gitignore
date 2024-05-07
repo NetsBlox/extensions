@@ -1,4 +1,9 @@
 node_modules
+<<<<<<< HEAD
 package-lock.json
 .DS_Store
 build/
+=======
+.DS_Store
+.vscode
+>>>>>>> master

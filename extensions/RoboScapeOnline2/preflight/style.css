@@ -1,0 +1,15 @@
+li.success {
+    color: green;
+}
+
+li.success:before {
+    content: "\2713";
+}
+
+li.error {
+    color: red;
+}
+
+li.error:before {
+    content: "\2717";
+}
