@@ -1,0 +1,59 @@
+<html>
+    <head>
+        <title>NetsBlox Extensions</title>
+        <link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" type="text/css" />
+        <style>
+            details p {
+                margin-bottom: 4px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>NetsBlox Extensions</h1>
+
+        <p>Welcome to the list of supported NetsBlox extensions! Click on one below to try it out!</p>
+
+        <input id="search" placeholder="🔍 Search" />  
+
+        <label for="multiSelect"><input type="checkbox" name="multiSelect" id="multiSelect" /> Enable multiple selections</label>
+
+        <a style="font-size: 12px;" id="showAllDescriptions">Show all descriptions</a>
+        <a style="font-size: 12px;" id="hideAllDescriptions">Hide all descriptions</a>
+
+        <% extensions.forEach(ext=> { %>
+        <details class="extension">
+            <summary><input type="checkbox" class="extensionOption" name="<%= ext.name %>" style="margin-right: 10px" hidden /><a href="<%= ext.linkUrl %>" target="_blank"> <%= ext.displayName %> </a></summary>
+            <p>
+                <input type="hidden" name="<%= ext.name %>_script" id="<%= ext.name %>_script" value="<%= ext.scriptUrl %>" />
+                <%= ext.description %>
+            </p>
+        </details>
+        <% }) %>
+
+        <hr />
+
+        <div id="multiSelectControls" hidden>
+            <button style="font-size: 16px" id="loadButton">
+                <strong>Load Selected Extensions</strong>
+            </button>
+
+            <details style="font-size: 12px">
+                <summary>Advanced options:</summary>
+                <p>
+                    <label for="devMode"><input type="checkbox" name="devMode" id="devMode" /> Use dev.netsblox.org</label>
+                </p>
+            </details>
+
+            <hr />
+        </div>
+
+        <p>
+            For more information or to report an issue, please visit
+            <a href="https://github.com/NetsBlox/extensions">github.com/NetsBlox/extensions</a>.
+        </p>
+
+        <script src="./index.js" async defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/fuzzysort@2.0.4/fuzzysort.min.js" async></script>
+    </body>
+</html>

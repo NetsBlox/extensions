@@ -6,5 +6,5 @@ package-lock.json
 .vscode
 
 # template-generated files
-index.html
-index.json
+/index.html
+/index.json
