@@ -1,2 +1,0 @@
-node utils/build-index.js
-exit $?

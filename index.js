@@ -61,12 +61,11 @@ search.oninput = () => {
         let result = fuzzysort.single(search.value, fullText);
         extension.style.display = (search.value == "" || result)? "block" : "none";
 
-
-        if (search.value == "") {
+        if(search.value == "") {
             // Clear highlight when no match
             title.innerHTML = title.innerText;
 
-            if (extension.open) {
+            if(extension.open) {
                 desc.innerHTML = desc.innerText;
             }
         }
