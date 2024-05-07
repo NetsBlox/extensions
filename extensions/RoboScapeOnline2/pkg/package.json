@@ -1,0 +1,14 @@
+{
+  "name": "roboscapesim-client",
+  "version": "0.1.0",
+  "files": [
+    "roboscapesim_client_bg.wasm",
+    "roboscapesim_client.js",
+    "roboscapesim_client.d.ts"
+  ],
+  "module": "roboscapesim_client.js",
+  "types": "roboscapesim_client.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

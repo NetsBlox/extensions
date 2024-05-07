@@ -18,5 +18,8 @@
   "homepage": "https://github.com/NetsBlox/extensions#readme",
   "devDependencies": {
     "lodash": "^4.17.21"
+  },
+  "dependencies": {
+    "js-aruco": "^0.1.0"
   }
 }

@@ -1,0 +1,14 @@
+{
+  "name": "roboscapesim-preflight",
+  "version": "0.1.0",
+  "files": [
+    "roboscapesim_preflight_bg.wasm",
+    "roboscapesim_preflight.js",
+    "roboscapesim_preflight.d.ts"
+  ],
+  "module": "roboscapesim_preflight.js",
+  "types": "roboscapesim_preflight.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

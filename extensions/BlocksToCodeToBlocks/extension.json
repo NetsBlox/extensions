@@ -1,0 +1,5 @@
+{
+    "customName": "Blocks to Code to Blocks (beta)",
+    "description": "Transform back and forth with LISP-like code and NetsBlox, based on new features in Snap! v10 (WIP)",
+    "useDev": false
+}

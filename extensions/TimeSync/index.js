@@ -1,12 +1,11 @@
 (function () {
     const TIME_SYNC_URL = 'wss://timesync.netsblox.org';
-    const TIME_SYNC_ITERS = 100;
-    const DISCARD_FRAC = 0.2; // discards the upper and lower fraction of data
-    const SLEEP_MS = 0; // sleep time between receiving a message and sending the next message
+    const TIME_SYNC_ITERS = 200;
+    const DISCARD_FRAC = 0.2;
+    const PASSIVE_SLEEP_TIME_MS = 500;
+    const PASSIVE_CALC_ITERS = 10;
 
     // --------------------------------------------------------
-
-    const I32_MAX = 2147483647;
 
     async function sleep(ms) {
         if (ms > 0) {
@@ -48,7 +47,53 @@
     class TimeSync extends Extension {
         constructor(ide) {
             super('TimeSync');
-            this.ide = ide;
+
+            const socket = new WebSocket(TIME_SYNC_URL);
+            const samples = [];
+            let fullCount = PASSIVE_CALC_ITERS;
+
+            const calculate = () => {
+                const roundTrips = samples.map(t => t[2] - t[0]);
+                const deltas = samples.map(t => (2 * t[1] - (t[0] + t[2])) / 2);
+
+                world.timeSyncInfo = {
+                    'round trip': discardAvg(roundTrips) / 1000,
+                    'clock delta': discardAvg(deltas) / 1000,
+                };
+
+                console.log('updated time sync info', world.timeSyncInfo);
+            };
+
+            socket.onopen = () => {
+                console.log('time sync socket opened');
+                socket.send(Date.now().toString());
+            };
+            socket.onmessage = async msg => {
+                const sample = `${msg.data},${Date.now()}`.split(',').map(x => +x);
+
+                if (samples.length >= TIME_SYNC_ITERS) {
+                    samples.shift();
+                    samples.push(sample);
+
+                    if (++fullCount >= PASSIVE_CALC_ITERS) {
+                        fullCount = 0;
+                        calculate();
+                    }
+
+                    await sleep(PASSIVE_SLEEP_TIME_MS);
+                } else {
+                    samples.push(sample);
+                }
+
+                socket.send(Date.now().toString());
+            };
+            socket.onerror = () => {
+                console.error('time sync socket error');
+                socket.close();
+            };
+            socket.onclose = () => {
+                console.error('time sync socket closed');
+            };
         }
 
         onOpenRole() {}
@@ -59,7 +104,6 @@
 
         getPalette() {
             const blocks = [
-                new Extension.Palette.Block('timeSyncCalculate'),
                 new Extension.Palette.Block('timeSyncGetInfo'),
                 new Extension.Palette.Block('timeSyncGetServerTime'),
             ];
@@ -74,57 +118,19 @@
                 return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
             }
             return [
-                block('timeSyncCalculate', 'command', 'network', 'calculate time sync info', [], function () {
-                    this.runAsyncFn(async () => {
-                        const socket = new WebSocket(TIME_SYNC_URL);
-                        const messages = [];
-                        const state = { running: true, error: null };
-
-                        socket.onopen = () => {
-                            console.log('time sync starting');
-                            socket.send(Date.now().toString());
-                        };
-                        socket.onmessage = async msg => {
-                            messages.push(`${msg.data},${Date.now()}`);
-                            if (messages.length < TIME_SYNC_ITERS) {
-                                await sleep(SLEEP_MS);
-                                socket.send(Date.now().toString());
-                            } else {
-                                socket.close();
-                            }
-                        };
-                        socket.onerror = () => {
-                            state.error = 'error contacting time sync server';
-                            socket.close();
-                        };
-                        socket.onclose = () => {
-                            console.log(`time sync completed (${messages.length} samples)`);
-                            state.running = false;
-                        };
-
-                        while (state.running) await sleep(100);
-                        if (state.error) throw Error(state.error);
-
-                        const samples = messages.map(msg => msg.split(',').map(x => +x));
-
-                        const roundTrips = samples.map(t => t[2] - t[0]);
-                        const deltas = samples.map(t => (2 * t[1] - (t[0] + t[2])) / 2);
-
-                        world.timeSyncInfo = {
-                            'round trip': discardAvg(roundTrips) / 1000,
-                            'clock delta': discardAvg(deltas) / 1000,
-                        };
-                    }, { args: [], timeout: I32_MAX });
-                }),
                 block('timeSyncGetInfo', 'reporter', 'network', 'time sync info', [], function () {
-                    if (!world.timeSyncInfo) {
-                        throw Error('You must calculate time sync info before reading it!');
+                    if (world.timeSyncInfo === undefined) {
+                        this.pushContext('doYield');
+                        this.pushContext();
+                        return;
                     }
                     return snapify(world.timeSyncInfo);
                 }),
                 block('timeSyncGetServerTime', 'reporter', 'network', 'server time', [], function () {
-                    if (!world.timeSyncInfo) {
-                        throw Error('You must calculate time sync info before reading it!');
+                    if (world.timeSyncInfo === undefined) {
+                        this.pushContext('doYield');
+                        this.pushContext();
+                        return;
                     }
                     return Date.now() + world.timeSyncInfo['clock delta'] * 1000;
                 }),

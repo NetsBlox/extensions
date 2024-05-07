@@ -24,11 +24,11 @@ function readExtension(name) {
     let scriptUrl = `https://extensions.netsblox.org/extensions/${name}/index.js`;
 
     if (!settings['useDev']) {
-        linkUrl = `https://editor.netsblox.org/?extensions=[%22${scriptUrl}%22]#`;
+        linkUrl = `https://editor.netsblox.org/?extensions=[%22${scriptUrl}%22]`;
     } else {
-        linkUrl = `https://dev.netsblox.org/?extensions=[%22${scriptUrl}%22]#`;
+        linkUrl = `https://dev.netsblox.org/?extensions=[%22${scriptUrl}%22]`;
     }
- 
+
     return {
         name,
         displayName : settings['customName'] ?? name,
