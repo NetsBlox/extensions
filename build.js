@@ -2,14 +2,14 @@ const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
 const EXTENSIONS_DIR = path.join(__dirname, 'extensions');
-const OUT_DIR = path.join(__dirname, 'build');
+const TEMPLATES_DIR = path.join(__dirname, 'templates');
 
 const extensions = fs.readdirSync(EXTENSIONS_DIR).map(readExtension);
+const templates = fs.readdirSync(TEMPLATES_DIR);
 
-try { fs.mkdirSync(OUT_DIR); } catch {}
-
-fs.writeFileSync(path.join(OUT_DIR, 'index.html'), renderTemplate('index.html', { extensions }));
-fs.copyFileSync('index.js', path.join(OUT_DIR, 'index.js'));
+for (const template of templates) {
+    fs.writeFileSync(template, renderTemplate(path.join(TEMPLATES_DIR, template), { extensions }));
+}
 
 // ------------------------------------------
 

@@ -1,9 +1,10 @@
+# misc files
 node_modules
-<<<<<<< HEAD
+build
 package-lock.json
 .DS_Store
-build/
-=======
-.DS_Store
 .vscode
->>>>>>> master
+
+# template-generated files
+index.html
+index.json
