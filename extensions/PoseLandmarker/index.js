@@ -56,7 +56,7 @@
 
     async infer(image){
       if(this.poseLandmarker === null){ 
-        throw new Error('poseLandmarker is not initialized');
+        await this.generateTask();
       }
       if(this.poseLandmarker === 'loading...'){ 
         throw new Error ('poseLandmarker is loading...');
