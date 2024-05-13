@@ -5341,7 +5341,7 @@ function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
     * If the `duration` parameter is not specified or is set to `null`, the audio clip will
     * play to completion.
     * 
-    * @param {ArrayBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
+    * @param {ArrayBuffer|AudioBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
     * @param {number} startTime - Global API time at which to start playing the clip
     * @param {number} [duration] -  Number of seconds for which to continue playing the clip
     * @returns {Promise<number>} Duration (in seconds) of the clip being played
@@ -5353,8 +5353,9 @@ function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
     */
    async function playClip(audioClip, startTime, duration) {
       let expectedDuration = null;
-      if (audioClip instanceof ArrayBuffer || audioClip instanceof Blob || audioClip.clipType == 'audio') {
-         const audioBuffer = await audioContext.decodeAudioData(audioClip instanceof ArrayBuffer ? audioClip : (audioClip instanceof Blob ? await audioClip.arrayBuffer() : await audioClip.getRawData().arrayBuffer()));
+      if (audioClip instanceof ArrayBuffer || audioClip instanceof AudioBuffer || audioClip instanceof Blob || audioClip.clipType == 'audio') {
+         const audioBuffer = (audioClip instanceof AudioBuffer) ? audioClip :
+            (await audioContext.decodeAudioData(audioClip instanceof ArrayBuffer ? audioClip : (audioClip instanceof Blob ? await audioClip.arrayBuffer() : await audioClip.getRawData().arrayBuffer())));
          const clipSource = new AudioBufferSourceNode(audioContext, { buffer: audioBuffer });
          audioSources.push(clipSource);
          if (duration) {
@@ -6757,6 +6758,18 @@ class WebAudioAPI {
    }
 
    /**
+    * Decodes an {@link ArrayBuffer} containing an audio clip into an {@link AudioBuffer} object.
+    * 
+    * @param {ArrayBuffer} audioClip - Array buffer containing the audio clip to decode
+    * @returns {AudioBuffer} Decoded audio buffer for the specified audio clip
+    */
+   async decodeAudioClip(audioClip) {
+      if (!(audioClip instanceof ArrayBuffer))
+         throw new WebAudioValueError('The specified audio clip must be of type ArrayBuffer for decoding');
+      return await this.#audioContext.decodeAudioData(audioClip);
+   }
+
+   /**
     * Analyzes the current realtime audio output according to the specified `analysisType`.
     * 
     * The `trackName` parameter is optional, and if left blank, will cause the analysis to be
@@ -7399,14 +7412,15 @@ class WebAudioAPI {
     * Schedules an audio clip to be played on a specific track for some duration of time.
     * 
     * The format of the audio clip in the `audioClip` parameter may be a data buffer containing
-    * raw audio-encoded data (such as from a WAV file), a blob containing audio-encoded data, or
-    * a {@link MidiClip} or {@link AudioClip} that was recorded using this library.
+    * raw audio-encoded data (such as from a WAV file), a blob containing audio-encoded data, an
+    * already-decoded audio buffer, or a {@link MidiClip} or {@link AudioClip} that was recorded
+    * using this library.
     * 
     * If the `duration` parameter is not specified or is set to `null`, the audio clip will
     * play to completion.
     * 
     * @param {string} trackName - Name of the track on which to play the clip
-    * @param {ArrayBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
+    * @param {ArrayBuffer|AudioBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
     * @param {number} startTime - Global API time at which to start playing the clip
     * @param {number} [duration] - Number of seconds for which to continue playing the clip
     * @returns {Promise<number>} Duration (in seconds) of the clip being played
@@ -7417,8 +7431,8 @@ class WebAudioAPI {
    async playClip(trackName, audioClip, startTime, duration) {
       if (!(trackName in this.#tracks))
          throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
-      if (!(audioClip instanceof ArrayBuffer || audioClip instanceof Blob || (audioClip instanceof Object && Object.prototype.hasOwnProperty.call(audioClip, 'clipType'))))
-         throw new WebAudioTrackError('The audio clip is not a known type (ArrayBuffer, Blob, MidiClip, AudioClip) and cannot be played');
+      if (!(audioClip instanceof ArrayBuffer || audioClip instanceof AudioBuffer || audioClip instanceof Blob || (audioClip instanceof Object && Object.prototype.hasOwnProperty.call(audioClip, 'clipType'))))
+         throw new WebAudioTrackError('The audio clip is not a known type (ArrayBuffer, AudioBuffer, Blob, MidiClip, AudioClip) and cannot be played');
       return await this.#tracks[trackName].playClip(audioClip, Number(startTime), duration ? Number(duration) : undefined);
    }
 
