@@ -166,7 +166,7 @@
         }
 
         async function playClip(trackName, clip, startTime, duration = undefined) {
-            const buffer = clip.audioBuffer || base64toArrayBuffer(clip.audio.src);
+            const buffer = clip || clip.audioBuffer || base64toArrayBuffer(clip.audio.src);
             return audioAPI.playClip(trackName, buffer, startTime, duration);
         }
 
@@ -465,7 +465,6 @@
                     new Extension.Palette.Block('lastRecordedClip'),
                     '-',
                     new Extension.Palette.Block('noteNew'),
-                    // new Extension.Palette.Block('notes'),
                     new Extension.Palette.Block('chords'),
                     new Extension.Palette.Block('scales'),
                 ];
@@ -569,7 +568,15 @@
                             }
 
                         }
+                        if(clip instanceof List){
+                            console.log(clip);
+                            const array = new Float64Array(clip.contents);
+                            console.log(array);
+                            clip = array.buffer;
+                        }
+                        console.log(clip);
                         this.runAsyncFn(async () => {
+                            
                             await instrumentPrefetch; // wait for all instruments to be loaded
                             const trackName = this.receiver.id;
                             const t = await playClip(trackName, clip, this.musicInfo.t);
@@ -785,13 +792,6 @@
                     //     this.receiver.stopFreq()
                     // }),
                     new Extension.Block('noteNew', 'reporter', 'music', 'note %note', [60], parseNote),
-                    // new Extension.Block('notes', 'reporter', 'music', 'note %noteNames %octaves %accidentals', ['C', '3', ''], function (noteName, octave, accidental) {
-                    //     const note = noteName + octave;
-                    //     if (accidental === '\u266F') note = noteName + octave + 's';
-                    //     if (accidental === '\u266D') note = noteName + octave + 'b';
-                    //     return parseNote(note);
-
-                    // }),
                     new Extension.Block('scales', 'reporter', 'music', 'scale %midiNote type %scaleTypes', ['C3', 'Major'], function (rootNote, type) {
                         rootNote = parseNote(rootNote);
 
