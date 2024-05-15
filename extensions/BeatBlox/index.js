@@ -279,12 +279,9 @@
         }
 
         async function arrayBufferToTimeSeries(arrayBuffer) {
-            const audioContext = new AudioContext();
         
             // Wrap decodeAudioData in a Promise
-            const audioBuffer = await new Promise((resolve, reject) => {
-                audioContext.decodeAudioData(arrayBuffer.slice(0), resolve, reject);
-            });
+            const audioBuffer = await audioAPI.decodeAudioClip(arrayBuffer);
         
             if (audioBuffer.numberOfChannels > 1) {
                 const result = [];
