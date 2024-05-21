@@ -164,9 +164,10 @@
             }
             return bytes.buffer;
         }
-
+        
         async function playClip(trackName, clip, startTime, duration = undefined) {
-            const buffer = clip || clip.audioBuffer || base64toArrayBuffer(clip.audio.src);
+            const buffer = clip.audioBuffer || base64toArrayBuffer(clip.audio.src);
+            console.log(buffer);
             return audioAPI.playClip(trackName, buffer, startTime, duration);
         }
 
@@ -279,10 +280,9 @@
         }
 
         async function arrayBufferToTimeSeries(arrayBuffer) {
-        
             // Wrap decodeAudioData in a Promise
             const audioBuffer = await audioAPI.decodeAudioClip(arrayBuffer);
-        
+            console.log(audioBuffer);
             if (audioBuffer.numberOfChannels > 1) {
                 const result = [];
                 for (let i = 0; i < audioBuffer.numberOfChannels; i += 1) {
@@ -290,10 +290,11 @@
                 }
                 return result;
             }
-        
+            
             const result = Array.from(audioBuffer.getChannelData(0));
             return result;
         }
+
         function getAudioObjectDuration(audioElement) {
             return new Promise((resolve, reject) => {
                 if (audioElement.readyState >= 1) {
@@ -570,11 +571,16 @@
                         }
                         if(clip instanceof List){
                             console.log(clip);
-                            const array = new Float64Array(clip.contents);
-                            console.log(array);
-                            clip = array.buffer;
+                            const newClip = {}
+                            const listArray = clip.contents;
+                            const bytes = new Float32Array(listArray);
+                            const buffer = ((new AudioContext()).createBuffer(1, listArray.length, 44100));
+                            console.log(bytes);
+                            buffer.copyToChannel(bytes,0);
+                            console.log(buffer);
+                            newClip.audioBuffer = buffer;
+                            clip = newClip;
                         }
-                        console.log(clip);
                         this.runAsyncFn(async () => {
                             
                             await instrumentPrefetch; // wait for all instruments to be loaded
