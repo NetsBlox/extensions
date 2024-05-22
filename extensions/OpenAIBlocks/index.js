@@ -89,8 +89,8 @@
             }
             const role = row.contents[0].toLowerCase();
             const content = row.contents[1];
-            if (!['system', 'user'].some((x) => x === role)) {
-                throw Error('speaker must be \'system\' or \'user\'');
+            if (!['system', 'user', 'assistant'].some((x) => x === role)) {
+                throw Error('speaker must be \'system\', \'user\', or \'assistant\'');
             }
             res.push({ role, content });
         }
