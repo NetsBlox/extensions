@@ -484,6 +484,8 @@
                     new Extension.Palette.Block('stopClips'),
                     '-',
                     new Extension.Palette.Block('hitDrums'),
+                    new Extension.Palette.Block('hitDrumsWVol'),
+                    new Extension.Palette.Block('hitDrumsWBeats'),
                     '-',
                     new Extension.Palette.Block('durationToBeats'),
                     new Extension.Palette.Block('soundMetaData'),
@@ -658,7 +660,20 @@
                         stopAudio();
                         this.doStopAll();
                     }),
-                    new Extension.Block('hitDrums','command','music','hit drum %drums vol %n',['Kick', 100],function(drum, volume){
+                    new Extension.Block('hitDrums','command','music','hit drum %drums',['Kick'],function(drum){
+                        setupProcess(this);
+                        this.runAsyncFn(async () => {
+                            const trackName = this.receiver.id;
+                            await changeToDrumTrack(trackName);
+                            const noteToPlay = drumToMidiNote(drum);
+                            console.log(noteToPlay);
+                            const receivedNote = parseNote(noteToPlay);
+                            await playNoteCommonBeats.apply(this, [0.5, receivedNote]); // internally does await instrumentPrefetch
+
+                        }, { args: [], timeout: I32_MAX });
+                        
+                    }),
+                    new Extension.Block('hitDrumsWVol','command','music','hit drum %drums with vol %n',['Kick', 100],function(drum, volume){
                         var amp = parseFloat(volume) / 100;
                         if (!amp || amp < 0 || amp > 1) throw Error('amp must be a number between 0 and 100');
                         setupProcess(this);
@@ -669,6 +684,21 @@
                             console.log(noteToPlay);
                             const receivedNote = parseNote(noteToPlay);
                             await playNoteCommonBeats.apply(this, [0.5, receivedNote, audioAPI.getModification(availableNoteModifiers['Velocity'], amp)]); // internally does await instrumentPrefetch
+
+                        }, { args: [], timeout: I32_MAX });
+                        
+                    }),
+                    new Extension.Block('hitDrumsWBeats','command','music','hit drum %drums for beats %n with vol %n',['Kick',1, 100],function(drum,beats, volume){
+                        var amp = parseFloat(volume) / 100;
+                        if (!amp || amp < 0 || amp > 1) throw Error('amp must be a number between 0 and 100');
+                        setupProcess(this);
+                        this.runAsyncFn(async () => {
+                            const trackName = this.receiver.id;
+                            await changeToDrumTrack(trackName);
+                            const noteToPlay = drumToMidiNote(drum);
+                            console.log(noteToPlay);
+                            const receivedNote = parseNote(noteToPlay);
+                            await playNoteCommonBeats.apply(this, [beats, receivedNote, audioAPI.getModification(availableNoteModifiers['Velocity'], amp)]); // internally does await instrumentPrefetch
 
                         }, { args: [], timeout: I32_MAX });
                         
