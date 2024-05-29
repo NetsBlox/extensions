@@ -28,7 +28,7 @@ global vision constants*/
   const VisionModuleURL =
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
   const WASMURL =
-    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-visioni@0.10.14/wasm";
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 
   Vision.Module = await import(VisionModuleURL);
   Vision.Task = await Vision.Module.FilesetResolver.forVisionTasks(WASMURL);
