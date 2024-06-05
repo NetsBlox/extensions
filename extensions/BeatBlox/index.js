@@ -235,12 +235,12 @@
         * @param {Number} velocity - volume of note to be played
         * @returns An Array Buffer
         */
-        async function playChordBeats(trackName, notes, startTime, beats, mod = undefined) {
+        async function playChordBeats(trackName, notes, startTime, beats, mod = undefined, isDrumNote = false) {
             if (notes.length === 0) return 0;
             let ret = Infinity;
             let beatMultiplier = 60 / getBPM();
             for (const note of notes) {
-                ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, -[beatMultiplier * beats], mod));
+                ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, -[beatMultiplier * beats], mod, isDrumNote));
             }
             return ret;
         }
@@ -520,7 +520,7 @@
 
             getBlocks() {
     
-               async function playNoteCommonBeats(trackName,beats, notes, mod = undefined) {
+               async function playNoteCommonBeats(trackName,beats, notes, mod = undefined, isDrumNote=false) {
                     if (beats === '') throw Error('Please select a valid beat duration');
                     notes = parseNote(notes);
                     if (!Array.isArray(notes)) notes = [notes];
@@ -528,7 +528,7 @@
 
                     setupProcess(this);
                     await instrumentPrefetch; // wait for all instruments to be loaded
-                    const t = await playChordBeats(trackName, notes, this.musicInfo.t, beats, mod);
+                    const t = await playChordBeats(trackName, notes, this.musicInfo.t, beats, mod, isDrumNote);
                     this.musicInfo.t += t;
                     await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                    
@@ -666,7 +666,7 @@
                             const drumTrackName = trackName+"Drum";
                             const noteToPlay = drumToMidiNote(drum);
                             const receivedNote = parseNote(noteToPlay);
-                            await playNoteCommonBeats.apply(this, [drumTrackName,beats, receivedNote]); // internally does await instrumentPrefetch
+                            await playNoteCommonBeats.apply(this, [drumTrackName,beats, receivedNote,undefined,true]); // internally does await instrumentPrefetch
 
                         }, { args: [], timeout: I32_MAX });
                         
@@ -680,7 +680,7 @@
                             const drumTrackName = trackName+"Drum";
                             const noteToPlay = drumToMidiNote(drum);
                             const receivedNote = parseNote(noteToPlay);
-                            await playNoteCommonBeats.apply(this, [drumTrackName,beats, receivedNote, audioAPI.getModification(availableNoteModifiers['Velocity'], amp)]); // internally does await instrumentPrefetch
+                            await playNoteCommonBeats.apply(this, [drumTrackName,beats, receivedNote, audioAPI.getModification(availableNoteModifiers['Velocity'], amp),true]); // internally does await instrumentPrefetch
 
                         }, { args: [], timeout: I32_MAX });
                         
