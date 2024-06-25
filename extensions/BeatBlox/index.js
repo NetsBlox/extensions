@@ -172,9 +172,13 @@
                     return "F3";
                 case 'Tamborine':
                     return "F#3";
+                case 'Rest':
+                    return "Rest";
+                default:
+                    return "";
             }
-
         }
+
         /**
          * Disconnects all audio and midi devices from NetsBlox
          * @param {String} trackName - name of the Track 
@@ -482,6 +486,8 @@
                     new Extension.Palette.Block('playSampleForDuration'),
                     new Extension.Palette.Block('stopClips'),
                     '-',
+                    new Extension.Palette.Block('hitDrums'),
+                    new Extension.Palette.Block('hitDrumsOverBeats'),
                     new Extension.Palette.Block('hitDrumsWBeats'),
                     new Extension.Palette.Block('hitDrumsWVol'),
                     '-',
@@ -692,6 +698,39 @@
                     new Extension.Block('stopClips', 'command', 'music', 'stop all clips', [], function () {
                         stopAudio();
                         this.doStopAll();
+                    }),
+                    new Extension.Block('hitDrums','command','music','hit drum sequence %mult%drums',['Kick'], function(drum){
+                        setupProcess(this);
+                        if (drum.contents.length === 0) throw Error(`cannot be empty`);
+                        if(drum.contents.some(value => drumToMidiNote(value) === "")) throw Error(`cannot play non-drum value`);
+                        this.runAsyncFn(async () => {
+                            const trackName = this.receiver.id;
+                            const drumTrackName = trackName+"Drum";
+                            for(const k of drum.contents){
+                                const noteToPlay = drumToMidiNote(k);
+                                const receivedNote = parseNote(noteToPlay);
+                                await playNoteCommonBeats.apply(this, [drumTrackName,1, receivedNote,undefined,true]);
+                            }
+
+                        }, { args: [], timeout: I32_MAX });
+                        
+                    }),
+                    new Extension.Block('hitDrumsOverBeats','command','music','hit drum sequence %mult%drums over beat(s) %n ',['Kick', 1], function(drum, beats){
+                        setupProcess(this);
+                        if (drum.contents.length === 0) throw Error(`cannot be empty`);
+                        if(drum.contents.some(value => drumToMidiNote(value) === "")) throw Error(`cannot play non-drum value`);
+                        if(beats == '') throw Error(`beats cannot be empty`);
+                        this.runAsyncFn(async () => {
+                            const trackName = this.receiver.id;
+                            const drumTrackName = trackName+"Drum";
+                            for(const k of drum.contents){
+                                const noteToPlay = drumToMidiNote(k);
+                                const receivedNote = parseNote(noteToPlay);
+                                await playNoteCommonBeats.apply(this, [drumTrackName,(beats/drum.contents.length), receivedNote,undefined,true]);
+                            }
+
+                        }, { args: [], timeout: I32_MAX });
+                        
                     }),
                     new Extension.Block('hitDrumsWBeats','command','music','hit drum %drums for beat(s) %n',['Kick',1],function(drum,beats){
                         setupProcess(this);
@@ -1233,8 +1272,8 @@
                     new Extension.LabelPart('drums', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
-                        identityMap(['Kick', 'Kick #2','Snare','Open Snare', 'Side Stick Snare','Closed Hi-Hat','Clap','Tom','Floor Tom','Rack Tom', 'Crash','Crash #2','Ride','Ride #2', 'Tamborine']),
-                        false, // readonly (no arbitrary text)
+                        identityMap(['Kick', 'Kick #2','Snare','Open Snare', 'Side Stick Snare','Closed Hi-Hat','Clap','Tom','Floor Tom','Rack Tom', 'Crash','Crash #2','Ride','Ride #2', 'Tamborine','Rest']),
+                        true, // readonly (no arbitrary text)
                     )),
                 ];
             }
