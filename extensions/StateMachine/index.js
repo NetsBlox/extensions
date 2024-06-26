@@ -31,7 +31,7 @@
 
         getBlocks() {
             return [
-                new Extension.Block('smTransition', 'command', 'StateMachine', 'transition %var to %s', [], function (machine, state) {
+                new Extension.Block('smTransition', 'command', 'StateMachine', 'transition %var to state %s', [], function (machine, state) {
                     this.doSetVar(machine, state);
                     this.doStop();
                 }).terminal().for(SpriteMorph, StageMorph),
