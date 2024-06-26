@@ -481,15 +481,13 @@
                     // new Extension.Palette.Block('playNoteBeatsWithAmp'),
                     // new Extension.Palette.Block('restBeats'),
                     '-',
+                    new Extension.Palette.Block('hitDrums'),
+                    new Extension.Palette.Block('hitDrumsOverDuration'),
+                    '-',
                     new Extension.Palette.Block('playAudioClip'),
                     new Extension.Palette.Block('playAudioClipForDuration'),
                     new Extension.Palette.Block('playSampleForDuration'),
                     new Extension.Palette.Block('stopClips'),
-                    '-',
-                    new Extension.Palette.Block('hitDrums'),
-                    new Extension.Palette.Block('hitDrumsOverBeats'),
-                    new Extension.Palette.Block('hitDrumsWBeats'),
-                    new Extension.Palette.Block('hitDrumsWVol'),
                     '-',
                     new Extension.Palette.Block('durationToBeats'),
                     new Extension.Palette.Block('soundMetaData'),
@@ -525,7 +523,7 @@
             }
 
             getBlocks() {
-                async function playNoteCommon(trackName,duration, notes, mod = undefined) {
+                async function playNoteCommon(trackName,duration, notes, mod = undefined, isDrumNote=false) {
                     if (duration === '') throw Error('Please select a valid note duration');
                     duration = availableNoteDurations[duration];
                     if (!duration) throw Error('unknown note duration');
@@ -536,7 +534,7 @@
 
                     setupProcess(this);
                     await instrumentPrefetch; // wait for all instruments to be loaded
-                    const t = await playChord(trackName, notes, this.musicInfo.t, duration, mod);
+                    const t = await playChord(trackName, notes, this.musicInfo.t, duration, mod, isDrumNote);
                     this.musicInfo.t += t;
                     await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                 }
@@ -715,7 +713,7 @@
                         }, { args: [], timeout: I32_MAX });
                         
                     }),
-                    new Extension.Block('hitDrumsOverBeats','command','music','hit drum sequence %mult%drums over beat(s) %n ',['Kick', 1], function(drum, beats){
+                    new Extension.Block('hitDrumsOverDuration','command','music','hit drum sequence %mult%drums over %noteDurations ',['Kick', 'Quarter'], function(drum, beats){
                         setupProcess(this);
                         if (drum.contents.length === 0) throw Error(`cannot be empty`);
                         if(drum.contents.some(value => drumToMidiNote(value) === "")) throw Error(`cannot play non-drum value`);
@@ -728,32 +726,6 @@
                                 const receivedNote = parseNote(noteToPlay);
                                 await playNoteCommonBeats.apply(this, [drumTrackName,(beats/drum.contents.length), receivedNote,undefined,true]);
                             }
-
-                        }, { args: [], timeout: I32_MAX });
-                        
-                    }),
-                    new Extension.Block('hitDrumsWBeats','command','music','hit drum %drums for beat(s) %n',['Kick',1],function(drum,beats){
-                        setupProcess(this);
-                        this.runAsyncFn(async () => {
-                            const trackName = this.receiver.id;
-                            const drumTrackName = trackName+"Drum";
-                            const noteToPlay = drumToMidiNote(drum);
-                            const receivedNote = parseNote(noteToPlay);
-                            await playNoteCommonBeats.apply(this, [drumTrackName,beats, receivedNote,undefined,true]); // internally does await instrumentPrefetch
-
-                        }, { args: [], timeout: I32_MAX });
-                        
-                    }),
-                    new Extension.Block('hitDrumsWVol','command','music','hit drum %drums for beat(s) %n with vol %n %',['Kick',1, 100],function(drum, beats, volume){
-                        var amp = parseFloat(volume) / 100;
-                        if (!amp || amp < 0 || amp > 1) throw Error('amp must be a number between 0 and 100');
-                        setupProcess(this);
-                        this.runAsyncFn(async () => {
-                            const trackName = this.receiver.id;
-                            const drumTrackName = trackName+"Drum";
-                            const noteToPlay = drumToMidiNote(drum);
-                            const receivedNote = parseNote(noteToPlay);
-                            await playNoteCommonBeats.apply(this, [drumTrackName,beats, receivedNote, audioAPI.getModification(availableNoteModifiers['Velocity'], amp),true]); // internally does await instrumentPrefetch
 
                         }, { args: [], timeout: I32_MAX });
                         
