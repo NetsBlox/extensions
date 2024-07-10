@@ -475,7 +475,7 @@
                     new Extension.Palette.Block('makeTempo'),
                     '-',
                     new Extension.Palette.Block('playNote'),
-                    new Extension.Palette.Block('playNoteWithAmp'),
+                    // new Extension.Palette.Block('playNoteWithAmp'),
                     new Extension.Palette.Block('rest'),
                     // new Extension.Palette.Block('playNoteBeats'),
                     // new Extension.Palette.Block('playNoteBeatsWithAmp'),
@@ -489,7 +489,7 @@
                     new Extension.Palette.Block('playSampleForDuration'),
                     new Extension.Palette.Block('stopClips'),
                     '-',
-                    new Extension.Palette.Block('durationToBeats'),
+                    // new Extension.Palette.Block('durationToBeats'),
                     new Extension.Palette.Block('soundMetaData'),
                     '-',
                     new Extension.Palette.Block('noteModifierC'),
@@ -700,6 +700,14 @@
                     new Extension.Block('hitDrums','command','music','hit drum sequence %mult%drums',['Kick'], function(drum){
                         setupProcess(this);
                         if (drum.contents.length === 0) throw Error(`cannot be empty`);
+                        var drumContents = drum.contents;
+                        if(drum instanceof List){
+                            var values = drum.contents.flat(2);
+                            // drumContents = values[0].contents;
+                            console.log("I AM A LIST");
+                            console.log(drum.contents);
+                            console.log(values);
+                        }
                         if(drum.contents.some(value => drumToMidiNote(value) === "")) throw Error(`cannot play non-drum value`);
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
@@ -863,7 +871,7 @@
                         }
                         return playDuration;
                     }),
-                    new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Piano'], function (mod, raw_block) {
+                    new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Volume'], function (mod, raw_block) {
                         if (raw_block === null)
                             throw Error('must contain a block');
 
@@ -906,7 +914,7 @@
 
                         return snapify(pattern.map((x) => rootNote + x));
                     }),
-                    new Extension.Block('setTrackEffect', 'command', 'music', 'track %supportedEffects effect to %n %', ['Volume', '50'], function (effectName, level) {
+                    new Extension.Block('setTrackEffect', 'command', 'music', 'track %supportedEffects effect to %n %', ['Delay', '50'], function (effectName, level) {
                         if (parseInt(level) > 100) level = 100
                         if (parseInt(level) < 0) level = 0
                         if (effectName == 'Echo' && level > 95) level = 95
@@ -1056,7 +1064,7 @@
                     new Extension.LabelPart('supportedEffects', () => new InputSlotMorph(
                         null, //text
                         false, //numeric
-                        identityMap(['Volume', 'Delay', 'Reverb', 'Echo', 'Panning']),
+                        identityMap(['Delay', 'Reverb', 'Echo', 'Panning']),
                         true, //readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('noteNames', () => new InputSlotMorph(
@@ -1238,7 +1246,7 @@
                     new Extension.LabelPart('noteModifiers', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
-                        identityMap(['Piano', 'Forte', 'Accent', 'Staccato', 'Tie', 'Triplet', 'TurnUpper', 'TurnLower']),
+                        identityMap(['Volume','Piano', 'Forte', 'Accent', 'Staccato', 'Tie', 'Triplet', 'TurnUpper', 'TurnLower']),
                         true, // readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('drums', () => new InputSlotMorph(
