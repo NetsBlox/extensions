@@ -62,7 +62,7 @@
 					'StateMachine',
 					'transition %var to state %s',
 					[],
-					function (v0, v1) { return StateMachine_fns.transition(this, v0, v1); }
+					function (v0, v1) { return window.StateMachine_fns.transition(this, v0, v1); }
 				).terminal().for(SpriteMorph, StageMorph),
 				new Extension.Block(
 					'smInState',
@@ -70,7 +70,7 @@
 					'StateMachine',
 					'%var in state %s ?',
 					[],
-					function (v0, v1) { return StateMachine_fns.check_state(this, v0, v1); }
+					function (v0, v1) { return window.StateMachine_fns.check_state(this, v0, v1); }
 				).for(SpriteMorph, StageMorph),
 
             ];
