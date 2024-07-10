@@ -1,47 +1,103 @@
-(function () {
+/**
+ * The following file is generated through a build script. Manually modifying it is an at-your-own-risk activity and your changes will likely be overridden.
+ */
+
+(function () {    
     class StateMachine extends Extension {
         constructor(ide) {
             super('StateMachine');
         }
 
+        onOpenRole() {
+
+        }
+
+        getSettings() {
+            return [
+
+            ];
+        }
+
         getMenu() {
             return {
-                'visualize': function () {
-                    alert('Coming Soon!');
-                },
+				'Visualize': window.StateMachine_fns.visualize,
+
             };
         }
 
         getCategories() {
             return [
-                new Extension.Category('StateMachine', new Color(150, 150, 150)),
+				new Extension.Category('StateMachine', new Color(150, 150, 150)),
+
             ];
         }
 
         getPalette() {
-            const blocks = [
-                new Extension.Palette.Block('smTransition'),
-                new Extension.Palette.Block('smInState'),
-            ];
             return [
-                new Extension.PaletteCategory('StateMachine', blocks, SpriteMorph),
-                new Extension.PaletteCategory('StateMachine', blocks, StageMorph),
+				new Extension.PaletteCategory(
+					'StateMachine',
+					[
+						new Extension.Palette.Block('smTransition'),
+						new Extension.Palette.Block('smInState'),
+					],
+					SpriteMorph
+				),
+				new Extension.PaletteCategory(
+					'StateMachine',
+					[
+						new Extension.Palette.Block('smTransition'),
+						new Extension.Palette.Block('smInState'),
+					],
+					StageMorph
+				),
+
             ];
         }
 
         getBlocks() {
             return [
-                new Extension.Block('smTransition', 'command', 'StateMachine', 'transition %var to state %s', [], function (machine, state) {
-                    this.doSetVar(machine, state);
-                    this.doStop();
-                }).terminal().for(SpriteMorph, StageMorph),
-                new Extension.Block('smInState', 'predicate', 'StateMachine', '%var in state %s ?', [], function (machine, state) {
-                    const variables = this.context.variables;
-                    return variables.getVar(machine) == state;
-                }).for(SpriteMorph, StageMorph),
+				new Extension.Block(
+					'smTransition',
+					'command',
+					'StateMachine',
+					'transition %var to state %s',
+					[],
+					function (v0, v1) { return StateMachine_fns.transition(this, v0, v1); }
+				).terminal().for(SpriteMorph, StageMorph),
+				new Extension.Block(
+					'smInState',
+					'predicate',
+					'StateMachine',
+					'%var in state %s ?',
+					[],
+					function (v0, v1) { return StateMachine_fns.check_state(this, v0, v1); }
+				).for(SpriteMorph, StageMorph),
+
             ];
         }
+
+        getLabelParts() {
+            return [
+
+            ];
+        }
+
     }
 
     NetsBloxExtensions.register(StateMachine);
+    let path = document.currentScript.src;
+    path = path.substring(0, path.lastIndexOf("/"));
+    var s = document.createElement('script');
+    s.type = "module";
+    s.innerHTML = `import init, {check_state, transition, visualize} from '${path}/pkg/stateflow_trans_ext.js';
+    
+    
+        await init();
+
+        window.StateMachine_fns = {};
+		window.StateMachine_fns.check_state = check_state;
+		window.StateMachine_fns.transition = transition;
+		window.StateMachine_fns.visualize = visualize;
+        `;
+    document.body.appendChild(s);
 })();
