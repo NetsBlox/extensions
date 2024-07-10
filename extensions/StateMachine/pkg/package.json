@@ -5,13 +5,11 @@
   "files": [
     "stateflow_trans_ext_bg.wasm",
     "stateflow_trans_ext.js",
-    "stateflow_trans_ext_bg.js",
     "stateflow_trans_ext.d.ts"
   ],
   "main": "stateflow_trans_ext.js",
   "types": "stateflow_trans_ext.d.ts",
   "sideEffects": [
-    "./stateflow_trans_ext.js",
     "./snippets/*"
   ]
 }
