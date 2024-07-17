@@ -285,6 +285,102 @@
             return base + delta;
         }
 
+        function durationToBeats(duration, durationSpecial = ''){
+            let playDuration = availableNoteDurations[duration];
+            switch (playDuration) {
+                case 1:
+                    //Whole
+                    playDuration = 4;
+                    break;
+                case 2:
+                    //Half
+                    playDuration = 2;
+                    break;
+                case 4:
+                    //Quarter
+                    playDuration = 1;
+                    break;
+                case 8:
+                    //Eighth
+                    playDuration = 0.5;
+                    break;
+                case 16:
+                    //Sixteenth
+                    playDuration = 0.25;
+                    break;
+                case 32:
+                    //Thirty-Secondth
+                    playDuration = 0.125;
+                    break;
+                case 64:
+                    //Sixty-Fourth
+                    playDuration = 0.0625;
+                    break;
+            }
+            if (durationSpecial != '') {
+                playDuration = availableNoteDurations[durationSpecial + duration];
+                switch (playDuration) {
+                    case (2.0 / 3.0):
+                        //  "Dotted Whole"
+                        playDuration = 6;
+                        break;
+                    case (4.0 / 7.0):
+                        //  "Dotted Dotted Whole"
+                        playDuration = 7;
+                        break;
+                    case (4.0 / 3.0):
+                        // "Dotted Half"
+                        playDuration = 3;
+                        break;
+                    case (8.0 / 7.0):
+                        // "Dotted Dotted Half"
+                        playDuration = 3.5;
+                        break;
+                    case (8.0 / 3.0):
+                        //  "Dotted Quarter"
+                        playDuration = 1.5;
+                        break;
+                    case (16.0 / 7.0):
+                        //  "Dotted Dotted Quarter"
+                        playDuration = 1.75;
+                        break;
+                    case (16.0 / 3.0):
+                        //  "Dotted Eighth"
+                        playDuration = 0.75;
+                        break;
+                    case (32.0 / 7.0):
+                        //  "Dotted Dotted Eighth"
+                        playDuration = 0.875;
+                        break;
+                    case (32.0 / 3.0):
+                        // "Dotted Sixteenth"
+                        playDuration = 0.375;
+                        break;
+                    case (64.0 / 7.0):
+                        // "Dotted Dotted Sixteenth"
+                        playDuration = 0.4375;
+                        break;
+                    case (64.0 / 3.0):
+                        // "Dotted Thirty Secondth"
+                        playDuration = 0.1875;
+                        break;
+                    case (128.0 / 7.0):
+                        // "Dotted Dotted Thirty Secondth"
+                        playDuration = 0.21875;
+                        break;
+                    case (128.0 / 3.0):
+                        // "Dotted SixtyFourth"
+                        playDuration = 0.09375;
+                        break;
+                    case (256.0 / 7.0):
+                        // "Dotted Dotted SixtyFourth"
+                        playDuration = 0.109375;
+                        break;
+                }
+            }
+            return playDuration;
+        }
+
         async function setTrackEffect(trackName, effectName, level) {
             const effectType = availableEffects[effectName];
             if (!appliedEffects.includes(trackName + effectName)) {
@@ -540,6 +636,13 @@
                 }
                async function playNoteCommonBeats(trackName,beats, notes, mod = undefined, isDrumNote=false) {
                     if (beats === '') throw Error('Please select a valid beat duration');
+                    if(isDrumNote && notes.length > 1){
+                        var drumNotes = []
+                        for(const k of notes){
+                            drumNotes.push(drumToMidiNote(k));
+                        }
+                        notes = drumNotes;
+                    }
                     notes = parseNote(notes);
                     if (!Array.isArray(notes)) notes = [notes];
                     if (notes.length === 0) return;
@@ -649,7 +752,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play sound %snd for duration %n', [null, 0], function (clip, duration) {
+                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play sound %snd for duration %n secs', [null, 0], function (clip, duration) {
                         setupProcess(this);
                         if (clip === '') throw Error(`sound cannot be empty`);
                         if (this.receiver.sounds.contents.length) {
@@ -700,41 +803,44 @@
                     new Extension.Block('hitDrums','command','music','hit drum sequence %mult%drums',['Kick'], function(drum){
                         setupProcess(this);
                         if (drum.contents.length === 0) throw Error(`cannot be empty`);
-                        var drumContents = drum.contents;
-                        if(drum instanceof List){
-                            var values = drum.contents.flat(2);
-                            // drumContents = values[0].contents;
-                            console.log("I AM A LIST");
-                            console.log(drum.contents);
-                            console.log(values);
-                        }
-                        if(drum.contents.some(value => drumToMidiNote(value) === "")) throw Error(`cannot play non-drum value`);
+                        // if(drum.contents.some(value => drumToMidiNote(value) === "")) throw Error(`cannot play non-drum value`);
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
                             const drumTrackName = trackName+"Drum";
                             for(const k of drum.contents){
+                                if(k instanceof List){
+                                    await playNoteCommonBeats.apply(this, [drumTrackName,1, k.contents,undefined,true]);
+                                }
+                                else{
                                 const noteToPlay = drumToMidiNote(k);
                                 const receivedNote = parseNote(noteToPlay);
                                 await playNoteCommonBeats.apply(this, [drumTrackName,1, receivedNote,undefined,true]);
+                                }
                             }
 
                         }, { args: [], timeout: I32_MAX });
                         
                     }),
-                    new Extension.Block('hitDrumsOverDuration','command','music','hit drum sequence %mult%drums over %noteDurations ',['Kick', 'Quarter'], function(drum, beats){
+                    new Extension.Block('hitDrumsOverDuration','command','music','hit over %noteDurations drum sequence %mult%drums',['Quarter', ['Kick']], function(duration,drum){
                         setupProcess(this);
                         if (drum.contents.length === 0) throw Error(`cannot be empty`);
-                        if(drum.contents.some(value => drumToMidiNote(value) === "")) throw Error(`cannot play non-drum value`);
-                        if(beats == '') throw Error(`beats cannot be empty`);
+                        // if(drum.contents.some(value => drumToMidiNote(value) === "")) throw Error(`cannot play non-drum value`);
+                        if(duration == '') throw Error(`duration cannot be empty`);
+                        const durationInBeats = durationToBeats(duration);
+                        const numberOfNotes = drum.contents.length;
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
                             const drumTrackName = trackName+"Drum";
                             for(const k of drum.contents){
+                                if(k instanceof List){
+                                    await playNoteCommonBeats.apply(this, [drumTrackName,(durationInBeats/numberOfNotes), k.contents,undefined,true]);
+                                }
+                                else{
                                 const noteToPlay = drumToMidiNote(k);
                                 const receivedNote = parseNote(noteToPlay);
-                                await playNoteCommonBeats.apply(this, [drumTrackName,(beats/drum.contents.length), receivedNote,undefined,true]);
+                                await playNoteCommonBeats.apply(this, [drumTrackName,(durationInBeats/numberOfNotes), receivedNote,undefined,true]);
+                                }
                             }
-
                         }, { args: [], timeout: I32_MAX });
                         
                     }),
@@ -777,99 +883,7 @@
                     }),
                     new Extension.Block('durationToBeats', 'reporter', 'music', 'duration %noteDurations %noteDurationsSpecial to beats', ['Quarter', ''], function (duration, durationSpecial) {
                         if (duration == '') throw Error('duration cannot be empty');
-                        let playDuration = availableNoteDurations[duration];
-                        switch (playDuration) {
-                            case 1:
-                                //Whole
-                                playDuration = 4;
-                                break;
-                            case 2:
-                                //Half
-                                playDuration = 2;
-                                break;
-                            case 4:
-                                //Quarter
-                                playDuration = 1;
-                                break;
-                            case 8:
-                                //Eighth
-                                playDuration = 0.5;
-                                break;
-                            case 16:
-                                //Sixteenth
-                                playDuration = 0.25;
-                                break;
-                            case 32:
-                                //Thirty-Secondth
-                                playDuration = 0.125;
-                                break;
-                            case 64:
-                                //Sixty-Fourth
-                                playDuration = 0.0625;
-                                break;
-                        }
-                        if (durationSpecial != '') {
-                            playDuration = availableNoteDurations[durationSpecial + duration];
-                            switch (playDuration) {
-                                case (2.0 / 3.0):
-                                    //  "Dotted Whole"
-                                    playDuration = 6;
-                                    break;
-                                case (4.0 / 7.0):
-                                    //  "Dotted Dotted Whole"
-                                    playDuration = 7;
-                                    break;
-                                case (4.0 / 3.0):
-                                    // "Dotted Half"
-                                    playDuration = 3;
-                                    break;
-                                case (8.0 / 7.0):
-                                    // "Dotted Dotted Half"
-                                    playDuration = 3.5;
-                                    break;
-                                case (8.0 / 3.0):
-                                    //  "Dotted Quarter"
-                                    playDuration = 1.5;
-                                    break;
-                                case (16.0 / 7.0):
-                                    //  "Dotted Dotted Quarter"
-                                    playDuration = 1.75;
-                                    break;
-                                case (16.0 / 3.0):
-                                    //  "Dotted Eighth"
-                                    playDuration = 0.75;
-                                    break;
-                                case (32.0 / 7.0):
-                                    //  "Dotted Dotted Eighth"
-                                    playDuration = 0.875;
-                                    break;
-                                case (32.0 / 3.0):
-                                    // "Dotted Sixteenth"
-                                    playDuration = 0.375;
-                                    break;
-                                case (64.0 / 7.0):
-                                    // "Dotted Dotted Sixteenth"
-                                    playDuration = 0.4375;
-                                    break;
-                                case (64.0 / 3.0):
-                                    // "Dotted Thirty Secondth"
-                                    playDuration = 0.1875;
-                                    break;
-                                case (128.0 / 7.0):
-                                    // "Dotted Dotted Thirty Secondth"
-                                    playDuration = 0.21875;
-                                    break;
-                                case (128.0 / 3.0):
-                                    // "Dotted SixtyFourth"
-                                    playDuration = 0.09375;
-                                    break;
-                                case (256.0 / 7.0):
-                                    // "Dotted Dotted SixtyFourth"
-                                    playDuration = 0.109375;
-                                    break;
-                            }
-                        }
-                        return playDuration;
+                        return durationToBeats(duration,durationSpecial);
                     }),
                     new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Volume'], function (mod, raw_block) {
                         if (raw_block === null)
