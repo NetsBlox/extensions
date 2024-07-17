@@ -1,14 +1,14 @@
 {
-  "name": "stateflow-trans-ext",
+  "name": "netsblox-stateflow-ext",
   "type": "module",
   "version": "0.1.0",
   "files": [
-    "stateflow_trans_ext_bg.wasm",
-    "stateflow_trans_ext.js",
-    "stateflow_trans_ext.d.ts"
+    "netsblox_stateflow_ext_bg.wasm",
+    "netsblox_stateflow_ext.js",
+    "netsblox_stateflow_ext.d.ts"
   ],
-  "main": "stateflow_trans_ext.js",
-  "types": "stateflow_trans_ext.d.ts",
+  "main": "netsblox_stateflow_ext.js",
+  "types": "netsblox_stateflow_ext.d.ts",
   "sideEffects": [
     "./snippets/*"
   ]
