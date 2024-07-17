@@ -2,6 +2,9 @@
 /* eslint-disable */
 /**
 */
+export function setup(): void;
+/**
+*/
 export function visualize(): void;
 /**
 * @param {any} proc
@@ -21,12 +24,15 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
+  readonly setup: () => void;
   readonly visualize: () => void;
   readonly transition: (a: number, b: number, c: number) => void;
   readonly check_state: (a: number, b: number, c: number) => number;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+  readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __wbindgen_exn_store: (a: number) => void;
+  readonly __wbindgen_start: () => void;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;

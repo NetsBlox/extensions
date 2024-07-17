@@ -89,7 +89,7 @@
     path = path.substring(0, path.lastIndexOf("/"));
     var s = document.createElement('script');
     s.type = "module";
-    s.innerHTML = `import init, {check_state, transition, visualize} from '${path}/pkg/stateflow_trans_ext.js';
+    s.innerHTML = `import init, {check_state, transition, visualize} from '${path}/pkg/netsblox_stateflow_ext.js';
     
     
         await init();
