@@ -207,7 +207,17 @@ export function visualize() {
 * @param {any} state
 */
 export function transition(proc, machine, state) {
-    wasm.transition(addHeapObject(proc), addHeapObject(machine), addHeapObject(state));
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.transition(retptr, addHeapObject(proc), addHeapObject(machine), addHeapObject(state));
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        if (r1) {
+            throw takeObject(r0);
+        }
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
 }
 
 /**
@@ -217,8 +227,19 @@ export function transition(proc, machine, state) {
 * @returns {boolean}
 */
 export function check_state(proc, machine, state) {
-    const ret = wasm.check_state(addHeapObject(proc), addHeapObject(machine), addHeapObject(state));
-    return ret !== 0;
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.check_state(retptr, addHeapObject(proc), addHeapObject(machine), addHeapObject(state));
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        var r2 = getInt32Memory0()[retptr / 4 + 2];
+        if (r2) {
+            throw takeObject(r1);
+        }
+        return r0 !== 0;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
 }
 
 function handleError(f, args) {
@@ -296,8 +317,9 @@ function __wbg_get_imports() {
         getFloat64Memory0()[arg0 / 8 + 1] = isLikeNone(ret) ? 0 : ret;
         getInt32Memory0()[arg0 / 4 + 0] = !isLikeNone(ret);
     };
-    imports.wbg.__wbindgen_jsval_eq = function(arg0, arg1) {
-        const ret = getObject(arg0) === getObject(arg1);
+    imports.wbg.__wbindgen_boolean_get = function(arg0) {
+        const v = getObject(arg0);
+        const ret = typeof(v) === 'boolean' ? (v ? 1 : 0) : 2;
         return ret;
     };
     imports.wbg.__wbg_new_abda76e883ba8a5f = function() {
