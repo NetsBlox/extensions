@@ -885,7 +885,7 @@
                         if (duration == '') throw Error('duration cannot be empty');
                         return durationToBeats(duration,durationSpecial);
                     }),
-                    new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Volume'], function (mod, raw_block) {
+                    new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Accent'], function (mod, raw_block) {
                         if (raw_block === null)
                             throw Error('must contain a block');
 
@@ -936,15 +936,19 @@
                         this.runAsyncFn(async () => {
                             await instrumentPrefetch; // wait for all instruments to be loaded
                             const trackName = this.receiver.id;
+                            const drumTrackName = trackName+"Drum";
                             await setTrackEffect(trackName, effectName, parseInt(level) / 100);
+                            await setTrackEffect(drumTrackName, effectName, parseInt(level) / 100);
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('clearTrackEffects', 'command', 'music', 'clear track effects', [], function () {
                         this.runAsyncFn(async () => {
                             await instrumentPrefetch; // wait for all instruments to be loaded
                             const trackName = this.receiver.id;
+                            const drumTrackName = trackName+"Drum";
                             for (const effectName in availableEffects) {
                                 await audioAPI.removeTrackEffect(trackName, effectName);
+                                await audioAPI.removeTrackEffect(drumTrackName, effectName);
                             }
                             appliedEffects = [];
                         }, { args: [], timeout: I32_MAX });
@@ -976,17 +980,20 @@
                     }).for(SpriteMorph, StageMorph),
                     new Extension.Block('presetEffect', 'command', 'music', 'preset effects %fxPreset %onOff', ['', 'on'], function (effect, status) {
                         const trackName = this.receiver.id;
+                        const drumTrackName = trackName+"Drum";
                         if (effect != '') {
                             if (status == 'on') {
                                 this.runAsyncFn(async () => {
                                     await instrumentPrefetch; // wait for all instruments to be loaded
                                     await addFxPreset(trackName, effect);
+                                    await addFxPreset(drumTrackName, effect);
                                 });
                             } else {
                                 const effectName = EffectsPreset[effect][0];
                                 this.runAsyncFn(async () => {
                                     await instrumentPrefetch; // wait for all instruments to be loaded
                                     await audioAPI.removeTrackEffect(trackName, effectName);
+                                    await audioAPI.removeTrackEffect(drumTrackName, effectName);
                                 });
                             }
                         } else {
@@ -1078,7 +1085,7 @@
                     new Extension.LabelPart('supportedEffects', () => new InputSlotMorph(
                         null, //text
                         false, //numeric
-                        identityMap(['Delay', 'Reverb', 'Echo', 'Panning']),
+                        identityMap(['Volume','Delay', 'Reverb', 'Echo', 'Panning']),
                         true, //readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('noteNames', () => new InputSlotMorph(
@@ -1260,7 +1267,7 @@
                     new Extension.LabelPart('noteModifiers', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
-                        identityMap(['Volume','Piano', 'Forte', 'Accent', 'Staccato', 'Tie', 'Triplet', 'TurnUpper', 'TurnLower']),
+                        identityMap(['Piano', 'Forte', 'Accent', 'Staccato', 'Tie', 'Triplet', 'TurnUpper', 'TurnLower']),
                         true, // readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('drums', () => new InputSlotMorph(
