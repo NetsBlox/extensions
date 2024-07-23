@@ -588,6 +588,7 @@
                     // new Extension.Palette.Block('durationToBeats'),
                     new Extension.Palette.Block('soundMetaData'),
                     '-',
+                    // new Extension.Palette.Block('noteModifiers'),
                     new Extension.Palette.Block('noteModifierC'),
                     // new Extension.Palette.Block('playFrequency'),
                     // new Extension.Palette.Block('stopFrequency'),
@@ -885,24 +886,25 @@
                         if (duration == '') throw Error('duration cannot be empty');
                         return durationToBeats(duration,durationSpecial);
                     }),
-                    new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Accent'], function (mod, raw_block) {
-                        if (raw_block === null)
-                            throw Error('must contain a block');
-
-                        let block = parseBlock(raw_block);
-                        let notes = [];
-                        let beats = [];
-
-                        while (block != null) {
-                            notes.push(block.note);
-                            beats.push(block.beats);
-                            block = block.nextBlock;
+                    // new Extension.Block('noteModifiers', 'reporter', 'music', 'note %s modifiers %noteModifiers', ['C3','Piano'], function(note,mod){
+                    //     var modifiedNote = {
+                    //         noteName: note,
+                    //         modifier: availableNoteModifiers[mod]
+                    //     }
+                    //     console.log(modifiedNote);
+                    //     return modifiedNote;
+                    // }),
+                    new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Piano'], function (mod, raw_block) {
+                        if (this.mods === undefined)
+                            this.mods = [];
+                        if (!this.context.modFlag) {
+                            this.context.modFlag = true;
+                            this.mods.push(mod);
+                            this.pushContext(raw_block.blockSequence());
+                            this.pushContext();
+                        } else {
+                            this.mods.pop();
                         }
-
-                        playScaleBeats.apply(this, [beats, notes, audioAPI.
-                            getModification(availableNoteModifiers[mod], 1)]);
-
-                        return;
                     }),
                     // new Extension.Block('playFrequency', 'command', 'music', 'play frequency %n Hz', [440], function(freq){
                     //     console.log(this);
