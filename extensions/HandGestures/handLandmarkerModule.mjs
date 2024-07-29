@@ -1,4 +1,6 @@
-const localhost = window.location.search.includes("localhost");
+const localhost =
+  window.location.search.includes("localhost") ||
+  window.location.search.includes("127.0.0.1");
 const root = localhost
   ? "http://localhost:8000/"
   : "https://extensions.netsblox.org/";
@@ -80,9 +82,9 @@ class VisionHandler {
     data: null,
     updateTime: -1,
     options: {
-      minDetConf: .5,
-      minPresConf: .5,
-      minTracConf: .5,
+      minDetConf: 0.5,
+      minPresConf: 0.5,
+      minTracConf: 0.5,
       maxHands: 2,
     },
   };
@@ -126,7 +128,7 @@ class VisionHandler {
     this.frameTime = performance.now();
     if (
       VisionHandler.config.data !== null &&
-      ((this.frameTime - VisionHandler.config.updateTime) < 5)
+      this.frameTime - VisionHandler.config.updateTime < 5
     ) {
       this.resolve = null;
       return VisionHandler.config.data;
@@ -209,9 +211,9 @@ async function getCentralCoords(image) {
   const imageCoords = data.landmarks;
   for (const hands of imageCoords) {
     for (const coord of hands) {
-      coord.x = (coord.x * image.width) - (image.width / 2);
-      coord.y = 1 - ((coord.y * image.height) - (image.height / 2));
-      coord.z = (coord.z * image.width) - (image.width / 2);
+      coord.x = coord.x * image.width - image.width / 2;
+      coord.y = 1 - (coord.y * image.height - image.height / 2);
+      coord.z = coord.z * image.width - image.width / 2;
     }
   }
   return imageCoords;
@@ -226,9 +228,9 @@ async function getCentralCoord(image, landmark) {
   const coords = data.landmarks[0][index]; /* does hand 0 everytime */
 
   const centralCoords = {
-    x: (coords.x * image.width) - (image.width / 2),
-    y: 1 - (coords.y * image.height) - (image.height / 2),
-    z: (coords.z), //* image.width) - (image.width/2)
+    x: coords.x * image.width - image.width / 2,
+    y: 1 - coords.y * image.height - image.height / 2,
+    z: coords.z, //* image.width) - (image.width/2)
   };
 
   return centralCoords;

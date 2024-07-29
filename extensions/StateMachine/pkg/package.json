@@ -1,0 +1,15 @@
+{
+  "name": "netsblox-stateflow-ext",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "netsblox_stateflow_ext_bg.wasm",
+    "netsblox_stateflow_ext.js",
+    "netsblox_stateflow_ext.d.ts"
+  ],
+  "main": "netsblox_stateflow_ext.js",
+  "types": "netsblox_stateflow_ext.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
