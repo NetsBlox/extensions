@@ -501,7 +501,7 @@
         async function waitUntil(t) {
             await wait(t - audioAPI.getCurrentTime());
         }
-        
+
         // ----------------------------------------------------------------------
         class MusicApp extends Extension {
             constructor(ide) {
@@ -555,7 +555,6 @@
                     // new Extension.Palette.Block('playNoteBeatsWithAmp'),
                     // new Extension.Palette.Block('restBeats'),
                     '-',
-                    new Extension.Palette.Block('hitDrums'),
                     new Extension.Palette.Block('hitDrumsOverDuration'),
                     '-',
                     new Extension.Palette.Block('playAudioClip'),
@@ -775,27 +774,6 @@
                     new Extension.Block('stopClips', 'command', 'music', 'stop all clips', [], function () {
                         stopAudio();
                         this.doStopAll();
-                    }),
-                    new Extension.Block('hitDrums','command','music','hit drum sequence %mult%drums',['Kick'], function(drum){
-                        setupProcess(this);
-                        if (drum.contents.length === 0) throw Error(`cannot be empty`);
-                        // if(drum.contents.some(value => drumToMidiNote(value) === "")) throw Error(`cannot play non-drum value`);
-                        this.runAsyncFn(async () => {
-                            const trackName = this.receiver.id;
-                            const drumTrackName = trackName+"Drum";
-                            for(const k of drum.contents){
-                                if(k instanceof List){
-                                    await playNoteCommonBeats.apply(this, [drumTrackName,1, k.contents,undefined,true]);
-                                }
-                                else{
-                                const noteToPlay = drumToMidiNote(k);
-                                const receivedNote = parseNote(noteToPlay);
-                                await playNoteCommonBeats.apply(this, [drumTrackName,1, receivedNote,undefined,true]);
-                                }
-                            }
-
-                        }, { args: [], timeout: I32_MAX });
-                        
                     }),
                     new Extension.Block('hitDrumsOverDuration','command','music','hit over %noteDurations drum sequence %mult%drums',['Quarter', ['Kick']], function(duration,drum){
                         setupProcess(this);
@@ -1243,7 +1221,7 @@
                     new Extension.LabelPart('noteModifiers', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
-                        identityMap(['Piano', 'Forte', 'Accent', 'Staccato', 'Tie', 'Triplet', 'TurnUpper', 'TurnLower']),
+                        identityMap(['Piano', 'Forte', 'Accent', 'Staccato', 'Triplet', 'TurnUpper', 'TurnLower']),
                         true, // readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('drums', () => new InputSlotMorph(
