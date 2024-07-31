@@ -208,7 +208,6 @@
 
         async function playClip(trackName, clip, startTime, duration = undefined) {
             const buffer = clip.audioBuffer || base64toArrayBuffer(clip.audio.src);
-            console.log(buffer);
             return audioAPI.playClip(trackName, buffer, startTime, duration);
         }
 
@@ -236,7 +235,6 @@
         * @param {List} notes - notes to be played
         * @param {Number} startTime - API time at which to start playback
         * @param {Number} beats - duration of note to be played
-        * @param {Number} velocity - volume of note to be played
         * @returns An Array Buffer
         */
         async function playChordBeats(trackName, notes, startTime, beats, mod = undefined, isDrumNote = false) {
@@ -503,27 +501,7 @@
         async function waitUntil(t) {
             await wait(t - audioAPI.getCurrentTime());
         }
-
-
-        function parseBlock(block) {
-            if (block === null)
-                return null;
-            if (block.selector !== 'playNoteBeats' && block.selector !== 'playNoteBeatsWithAmp')
-                return null;
-            return {
-                note: block.cachedInputs[0].lastValue,
-                beats: block.cachedInputs[1].lastValue,
-                nextBlock: parseBlock(getNextBlock(block))
-            };
-        }
-
-        function getNextBlock(block) {
-            if (block.children[block.children.length - 1] instanceof CommandBlockMorph)
-                return block.children[block.children.length - 1];
-            return null;
-        }
-
-
+        
         // ----------------------------------------------------------------------
         class MusicApp extends Extension {
             constructor(ide) {
@@ -733,14 +711,11 @@
 
                         }
                         if(clip instanceof List){
-                            console.log(clip);
                             const newClip = {}
                             const listArray = clip.contents;
                             const bytes = new Float32Array(listArray);
                             const buffer = ((new AudioContext()).createBuffer(1, listArray.length, 44100));
-                            console.log(bytes);
                             buffer.copyToChannel(bytes,0);
-                            console.log(buffer);
                             newClip.audioBuffer = buffer;
                             clip = newClip;
                         }
@@ -847,7 +822,6 @@
                     }),
                     new Extension.Block('soundMetaData', 'reporter', 'music', '%soundMetaData of sound %snd', ['duration', ''], function (option, sound) {
                         if (sound === '') throw Error(`sound cannot be empty`);
-                        if (option === '') throw Error(`option value cannot be empty`);
                         if (this.receiver.sounds.contents.length) {
                             for (let i = 0; i < this.receiver.sounds.contents.length; i++) {
                                 if (sound === this.receiver.sounds.contents[i].name) {
@@ -864,20 +838,20 @@
                                 return sound.name;
                             case 'duration':
                                 return this.runAsyncFn(async () => {
-                                const duration = await getAudioObjectDuration(sound.audio);
-                                return duration;
-                            }, { args: [], timeout: I32_MAX });
+                                    const duration = await getAudioObjectDuration(sound.audio);
+                                    return duration;
+                                }, { args: [], timeout: I32_MAX });
                             case 'beats':
                                 return this.runAsyncFn(async () => {
-                                var currentBPM = getBPM();
-                                var clipDuration = await getAudioObjectDuration(sound.audio);
-                                return secondsToBeats(clipDuration,currentBPM);
-                            }, { args: [], timeout: I32_MAX });
+                                    var currentBPM = getBPM();
+                                    var clipDuration = await getAudioObjectDuration(sound.audio);
+                                    return secondsToBeats(clipDuration,currentBPM);
+                                }, { args: [], timeout: I32_MAX });
                             case 'samples':
                                 return this.runAsyncFn(async () => {
-                                var buffer = base64toArrayBuffer(sound.audio.src);
-                                var timeSeries = await arrayBufferToTimeSeries(buffer);
-                                return snapify(timeSeries);
+                                    var buffer = base64toArrayBuffer(sound.audio.src);
+                                    var timeSeries = await arrayBufferToTimeSeries(buffer);
+                                    return snapify(timeSeries);
                                }, { args: [], timeout: I32_MAX });
                         }
                         return "OK";
