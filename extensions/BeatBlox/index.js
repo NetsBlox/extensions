@@ -454,26 +454,18 @@
 
                     setupProcess(this);
                     this.runAsyncFn(async () => {
+                        if (this.mods === undefined || this.mods.length == 0)
+                            mods = undefined;
+                        else {
+                            mods = [];
+                            for (let i = 0; i < this.mods.length; i++)
+                                mods.push(audioAPI.getModification(availableNoteModifiers[this.mods[i]]));
+                        }
                         await instrumentPrefetch; // wait for all instruments to be loaded
                         const trackName = this.receiver.id;
                         const t = await playChordBeats(trackName, notes, this.musicInfo.t, beats, mod);
                         this.musicInfo.t += t;
                         await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                    }, { args: [], timeout: I32_MAX });
-                }
-                function playScaleBeats(beats, notes, mod) {
-                    notes = parseNote(notes);
-                    if (!Array.isArray(notes)) notes = [notes];
-                    if (notes.length === 0) return;
-                    setupProcess(this);
-                    this.runAsyncFn(async () => {
-                        await instrumentPrefetch; // wait for all instruments to be loaded
-                        const trackName =  this.receiver.id;
-                        for (let i = 0; i < notes.length; i++) {
-                            const t = await playChordBeats(trackName, [notes[i]], this.musicInfo.t, [beats[i]], mod);
-                            this.musicInfo.t += t;
-                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                        }
                     }, { args: [], timeout: I32_MAX });
                 }
                 return [
@@ -700,23 +692,16 @@
                         return playDuration;
                     }),
                     new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Piano'], function (mod, raw_block) {
-                        if (raw_block === null)
-                            throw Error('must contain a block');
-
-                        let block = parseBlock(raw_block);
-                        let notes = [];
-                        let beats = [];
-
-                        while (block != null) {
-                            notes.push(block.note);
-                            beats.push(block.beats);
-                            block = block.nextBlock;
+                        if (this.mods === undefined)
+                            this.mods = [];
+                        if (!this.context.modFlag) {
+                            this.context.modFlag = true;
+                            this.mods.push(mod);
+                            this.pushContext(raw_block.blockSequence());
+                            this.pushContext();
+                        } else {
+                            this.mods.pop();
                         }
-
-                        playScaleBeats.apply(this, [beats, notes, audioAPI.
-                        getModification(availableNoteModifiers[mod], 1)]);
-                        
-                        return;
                     }),
                     new Extension.Block('playFrequency', 'command', 'music', 'play frequency %n Hz', [440], function(freq){
                         this.receiver.playFreq(freq)
