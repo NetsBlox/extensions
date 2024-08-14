@@ -24,7 +24,6 @@
         const devRoot = 'http://localhost:9090/extensions/BeatBlox/instruments/';
         const releaseRoot = 'https://extensions.netsblox.org/extensions/BeatBlox/instruments/';
         const instrumentLocation = window.origin.includes('localhost') ? devRoot : releaseRoot;
-        // const instrumentLocation = devRoot;
 
 
         let midiDevices = [];
