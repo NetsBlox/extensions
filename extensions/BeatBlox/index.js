@@ -26,6 +26,7 @@
         const instrumentLocation = window.origin.includes('localhost') ? devRoot : releaseRoot;
 
 
+
         let midiDevices = [];
         let audioDevices = [];
         let midiInstruments = [];
@@ -142,41 +143,41 @@
         }
 
         function drumToMidiNote(drumName){
-            switch (drumName){
-                case 'Kick':
+            switch (drumName.toLowerCase()) {
+                case 'kick':
                     return "A1";
-                case 'Kick #2':
+                case 'kick #2':
                     return "C2";
-                case 'Snare':
+                case 'snare':
                     return "G1";
-                case 'Side Stick Snare':
+                case 'side stick snare':
                     return "C#2";
-                case 'Open Snare':
+                case 'open snare':
                     return "E2";
-                case 'Closed Hi-Hat':
+                case 'closed hi-hat':
                     return "F#2";
-                case 'Clap':
+                case 'clap':
                     return "Eb2";
-                case 'Tom':
+                case 'tom':
                     return "C3";
-                case 'Rack Tom':
+                case 'rack tom':
                     return "B2";
-                case 'Floor Tom':
+                case 'floor tom':
                     return "F2";
-                case 'Crash':
+                case 'crash':
                     return "Bb2";
-                case 'Crash #2':
+                case 'crash #2':
                     return "E3";
-                case 'Ride':
+                case 'ride':
                     return "Eb3";
-                case 'Ride #2':
+                case 'ride #2':
                     return "F3";
-                case 'Tamborine':
+                case 'tamborine':
                     return "F#3";
-                case 'Rest':
+                case 'rest':
                     return "Rest";
                 default:
-                    return "";
+                    return drumName;
             }
         }
 
@@ -550,11 +551,7 @@
                     new Extension.Palette.Block('makeTempo'),
                     '-',
                     new Extension.Palette.Block('playNote'),
-                    // new Extension.Palette.Block('playNoteWithAmp'),
                     new Extension.Palette.Block('rest'),
-                    // new Extension.Palette.Block('playNoteBeats'),
-                    // new Extension.Palette.Block('playNoteBeatsWithAmp'),
-                    // new Extension.Palette.Block('restBeats'),
                     '-',
                     new Extension.Palette.Block('hitDrumsOverDuration'),
                     '-',
@@ -563,13 +560,9 @@
                     new Extension.Palette.Block('playSampleForDuration'),
                     new Extension.Palette.Block('stopClips'),
                     '-',
-                    // new Extension.Palette.Block('durationToBeats'),
                     new Extension.Palette.Block('soundMetaData'),
                     '-',
-                    // new Extension.Palette.Block('noteModifiers'),
                     new Extension.Palette.Block('noteModifierC'),
-                    // new Extension.Palette.Block('playFrequency'),
-                    // new Extension.Palette.Block('stopFrequency'),
                     '-',
                     new Extension.Palette.Block('presetEffect'),
                     new Extension.Palette.Block('setTrackEffect'),
@@ -643,21 +636,6 @@
                     await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                    
                 }
-                // function playScaleBeats(beats, notes, mod) {
-                //     notes = parseNote(notes);
-                //     if (!Array.isArray(notes)) notes = [notes];
-                //     if (notes.length === 0) return;
-                //     setupProcess(this);
-                //     this.runAsyncFn(async () => {
-                //         await instrumentPrefetch; // wait for all instruments to be loaded
-                //         const trackName = this.receiver.id;
-                //         for (let i = 0; i < notes.length; i++) {
-                //             const t = await playChordBeats(trackName, [notes[i]], this.musicInfo.t, [beats[i]], mod);
-                //             this.musicInfo.t += t;
-                //             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                //         }
-                //     }, { args: [], timeout: I32_MAX });
-                // }
                 return [
                     new Extension.Block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', ['Synthesizer'], function (instrument) {
                         if (instrument === '') throw Error(`instrument cannot be empty`);
@@ -678,41 +656,12 @@
                         }
                         
                     }),
-                    // new Extension.Block('playNoteWithAmp', 'command', 'music', 'play note(s) %s  %noteDurations %noteDurationsSpecial with vol %n %', ['C3','Quarter', '', '100'], function ( notes,duration, durationSpecial,amp) {
-                    //     var amp = parseFloat(amp) / 100;
-                    //     if (!amp || amp < 0 || amp > 1) throw Error('amp must be a number between 0 and 100');
-                    //     this.runAsyncFn(async () => {
-                    //         const trackName = this.receiver.id;
-                    //         playNoteCommon.apply(this, [trackName,durationSpecial + duration, notes, audioAPI.getModification(availableNoteModifiers['Velocity'],amp)]); // internally does await instrumentPrefetch
-                    //     }, { args: [], timeout: I32_MAX });
-                    // }),
                     new Extension.Block('rest', 'command', 'music', 'rest %noteDurations %noteDurationsSpecial', ['Quarter',''], function (duration, durationSpecial) {
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
                             playNoteCommon.apply(this, [trackName,durationSpecial + duration, 'Rest']); // internally does await instrumentPrefetch
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    // new Extension.Block('playNoteBeats', 'command', 'music', 'play note(s) %s for beat(s) %n', ['C3', 1], function (notes, beats) {
-                    //     this.runAsyncFn(async () => {
-                    //     const trackName = this.receiver.id;
-                    //     await playNoteCommonBeats.apply(this, [trackName, beats, notes]); // internally does await instrumentPrefetch
-                    // }, { args: [], timeout: I32_MAX });
-
-                    // }),
-                    // new Extension.Block('playNoteBeatsWithAmp', 'command', 'music', 'play note(s) %s for beat(s) %n with vol %n %', ['C3', 1, 100], function (notes, beats, velocity) {
-                    //     var amp = parseFloat(velocity) / 100;
-                    //     if (!amp || amp < 0 || amp > 1) throw Error('amp must be a number between 0 and 100');
-                    //     this.runAsyncFn(async () => {
-                    //     const trackName = this.receiver.id;
-                    //     await playNoteCommonBeats.apply(this, [trackName,beats, notes, audioAPI.getModification(availableNoteModifiers['Velocity'], amp)]); // internally does await instrumentPrefetch
-                    // }, { args: [], timeout: I32_MAX });
-                    // }),
-                    // new Extension.Block('restBeats', 'command', 'music', 'rest for beat(s) %n', [1], function (beats) {
-                    //     this.runAsyncFn(async () => {
-                    //     const trackName = this.receiver.id;
-                    //     await playNoteCommonBeats.apply(this, [trackName,beats, 'Rest']); // internally does await instrumentPrefetch
-                    // }, { args: [], timeout: I32_MAX });
-                    // }),
                     new Extension.Block('playAudioClip', 'command', 'music', 'play sound %snd', [null], function (clip) {
                         setupProcess(this);
                         if (clip === '') throw Error(`sound cannot be empty`);
@@ -793,8 +742,7 @@
                     }),
                     new Extension.Block('hitDrumsOverDuration','command','music','hit over %noteDurations drum sequence %mult%drums',['Quarter', ['Kick']], function(duration,drum){
                         setupProcess(this);
-                        if (drum.contents.length === 0) throw Error(`cannot be empty`);
-                        // if(drum.contents.some(value => drumToMidiNote(value) === "")) throw Error(`cannot play non-drum value`);
+                        if (drum.contents.length === 0) throw Error(`drum cannot be empty`);
                         if(duration == '') throw Error(`duration cannot be empty`);
                         const durationInBeats = durationToBeats(duration);
                         const numberOfNotes = drum.contents.length;
@@ -854,14 +802,6 @@
                         if (duration == '') throw Error('duration cannot be empty');
                         return durationToBeats(duration,durationSpecial);
                     }),
-                    // new Extension.Block('noteModifiers', 'reporter', 'music', 'note %s modifiers %noteModifiers', ['C3','Piano'], function(note,mod){
-                    //     var modifiedNote = {
-                    //         noteName: note,
-                    //         modifier: availableNoteModifiers[mod]
-                    //     }
-                    //     console.log(modifiedNote);
-                    //     return modifiedNote;
-                    // }),
                     new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Piano'], function (mod, raw_block) {
                         if (this.mods === undefined)
                             this.mods = [];
@@ -874,13 +814,6 @@
                             this.mods.pop();
                         }
                     }),
-                    // new Extension.Block('playFrequency', 'command', 'music', 'play frequency %n Hz', [440], function(freq){
-                    //     console.log(this);
-                    //     this.doPlayNote(freq,1);
-                    // }),
-                    // new Extension.Block('stopFrequency', 'command', 'music', 'stop frequency', [], function(){
-                    //     this.receiver.stopFreq()
-                    // }),
                     new Extension.Block('noteNew', 'reporter', 'music', 'note %note', [60], parseNote),
                     new Extension.Block('scales', 'reporter', 'music', 'scale %midiNote type %scaleTypes', ['C3', 'Major'], function (rootNote, type) {
                         rootNote = parseNote(rootNote);
