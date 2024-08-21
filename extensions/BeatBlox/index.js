@@ -684,17 +684,14 @@
                     }),
                     new Extension.Block('soundMetaData', 'reporter', 'music', '%soundMetaData of sound %snd', ['duration', ''], function (option, sound) {
                         if (sound === '') throw Error(`sound cannot be empty`);
-                        if (this.receiver.sounds.contents.length) {
-                            for (let i = 0; i < this.receiver.sounds.contents.length; i++) {
-                                if (sound === this.receiver.sounds.contents[i].name) {
-                                    sound = this.receiver.sounds.contents[i];
-                                    break;
-                                }
+                        
+                        for (const element of this.receiver.sounds.contents) {
+                            if (sound === element.name) {
+                                sound = element;
+                                break;
                             }
                         }
-                        else {
-                            sound = clipToSnap(sound);
-                        }
+                       
                         switch (option) {
                             case 'name':
                                 return sound.name;
