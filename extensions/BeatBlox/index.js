@@ -285,26 +285,21 @@
             return base + delta;
         }
 
-        function durationToBeats(duration, durationSpecial = '') {
+        function durationToBeats(duration, durationSpecial = ''){
             let playDuration = availableNoteDurations[duration];
-            
-            if (!durationSpecial) {
-                // For regular durations
+
+            // Regular durations
+            if(!durationSpecial){
                 return 4 / playDuration;
-            } else {
-                // For special durations
-                playDuration = availableNoteDurations[durationSpecial + duration];
-                
-                if (playDuration === 2/3 || playDuration === 4/7) {
-                    // Dotted Whole and Dotted Dotted Whole
-                    return 4 / (1 - (1 / playDuration));
-                } else {
-                    // All other special durations
-                    return 4 / (playDuration * 2);
-                }
+            } 
+            else{
+                //Special durations
+                if(durationSpecial === 'Dotted') return (4 / playDuration) * 1.5;
+                if(durationSpecial === 'DottedDotted') return (4 / playDuration) *1.75;
             }
         }
-
+        
+ 
 
         async function setTrackEffect(trackName, effectName, level) {
             const effectType = availableEffects[effectName];
@@ -483,7 +478,7 @@
                     new Extension.Palette.Block('playAudioClip'),
                     new Extension.Palette.Block('playAudioClipForDuration'),
                     new Extension.Palette.Block('playSampleForDuration'),
-                    new Extension.Palette.Block('stopClips'),
+                    new Extension.Palette.Block('stopAudio'),
                     '-',
                     new Extension.Palette.Block('soundMetaData'),
                     '-',
@@ -661,7 +656,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('stopClips', 'command', 'music', 'stop all clips', [], function () {
+                    new Extension.Block('stopAudio', 'command', 'music', 'stop all audio', [], function () {
                         stopAudio();
                         this.doStopAll();
                     }),
@@ -722,10 +717,6 @@
                                }, { args: [], timeout: I32_MAX });
                         }
                         return "OK";
-                    }),
-                    new Extension.Block('durationToBeats', 'reporter', 'music', 'duration %noteDurations %noteDurationsSpecial to beats', ['Quarter', ''], function (duration, durationSpecial) {
-                        if (duration == '') throw Error('duration cannot be empty');
-                        return durationToBeats(duration,durationSpecial);
                     }),
                     new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Piano'], function (mod, raw_block) {
                         if (this.mods === undefined)
