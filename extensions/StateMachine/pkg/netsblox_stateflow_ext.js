@@ -202,6 +202,12 @@ export function visualize() {
 }
 
 /**
+*/
+export function copy_stateflow_code() {
+    wasm.copy_stateflow_code();
+}
+
+/**
 * @param {any} proc
 * @param {any} machine
 * @param {any} state
