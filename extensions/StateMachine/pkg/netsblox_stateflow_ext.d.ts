@@ -7,6 +7,9 @@ export function setup(): void;
 */
 export function visualize(): void;
 /**
+*/
+export function copy_stateflow_code(): void;
+/**
 * @param {any} proc
 * @param {any} machine
 * @param {any} state
@@ -26,6 +29,7 @@ export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly setup: () => void;
   readonly visualize: () => void;
+  readonly copy_stateflow_code: () => void;
   readonly transition: (a: number, b: number, c: number, d: number) => void;
   readonly check_state: (a: number, b: number, c: number, d: number) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;

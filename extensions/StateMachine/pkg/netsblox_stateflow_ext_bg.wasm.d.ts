@@ -3,6 +3,7 @@
 export const memory: WebAssembly.Memory;
 export function setup(): void;
 export function visualize(): void;
+export function copy_stateflow_code(): void;
 export function transition(a: number, b: number, c: number, d: number): void;
 export function check_state(a: number, b: number, c: number, d: number): void;
 export function __wbindgen_malloc(a: number, b: number): number;
