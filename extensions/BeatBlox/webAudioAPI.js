@@ -5162,12 +5162,13 @@ function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
     * @param {number} startTime - Global API time at which to start playing the note
     * @param {number} duration - {@link module:Constants.Duration Duration} for which to continue playing the note
     * @param {ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the note
-    * @param {boolean} [fromChord=false] - Whether this note is being played from the {@link playChord playChord()} function
+    * @param {boolean} isDrumNote - Whether this note is a drum note (i.e., not affected by key or duration)
+    * @param {boolean} [fromChord] - Whether this note is being played from the {@link playChord playChord()} function
     * @returns {number} Duration (in seconds) of the note being played
     * @memberof Track
     * @instance
     */
-   function playNote(note, startTime, duration, modifications, fromChord=false) {
+   function playNote(note, startTime, duration, modifications, isDrumNote, fromChord=false) {
       if (!instrument)
          throw new WebAudioTrackError(`The current track (${name}) cannot play a note without first setting up an instrument`);
 
@@ -5251,10 +5252,11 @@ function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
             const noteSource = instrument.getNote(note.note);
             const noteVolume = new GainNode(audioContext, { gain: note.velocity });
             noteSource.connect(noteVolume).connect(audioSink);
-            noteVolume.gain.setTargetAtTime(0.0, startTime + note.startTimeOffset + durationSeconds, 0.03);
+            if (!isDrumNote)
+               noteVolume.gain.setTargetAtTime(0.0, startTime + note.startTimeOffset + durationSeconds, 0.03);
             noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
             audioSources.push(noteSource);
-            noteSource.start(startTime + note.startTimeOffset, 0, durationSeconds + 0.200);
+            noteSource.start(startTime + note.startTimeOffset, 0, isDrumNote ? undefined : (durationSeconds + 0.200));
          }
          if (newTies.includes(note.note))
             waitingTies.push(newTies.splice(newTies.indexOf(note.note), 1)[0]);
@@ -5280,17 +5282,18 @@ function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
     * @param {Array<Array>}} chord - Array of `[note, duration, mods]` corresponding to the chord to be played
     * @param {number} startTime - Global API time at which to start playing the chord
     * @param {ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the chord
+    * @param {boolean} areDrumNotes - Whether this chord contains only drum notes (i.e., not affected by key or duration)
     * @returns {number} Duration (in seconds) of the chord being played
     * @memberof Track
     * @instance
     */
-   function playChord(chord, startTime, modifications) {
+   function playChord(chord, startTime, modifications, areDrumNotes) {
       chordIndex = (chordIndex + 1) % 2;
       let minDuration = Number.POSITIVE_INFINITY;
       for (const chordItem of chord) {
          const [note, duration, noteMods] = chordItem;
          const mods = modifications.concat(noteMods ? (Array.isArray(noteMods) ? noteMods : [noteMods]) : []);
-         minDuration = Math.min(minDuration, playNote(Number(note), startTime, Number(duration), mods, true));
+         minDuration = Math.min(minDuration, playNote(Number(note), startTime, Number(duration), mods, areDrumNotes, true));
       }
       chordDynamicUpdated = false;
       return minDuration;
@@ -5313,11 +5316,12 @@ function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
     * @param {Array<Array|Array<Array>>} sequence - Array of `[note, duration, mods]` and/or chords corresponding to the sequence to be played
     * @param {number} startTime - Global API time at which to start playing the sequence
     * @param {ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the sequence
+    * @param {boolean} areDrumNotes - Whether this sequence contains only drum notes (i.e., not affected by key or duration)
     * @returns {number} Duration (in seconds) of the sequence being played
     * @memberof Track
     * @instance
     */
-   function playSequence(sequence, startTime, modifications) {
+   function playSequence(sequence, startTime, modifications, areDrumNotes) {
       let noteIndex = 0;
       const originalStartTime = startTime;
       for (const sequenceItem of sequence) {
@@ -5325,11 +5329,11 @@ function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
          for (const modification of modifications)
             modification.value = inferModificationParametersFromSequence(modification.type, sequence, noteIndex, modification.value);
          if (Array.isArray(sequenceItem[0]))
-            startTime += playChord(sequenceItem, startTime, modifications);
+            startTime += playChord(sequenceItem, startTime, modifications, areDrumNotes);
          else {
             const [note, duration, noteMods] = sequenceItem;
             const mods = (noteMods ? (Array.isArray(noteMods) ? noteMods : [noteMods]) : []).concat(modifications);
-            startTime += playNote(Number(note), startTime, Number(duration), mods);
+            startTime += playNote(Number(note), startTime, Number(duration), mods, areDrumNotes);
          }
       }
       return startTime - originalStartTime;
@@ -5341,7 +5345,7 @@ function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
     * If the `duration` parameter is not specified or is set to `null`, the audio clip will
     * play to completion.
     * 
-    * @param {ArrayBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
+    * @param {ArrayBuffer|AudioBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
     * @param {number} startTime - Global API time at which to start playing the clip
     * @param {number} [duration] -  Number of seconds for which to continue playing the clip
     * @returns {Promise<number>} Duration (in seconds) of the clip being played
@@ -5353,8 +5357,9 @@ function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
     */
    async function playClip(audioClip, startTime, duration) {
       let expectedDuration = null;
-      if (audioClip instanceof ArrayBuffer || audioClip instanceof Blob || audioClip.clipType == 'audio') {
-         const audioBuffer = await audioContext.decodeAudioData(audioClip instanceof ArrayBuffer ? audioClip : (audioClip instanceof Blob ? await audioClip.arrayBuffer() : await audioClip.getRawData().arrayBuffer()));
+      if (audioClip instanceof ArrayBuffer || audioClip instanceof AudioBuffer || audioClip instanceof Blob || audioClip.clipType == 'audio') {
+         const audioBuffer = (audioClip instanceof AudioBuffer) ? audioClip :
+            (await audioContext.decodeAudioData(audioClip instanceof ArrayBuffer ? audioClip : (audioClip instanceof Blob ? await audioClip.arrayBuffer() : await audioClip.getRawData().arrayBuffer())));
          const clipSource = new AudioBufferSourceNode(audioContext, { buffer: audioBuffer });
          audioSources.push(clipSource);
          if (duration) {
@@ -5382,13 +5387,13 @@ function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
                   unmatchedNotes[note] = [ Number(noteTime), getMidiVelocity(midiData) ];
                else if ((command === MidiCommand.NoteOff) && (note in unmatchedNotes)) {
                   const noteDuration = ((!duration || (Number(noteTime) <= duration)) ? Number(noteTime) : duration) - unmatchedNotes[note][0];
-                  playNote(note, startTime + unmatchedNotes[note][0], -noteDuration, [{ type: ModificationType.Velocity, value: unmatchedNotes[note][1] }]);
+                  playNote(note, startTime + unmatchedNotes[note][0], -noteDuration, [{ type: ModificationType.Velocity, value: unmatchedNotes[note][1] }], false);
                   delete unmatchedNotes[note];
                }
             }
          for (const [note, noteData] of Object.entries(unmatchedNotes)) {
             const noteDuration = audioClip.getDuration() - noteData[0];
-            playNote(note, startTime + noteData[0], -noteDuration, [{ type: ModificationType.Velocity, value: noteData[1] }]);
+            playNote(note, startTime + noteData[0], -noteDuration, [{ type: ModificationType.Velocity, value: noteData[1] }], false);
          }
          expectedDuration = (duration && (duration < audioClip.getDuration())) ? duration : audioClip.getDuration();
       }
@@ -6757,6 +6762,18 @@ class WebAudioAPI {
    }
 
    /**
+    * Decodes an {@link ArrayBuffer} containing an audio clip into an {@link AudioBuffer} object.
+    * 
+    * @param {ArrayBuffer} audioClip - Array buffer containing the audio clip to decode
+    * @returns {AudioBuffer} Decoded audio buffer for the specified audio clip
+    */
+   async decodeAudioClip(audioClip) {
+      if (!(audioClip instanceof ArrayBuffer))
+         throw new WebAudioValueError('The specified audio clip must be of type ArrayBuffer for decoding');
+      return await this.#audioContext.decodeAudioData(audioClip);
+   }
+
+   /**
     * Analyzes the current realtime audio output according to the specified `analysisType`.
     * 
     * The `trackName` parameter is optional, and if left blank, will cause the analysis to be
@@ -7298,20 +7315,21 @@ class WebAudioAPI {
     * @param {number} startTime - Global API time at which to start playing the note
     * @param {number} duration - {@link module:Constants.Duration Duration} for which to continue playing the note
     * @param {ModificationDetails|ModificationDetails[]} [modifications] - Optional individual or list of modifications to apply to the note
+    * @param {boolean} [isDrumNote] - Optional flag indicating whether this note is a drum note (i.e., not affected by key or duration)
     * @returns {Promise<number>} Duration (in seconds) of the note being played
     * @see {@link module:Constants.Note Note}
     * @see {@link module:Constants.Duration Duration}
     * @see {@link module:Constants.ModificationType ModificationType}
     * @see {@link WebAudioAPI#getModification getModification()}
     */
-   async playNote(trackName, note, startTime, duration, modifications=[]) {
+   async playNote(trackName, note, startTime, duration, modifications=[], isDrumNote=false) {
       const mods = (modifications ? (Array.isArray(modifications) ? modifications : [modifications]) : []);
       if (!(trackName in this.#tracks))
          throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
       else
          checkModifications(mods, true);
       const noteInKey = note ? (Number(note) + this.#key.offsets[Number(note) % 12]) : 0;
-      return await this.#tracks[trackName].playNote(noteInKey, Number(startTime), Number(duration), mods);
+      return await this.#tracks[trackName].playNote(noteInKey, Number(startTime), Number(duration), mods, isDrumNote);
    }
 
    /**
@@ -7332,13 +7350,14 @@ class WebAudioAPI {
     * @param {Array<Array>} chord - Array of `[note, duration, mods]` corresponding to the chord to be played
     * @param {number} startTime - Global API time at which to start playing the chord
     * @param {ModificationDetails[]} [modifications] - Optional individual or list of modifications to apply to the chord
+    * @param {boolean} [areDrumNotes] - Optional flag indicating whether this chord contains only drum notes (i.e., not affected by key or duration)
     * @returns {Promise<number>} Duration (in seconds) of the chord being played
     * @see {@link module:Constants.Note Note}
     * @see {@link module:Constants.Duration Duration}
     * @see {@link module:Constants.ModificationType ModificationType}
     * @see {@link WebAudioAPI#getModification getModification()}
     */
-   async playChord(trackName, chord, startTime, modifications=[]) {
+   async playChord(trackName, chord, startTime, modifications=[], areDrumNotes=false) {
       const mods = (modifications ? (Array.isArray(modifications) ? modifications : [modifications]) : []);
       if (!(trackName in this.#tracks))
          throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
@@ -7348,7 +7367,7 @@ class WebAudioAPI {
          checkModifications(mods, true);
       for (const chordItem of chord)
          chordItem[0] = chordItem[0] ? (Number(chordItem[0]) + this.#key.offsets[Number(chordItem[0]) % 12]) : 0;
-      return await this.#tracks[trackName].playChord(chord, Number(startTime), mods);
+      return await this.#tracks[trackName].playChord(chord, Number(startTime), mods, areDrumNotes);
    }
 
    /**
@@ -7370,13 +7389,14 @@ class WebAudioAPI {
     * @param {Array<Array|Array<Array>>} sequence - Array of `[note, duration, mods]` and/or chords corresponding to the sequence to be played
     * @param {number} startTime - Global API time at which to start playing the sequence
     * @param {ModificationDetails[]} [modifications] - Optional individual or list of modifications to apply to the sequence
+    * @param {boolean} [areDrumNotes] - Optional flag indicating whether this sequence contains only drum notes (i.e., not affected by key or duration)
     * @returns {Promise<number>} Duration (in seconds) of the sequence being played
     * @see {@link module:Constants.Note Note}
     * @see {@link module:Constants.Duration Duration}
     * @see {@link module:Constants.ModificationType ModificationType}
     * @see {@link WebAudioAPI#getModification getModification()}
     */
-   async playSequence(trackName, sequence, startTime, modifications=[]) {
+   async playSequence(trackName, sequence, startTime, modifications=[], areDrumNotes=false) {
       const mods = (modifications ? (Array.isArray(modifications) ? modifications : [modifications]) : []);
       if (!(trackName in this.#tracks))
          throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
@@ -7392,21 +7412,22 @@ class WebAudioAPI {
          else
             sequenceItem[0] = sequenceItem[0] ? (Number(sequenceItem[0]) + this.#key.offsets[Number(sequenceItem[0]) % 12]) : 0;
       }
-      return await this.#tracks[trackName].playSequence(sequence, Number(startTime), mods);
+      return await this.#tracks[trackName].playSequence(sequence, Number(startTime), mods, areDrumNotes);
    }
 
    /**
     * Schedules an audio clip to be played on a specific track for some duration of time.
     * 
     * The format of the audio clip in the `audioClip` parameter may be a data buffer containing
-    * raw audio-encoded data (such as from a WAV file), a blob containing audio-encoded data, or
-    * a {@link MidiClip} or {@link AudioClip} that was recorded using this library.
+    * raw audio-encoded data (such as from a WAV file), a blob containing audio-encoded data, an
+    * already-decoded audio buffer, or a {@link MidiClip} or {@link AudioClip} that was recorded
+    * using this library.
     * 
     * If the `duration` parameter is not specified or is set to `null`, the audio clip will
     * play to completion.
     * 
     * @param {string} trackName - Name of the track on which to play the clip
-    * @param {ArrayBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
+    * @param {ArrayBuffer|AudioBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
     * @param {number} startTime - Global API time at which to start playing the clip
     * @param {number} [duration] - Number of seconds for which to continue playing the clip
     * @returns {Promise<number>} Duration (in seconds) of the clip being played
@@ -7417,8 +7438,8 @@ class WebAudioAPI {
    async playClip(trackName, audioClip, startTime, duration) {
       if (!(trackName in this.#tracks))
          throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
-      if (!(audioClip instanceof ArrayBuffer || audioClip instanceof Blob || (audioClip instanceof Object && Object.prototype.hasOwnProperty.call(audioClip, 'clipType'))))
-         throw new WebAudioTrackError('The audio clip is not a known type (ArrayBuffer, Blob, MidiClip, AudioClip) and cannot be played');
+      if (!(audioClip instanceof ArrayBuffer || audioClip instanceof AudioBuffer || audioClip instanceof Blob || (audioClip instanceof Object && Object.prototype.hasOwnProperty.call(audioClip, 'clipType'))))
+         throw new WebAudioTrackError('The audio clip is not a known type (ArrayBuffer, AudioBuffer, Blob, MidiClip, AudioClip) and cannot be played');
       return await this.#tracks[trackName].playClip(audioClip, Number(startTime), duration ? Number(duration) : undefined);
    }
 
