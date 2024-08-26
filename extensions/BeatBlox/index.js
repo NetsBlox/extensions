@@ -481,6 +481,7 @@
                     new Extension.Palette.Block('stopAudio'),
                     '-',
                     new Extension.Palette.Block('soundMetaData'),
+                    new Extension.Palette.Block('convertToSound'),
                     '-',
                     new Extension.Palette.Block('noteModifierC'),
                     '-',
@@ -714,6 +715,16 @@
                                }, { args: [], timeout: I32_MAX });
                         }
                         return "OK";
+                    }),
+                    new Extension.Block('convertToSound', 'reporter', 'music', 'convert to sound %c', [], function (blocks) {
+                        if (this.recordFlag === undefined) {
+                            this.pushContext(blocks.blockSequence());
+                            this.pushContext();
+                            this.recordFlag = true;
+                        } else {
+                            this.recordFlag = undefined;
+                            return 2;
+                        }
                     }),
                     new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Piano'], function (mod, raw_block) {
                         if (this.mods === undefined)
