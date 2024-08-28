@@ -687,7 +687,7 @@
                         stopAudio();
                         this.doStopAll();
                     }),
-                    new Extension.Block('hitDrumsOverDuration','command','music','hit over %noteDurations drum sequence %mult%drums',['Quarter', ['Kick']], function(duration,drum){
+                    new Extension.Block('hitDrumsOverDuration','command','music','for %noteDurations drum sequence %mult%drums',['Quarter', ['Kick']], function(duration,drum){
                         setupProcess(this);
                         if (drum.contents.length === 0) throw Error(`drum cannot be empty`);
                         if(duration == '') throw Error(`duration cannot be empty`);
