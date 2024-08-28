@@ -7,6 +7,7 @@
     script.async = false;
     script.onload = () => {
         let lastRecordedClip = null;
+        let lastConvertBlockClip = null;
         let currentDeviceType = null;
         let appliedEffects = [];
         const audioAPI = new window.WebAudioAPI();
@@ -481,7 +482,7 @@
                     new Extension.Palette.Block('stopAudio'),
                     '-',
                     new Extension.Palette.Block('soundMetaData'),
-                    new Extension.Palette.Block('convertToSound'),
+                    new Extension.Palette.Block('convertToClip'),
                     '-',
                     new Extension.Palette.Block('noteModifierC'),
                     '-',
@@ -716,14 +717,19 @@
                         }
                         return "OK";
                     }),
-                    new Extension.Block('convertToSound', 'reporter', 'music', 'convert to sound %c', [], function (blocks) {
+                    new Extension.Block('convertToClip', 'reporter', 'music', 'convert to clip %c', [], function (blocks) {
                         if (this.recordFlag === undefined) {
+                            this.recordFlag = true;
+                            lastConvertBlockClip = audioAPI.recordOutput()
                             this.pushContext(blocks.blockSequence());
                             this.pushContext();
-                            this.recordFlag = true;
                         } else {
-                            this.recordFlag = undefined;
-                            return 2;
+                            return this.runAsyncFn(async () => {
+                                await lastConvertBlockClip.finalize();
+                                let temp = await clipToSnap(lastConvertBlockClip);
+                                temp.audioBuffer = await lastConvertBlockClip.getEncodedData(availableEncoders['WAV']);
+                                return temp;
+                            }, { args: [], timeout: I32_MAX });
                         }
                     }),
                     new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Piano'], function (mod, raw_block) {
