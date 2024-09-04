@@ -223,7 +223,6 @@
         */
         async function playChord(trackName, notes, startTime, noteDuration, mod = undefined) {
             if (notes.length === 0) return 0;
-
             let ret = Infinity;
             for (const note of notes) {
                 ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, noteDuration, mod));
@@ -556,6 +555,24 @@
                     await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                    
                 }
+                async function playClipForDuration(trackName,clip, duration){
+                    const clipDuration = await getAudioObjectDuration(clip.audio);
+                    if(duration > clipDuration) {
+                        let remainingDuration = duration;
+                        while (remainingDuration > 0){
+                            const playingDuration = Math.min(remainingDuration, clipDuration);
+                            const t = await playClip(trackName, clip, this.musicInfo.t, playingDuration);
+                            this.musicInfo.t += t;
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                            remainingDuration -= playingDuration;
+                        } 
+                    }
+                    else{
+                        const t = await playClip(trackName, clip, this.musicInfo.t, duration);
+                        this.musicInfo.t += t;
+                        await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                    }
+                }
                 return [
                     new Extension.Block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', ['Synthesizer'], function (instrument) {
                         if (instrument === '') throw Error(`instrument cannot be empty`);
@@ -566,8 +583,12 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('playNote', 'command', 'music', 'play note(s) %s %noteDurations %noteDurationsSpecial ', [ 'C3','Quarter',''], function (notes,duration, durationSpecial) {
-                        if(typeof notes === 'object'){
+                        if (notes instanceof List){
+                            playNoteCommon.apply(this, [durationSpecial + duration, notes]); 
+                        }
+                        else if(typeof notes === 'object'){
                             var noteName = notes.noteName;
+                            console.log(notes);
                             var modifier = notes.modifier;
                             playNoteCommon.apply(this, [durationSpecial + duration, noteName, audioAPI.getModification(modifier,1)]);
                         }
@@ -582,7 +603,7 @@
                             playNoteCommon.apply(this, [trackName,durationSpecial + duration, 'Rest']); // internally does await instrumentPrefetch
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playAudioClip', 'command', 'music', 'play sound %snd', [null], function (clip) {
+                    new Extension.Block('playAudioClip', 'command', 'music', 'play clip %snd', [null], function (clip) {
                         setupProcess(this);
                         if (clip === '') throw Error(`sound cannot be empty`);
                         if (this.receiver.sounds.contents.length) {
@@ -612,9 +633,10 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play sound %snd for duration %n secs', [null, 0], function (clip, duration) {
+                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play clip %snd for duration %n secs', [null, 0], function (clip, duration) {
                         setupProcess(this);
                         if (clip === '') throw Error(`sound cannot be empty`);
+                        if (duration <= 0) throw Error(`duration must be greater than 0`);
                         if (this.receiver.sounds.contents.length) {
                             for (let i = 0; i < this.receiver.sounds.contents.length; i++) {
                                 if (clip === this.receiver.sounds.contents[i].name) {
@@ -627,12 +649,11 @@
                         this.runAsyncFn(async () => {
                             await instrumentPrefetch; // wait for all instruments to be loaded
                             const trackName = this.receiver.id;
-                            const t = await playClip(trackName, clip, this.musicInfo.t, duration);
-                            this.musicInfo.t += t;
-                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                            await playClipForDuration.apply(this,[trackName,clip,duration]);
+           
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play sound %snd for duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration, durationSpecial) {
+                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play clip %snd for duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration, durationSpecial) {
                         setupProcess(this);
                         let playDuration = availableNoteDurations[duration];
                         if (durationSpecial != '') {
@@ -650,17 +671,16 @@
                         this.runAsyncFn(async () => {
                             await instrumentPrefetch; // wait for all instruments to be loaded
                             const trackName = this.receiver.id;
-                            const clipDuration = audioAPI.convertNoteDurationToSeconds(playDuration);
-                            const t = await playClip(trackName, clip, this.musicInfo.t, clipDuration);  
-                            this.musicInfo.t += t;
-                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                            const durationInSecs = audioAPI.convertNoteDurationToSeconds(playDuration);
+                            await playClipForDuration.apply(this,[trackName,clip,durationInSecs]);
+        
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('stopAudio', 'command', 'music', 'stop all audio', [], function () {
                         stopAudio();
                         this.doStopAll();
                     }),
-                    new Extension.Block('hitDrumsOverDuration','command','music','hit over %noteDurations drum sequence %mult%drums',['Quarter', ['Kick']], function(duration,drum){
+                    new Extension.Block('hitDrumsOverDuration','command','music','for %noteDurations drum sequence %mult%drums',['Quarter', ['Kick']], function(duration,drum){
                         setupProcess(this);
                         if (drum.contents.length === 0) throw Error(`drum cannot be empty`);
                         if(duration == '') throw Error(`duration cannot be empty`);
