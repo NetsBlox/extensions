@@ -223,7 +223,6 @@
         */
         async function playChord(trackName, notes, startTime, noteDuration, mod = undefined) {
             if (notes.length === 0) return 0;
-
             let ret = Infinity;
             for (const note of notes) {
                 ret = Math.min(ret, await audioAPI.playNote(trackName, note, startTime, noteDuration, mod));
@@ -584,8 +583,12 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('playNote', 'command', 'music', 'play note(s) %s %noteDurations %noteDurationsSpecial ', [ 'C3','Quarter',''], function (notes,duration, durationSpecial) {
-                        if(typeof notes === 'object'){
+                        if (notes instanceof List){
+                            playNoteCommon.apply(this, [durationSpecial + duration, notes]); 
+                        }
+                        else if(typeof notes === 'object'){
                             var noteName = notes.noteName;
+                            console.log(notes);
                             var modifier = notes.modifier;
                             playNoteCommon.apply(this, [durationSpecial + duration, noteName, audioAPI.getModification(modifier,1)]);
                         }
