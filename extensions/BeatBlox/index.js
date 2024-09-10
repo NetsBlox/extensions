@@ -261,6 +261,7 @@
             const letter = note[0];
             let octave = null;
             let delta = 0;
+            let natural = false;
             for (let i = 1; i < note.length; ++i) {
                 let v = note[i];
                 if (v === '+' || v === '-' || (v >= '0' && v <= '9')) {
@@ -273,15 +274,22 @@
                     delta += 1;
                 } else if (v === 'b' || v === '♭') {
                     delta -= 1;
+                } else if (v === 'n') {
+                    natural = true;
                 } else {
                     throw Error(`expected a note, got '${note}' (unknown character '${v}')`);
                 }
             }
             if (octave == null) throw Error(`expected a note, got '${note}' (missing octave number)`);
+            if (natural && delta != 0) throw Error(`naturals cannot be sharp/flat, got '${note}'`);
 
             const base = availableNotes[`${letter}${octave}`.toUpperCase()];
             if (base === undefined) throw Error(`expected a note, got '${note}'`);
-            return base + delta;
+
+            const off = base + delta;
+            if (off <= 0 || off >= 128) throw Error(`Note outside of valid range, got ${note}`);
+
+            return natural ? -off : off;
         }
 
         function durationToBeats(duration, durationSpecial = ''){
@@ -510,23 +518,24 @@
             }
 
             getBlocks() {
-                async function playNoteCommon(duration, notes, mods = undefined, isDrumNote=false) {
-                    if (duration === '') throw Error('Please select a valid note duration');
-                    duration = availableNoteDurations[duration];
-                    if (!duration) throw Error('unknown note duration');
-
-                    notes = parseNote(notes);
-                    if (!Array.isArray(notes)) notes = [notes];
-                    if (notes.length === 0) return;
-
+                function playNoteCommon(duration, notes, mods = undefined, isDrumNote=false) {
                     setupProcess(this);
                     this.runAsyncFn(async () => {
+                        if (duration === '') throw Error('Please select a valid note duration');
+                        duration = availableNoteDurations[duration];
+                        if (!duration) throw Error('unknown note duration');
+
+                        notes = parseNote(notes);
+                        if (!Array.isArray(notes)) notes = [notes];
+                        if (notes.length === 0) return;
+
                         if (this.mods === undefined || this.mods.length == 0)
                             mods = undefined;
                         else {
                             mods = [];
-                            for (let i = 0; i < this.mods.length; i++)
+                            for (let i = 0; i < this.mods.length; i++) {
                                 mods.push(audioAPI.getModification(availableNoteModifiers[this.mods[i]]));
+                            }
                         }
                         await instrumentPrefetch; // wait for all instruments to be loaded
                         const trackName = this.receiver.id;
@@ -553,7 +562,6 @@
                     const t = await playChordBeats(trackName, notes, this.musicInfo.t, beats, mod, isDrumNote);
                     this.musicInfo.t += t;
                     await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                   
                 }
                 async function playClipForDuration(trackName,clip, duration){
                     const clipDuration = await getAudioObjectDuration(clip.audio);
@@ -582,26 +590,19 @@
                             await audioAPI.updateInstrument(trackName, instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playNote', 'command', 'music', 'play note(s) %s %noteDurations %noteDurationsSpecial ', [ 'C3','Quarter',''], function (notes,duration, durationSpecial) {
-                        if (notes instanceof List){
-                            playNoteCommon.apply(this, [durationSpecial + duration, notes]); 
-                        }
-                        else if(typeof notes === 'object'){
+                    new Extension.Block('playNote', 'command', 'music', 'play note(s) %s %noteDurations %noteDurationsSpecial ', ['C3', 'Quarter', ''], function (notes,duration, durationSpecial) {
+                        if (notes instanceof List) {
+                            playNoteCommon.apply(this, [durationSpecial + duration, notes]);
+                        } else if(typeof notes === 'object') {
                             var noteName = notes.noteName;
-                            console.log(notes);
                             var modifier = notes.modifier;
-                            playNoteCommon.apply(this, [durationSpecial + duration, noteName, audioAPI.getModification(modifier,1)]);
+                            playNoteCommon.apply(this, [durationSpecial + duration, noteName, audioAPI.getModification(modifier, 1)]);
+                        } else {
+                            playNoteCommon.apply(this, [durationSpecial + duration, notes]);
                         }
-                        else{
-                            playNoteCommon.apply(this, [durationSpecial + duration, notes]); 
-                        }
-                        
                     }),
                     new Extension.Block('rest', 'command', 'music', 'rest %noteDurations %noteDurationsSpecial', ['Quarter',''], function (duration, durationSpecial) {
-                        this.runAsyncFn(async () => {
-                            const trackName = this.receiver.id;
-                            playNoteCommon.apply(this, [trackName,durationSpecial + duration, 'Rest']); // internally does await instrumentPrefetch
-                        }, { args: [], timeout: I32_MAX });
+                        playNoteCommon.apply(this, [durationSpecial + duration, 'Rest']);
                     }),
                     new Extension.Block('playAudioClip', 'command', 'music', 'play clip %snd', [null], function (clip) {
                         setupProcess(this);
@@ -613,7 +614,6 @@
                                     break;
                                 }
                             }
-
                         }
                         if(clip instanceof List){
                             const newClip = {}
@@ -796,7 +796,7 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('setKeySignature', 'command', 'music', 'set key signature %keySignatures', ['DMajor'], function (key) {
-                        if (!availableKeySignatures[key]) throw Error(`unknown key signature: '${key}'`);
+                        if (availableKeySignatures[key] === undefined) throw Error(`unknown key signature: '${key}'`);
                         const currentKeySignature = audioAPI.getKeySignature();
                         if (currentKeySignature != key) {
                             audioAPI.updateKeySignature(availableKeySignatures[key]);
