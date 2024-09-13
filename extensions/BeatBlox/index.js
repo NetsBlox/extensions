@@ -391,8 +391,9 @@
                 for (const sprite of this.ide.sprites.contents) {
                     setupTrack(sprite.id);
                 }
-
                 setupTrack(this.ide.stage.id);
+
+                audio.updateTempo(4, this.ide.stage.tempo);
             }
 
             onNewSprite(sprite) {
@@ -722,11 +723,9 @@
                             appliedEffects = [];
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('makeTempo', 'command', 'music', 'set tempo %n bpm', [120], function (tempo) {
-                        this.runAsyncFn(async () => {
-                            await instrumentPrefetch; // wait for all instruments to be loaded
-                            audio.updateTempo(4, tempo, 4, 4);
-                        }, { args: [], timeout: I32_MAX });
+                    new Extension.Block('makeTempo', 'command', 'music', 'set tempo %n bpm', [60], function (tempo) {
+                        audio.updateTempo(4, tempo, 4, 4);
+                        world.children[0].stage.tempo = tempo;
                     }),
                     new Extension.Block('setKeySignature', 'command', 'music', 'set key signature %keySignatures', ['DMajor'], function (key) {
                         if (availableKeySignatures[key] === undefined) throw Error(`unknown key signature: '${key}'`);
