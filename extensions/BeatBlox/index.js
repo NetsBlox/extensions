@@ -178,15 +178,6 @@
             return audio.playClip(trackName, buffer, startTime, duration);
         }
 
-        async function playChord(trackName, notes, startTime, noteDuration, mod = undefined) {
-            if (notes.length === 0) return 0;
-            let ret = Infinity;
-            for (const note of notes) {
-                ret = Math.min(ret, await audio.playNote(trackName, note, startTime, noteDuration, mod));
-            }
-            return ret;
-        }
-
         async function playChordBeats(trackName, notes, startTime, beats, mod = undefined, isDrumNote = false) {
             if (notes.length === 0) return 0;
             let ret = Infinity;
@@ -300,15 +291,11 @@
         function getAudioObjectDuration(audioElement) {
             return new Promise((resolve, reject) => {
                 if (audioElement.readyState >= 1) {
-                    // Metadata is already loaded
                     resolve(audioElement.duration);
                 } else {
-                    // Wait for the metadata to load
                     audioElement.addEventListener('loadedmetadata', () => {
                         resolve(audioElement.duration);
                     }, { once: true });
-        
-                    // Handle error case
                     audioElement.addEventListener('error', (err) => {
                         reject('Error loading audio metadata');
                     }, { once: true });
@@ -327,36 +314,24 @@
             return snapify(res);
         }
 
-        function createTrack(trackName) {
-            audio.createTrack(trackName);
-        }
-
         function stopAudio() {
             audio.stop();
             audio.clearAllTracks();
             audio.start();
         }
-        async function addFxPreset(track, effect) {
-            const effectName = EffectsPreset[effect][0];
-            await audio.applyTrackEffect(track, effectName, availableEffects[effectName]);
-            appliedEffects.push(effectName);
-            const effectOptions = EffectsPreset[effect][1];
-            await audio.updateTrackEffect(track, effectName, effectOptions);
-        }
         function setupTrack(name) {
-            const drumTrackName = name + 'Drum';
             instrumentPrefetch.then(() => {
-                appliedEffects = [];
-                createTrack(name);
-                createTrack(drumTrackName);
-                audio.updateInstrument(name, 'Synthesizer');
-                audio.updateInstrument(drumTrackName, 'Drum Kit');
+                audio.createTrack(name);
+                audio.createTrack(name + 'Drum');
+                audio.updateInstrument(name, 'Grand Piano');
+                audio.updateInstrument(name + 'Drum', 'Drum Kit');
             });
         }
         function setupProcess(proc) {
             if (proc.musicInfo) return;
             proc.musicInfo = {
                 t: audio.getCurrentTime() + 0.001,
+                mods: [],
             };
         }
 
@@ -369,22 +344,58 @@
             await wait(t - audio.getCurrentTime());
         }
 
+        async function playNoteCommonBeats(trackName, beats, notes, mod = undefined, isDrumNote=false) {
+            if (beats === '') throw Error('Please select a valid beat duration');
+            if(isDrumNote && notes.length > 1){
+                var drumNotes = []
+                for(const k of notes){
+                    drumNotes.push(drumToMidiNote(k));
+                }
+                notes = drumNotes;
+            }
+            notes = parseNote(notes);
+            if (!Array.isArray(notes)) notes = [notes];
+            if (notes.length === 0) return;
+
+            setupProcess(this);
+            await instrumentPrefetch;
+            const t = await playChordBeats(trackName, notes, this.musicInfo.t, beats, mod, isDrumNote);
+            this.musicInfo.t += t;
+            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+        }
+        async function playClipForDuration(trackName,clip, duration){
+            const clipDuration = await getAudioObjectDuration(clip.audio);
+            if(duration > clipDuration) {
+                let remainingDuration = duration;
+                while (remainingDuration > 0){
+                    const playingDuration = Math.min(remainingDuration, clipDuration);
+                    const t = await playClip(trackName, clip, this.musicInfo.t, playingDuration);
+                    this.musicInfo.t += t;
+                    await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                    remainingDuration -= playingDuration;
+                }
+            }
+            else {
+                const t = await playClip(trackName, clip, this.musicInfo.t, duration);
+                this.musicInfo.t += t;
+                await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+            }
+        }
+
         // ----------------------------------------------------------------------
+
         class MusicApp extends Extension {
             constructor(ide) {
                 super('MusicApp');
 
                 this.ide = ide;
-
-                appliedEffects = [];
+                ide.hideCategory('sound');
 
                 const _runStopScripts = StageMorph.prototype.runStopScripts;
                 StageMorph.prototype.runStopScripts = function () {
                     _runStopScripts.call(this);
                     stopAudio();
                 };
-
-                ide.hideCategory('sound');
             }
 
             onOpenRole() {
@@ -411,10 +422,10 @@
             getPalette() {
                 const blocks = [
                     new Extension.Palette.Block('setInstrument'),
-                    new Extension.Palette.Block('setKeySignature'),
-                    new Extension.Palette.Block('makeTempo'),
+                    new Extension.Palette.Block('setKey'),
+                    new Extension.Palette.Block('setBPM'),
                     '-',
-                    new Extension.Palette.Block('playNote'),
+                    new Extension.Palette.Block('playNotes'),
                     new Extension.Palette.Block('rest'),
                     '-',
                     new Extension.Palette.Block('hitDrumsOverDuration'),
@@ -455,92 +466,102 @@
             }
 
             getBlocks() {
-                function playNoteCommon(duration, notes, mods = undefined, isDrumNote = false) {
-                    setupProcess(this);
-                    this.runAsyncFn(async () => {
-                        if (duration === '') throw Error('Please select a valid note duration');
-                        duration = availableNoteDurations[duration];
-                        if (!duration) throw Error('unknown note duration');
-
-                        notes = parseNote(notes);
-                        if (!Array.isArray(notes)) notes = [notes];
-                        if (notes.length === 0) return;
-
-                        if (this.mods === undefined || this.mods.length == 0)
-                            mods = undefined;
-                        else {
-                            mods = [];
-                            for (let i = 0; i < this.mods.length; i++) {
-                                mods.push(audio.getModification(availableNoteModifiers[this.mods[i]]));
-                            }
-                        }
-                        await instrumentPrefetch; // wait for all instruments to be loaded
-                        const trackName = this.receiver.id;
-                        const t = await playChord(trackName, notes, this.musicInfo.t, duration, mods, isDrumNote);
-                        this.musicInfo.t += t;
-                        await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                }, { args: [], timeout: I32_MAX });
-                }
-               async function playNoteCommonBeats(trackName,beats, notes, mod = undefined, isDrumNote=false) {
-                    if (beats === '') throw Error('Please select a valid beat duration');
-                    if(isDrumNote && notes.length > 1){
-                        var drumNotes = []
-                        for(const k of notes){
-                            drumNotes.push(drumToMidiNote(k));
-                        }
-                        notes = drumNotes;
-                    }
-                    notes = parseNote(notes);
-                    if (!Array.isArray(notes)) notes = [notes];
-                    if (notes.length === 0) return;
-
-                    setupProcess(this);
-                    await instrumentPrefetch; // wait for all instruments to be loaded
-                    const t = await playChordBeats(trackName, notes, this.musicInfo.t, beats, mod, isDrumNote);
-                    this.musicInfo.t += t;
-                    await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                }
-                async function playClipForDuration(trackName,clip, duration){
-                    const clipDuration = await getAudioObjectDuration(clip.audio);
-                    if(duration > clipDuration) {
-                        let remainingDuration = duration;
-                        while (remainingDuration > 0){
-                            const playingDuration = Math.min(remainingDuration, clipDuration);
-                            const t = await playClip(trackName, clip, this.musicInfo.t, playingDuration);
-                            this.musicInfo.t += t;
-                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                            remainingDuration -= playingDuration;
-                        } 
-                    }
-                    else{
-                        const t = await playClip(trackName, clip, this.musicInfo.t, duration);
-                        this.musicInfo.t += t;
-                        await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                    }
-                }
                 return [
-                    new Extension.Block('setInstrument', 'command', 'music', 'set instrument %webMidiInstrument', ['Synthesizer'], function (instrument) {
-                        if (instrument === '') throw Error(`instrument cannot be empty`);
-                        const trackName = this.receiver.id;
+                    new Extension.Block('setInstrument', 'command', 'music', 'set instrument %instrument', ['Grand Piano'], function (instrument) {
                         this.runAsyncFn(async () => {
-                            await instrumentPrefetch; // wait for all instruments to be loaded
-                            await audio.updateInstrument(trackName, instrument);
+                            setupProcess(this);
+                            await instrumentPrefetch;
+
+                            if (midiInstruments.indexOf(instrument) < 0) throw Error(`unknown instrument: "${instrument}"`);
+
+                            await audio.updateInstrument(this.receiver.id, instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playNote', 'command', 'music', 'play note(s) %s %noteDurations %noteDurationsSpecial ', ['C3', 'Quarter', ''], function (notes,duration, durationSpecial) {
-                        if (notes instanceof List) {
-                            playNoteCommon.apply(this, [durationSpecial + duration, notes]);
-                        } else if(typeof notes === 'object') {
-                            var noteName = notes.noteName;
-                            var modifier = notes.modifier;
-                            playNoteCommon.apply(this, [durationSpecial + duration, noteName, audio.getModification(modifier, 1)]);
-                        } else {
-                            playNoteCommon.apply(this, [durationSpecial + duration, notes]);
-                        }
+                    new Extension.Block('setKey', 'command', 'music', 'set key %keys', ['DMajor'], function (key) {
+                        if (availableKeySignatures[key] === undefined) throw Error(`unknown key: '${key}'`);
+
+                        audio.updateKeySignature(availableKeySignatures[key]);
                     }),
-                    new Extension.Block('rest', 'command', 'music', 'rest %noteDurations %noteDurationsSpecial', ['Quarter',''], function (duration, durationSpecial) {
-                        playNoteCommon.apply(this, [durationSpecial + duration, 'Rest']);
+                    new Extension.Block('setBPM', 'command', 'music', 'set tempo %n bpm', [60], function (tempo) {
+                        tempo = Math.max(tempo, 1);
+                        audio.updateTempo(4, tempo, 4, 4);
+                        world.children[0].stage.tempo = tempo;
                     }),
+                    new Extension.Block('playNotes', 'command', 'music', 'play %newDuration notes %mult%s', ['Quarter', ['C4']], function (durationName, notes) {
+                        this.runAsyncFn(async () => {
+                            setupProcess(this);
+                            await instrumentPrefetch;
+
+                            const duration = availableNoteDurations[durationName];
+                            if (!duration) throw Error(`unknown note duration: "${durationName}"`);
+
+                            notes = parseNote(notes);
+                            if (!Array.isArray(notes)) notes = [notes];
+                            if (notes.length === 0) notes = [parseNote('Rest')];
+
+                            const mods = this.musicInfo.mods.map(x => audio.getModification(availableNoteModifiers[x]));
+
+                            let t = Infinity;
+                            for (const note of notes) {
+                                t = Math.min(t, await audio.playNote(this.receiver.id, note, this.musicInfo.t, duration, mods));
+                            }
+                            this.musicInfo.t += t;
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('rest', 'command', 'music', 'rest %newDuration', ['Quarter'], function (durationName) {
+                        this.playNotes(durationName, 'Rest');
+                    }),
+
+
+
+
+
+
+
+
+
+                    new Extension.Block('presetEffect', 'command', 'music', 'preset %fxPreset effect %b', [], function (effectName, enable) {
+                        this.runAsyncFn(async () => {
+                            setupProcess(this);
+                            await instrumentPrefetch;
+
+                            const [effect, params] = EffectsPreset[effectName] || [null, null];
+                            if (!effect) throw Error(`unknown effect: "${effectName}"`);
+
+                            for (const target of [this.receiver.id, this.receiver.id + 'Drum']) {
+                                if (enable) {
+                                    await audio.applyTrackEffect(target, effect, availableEffects[effect]);
+                                    await audio.updateTrackEffect(target, effect, params);
+                                } else {
+                                    await audio.removeTrackEffect(target, effect);
+                                }
+                            }
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     new Extension.Block('playAudioClip', 'command', 'music', 'play clip %snd', [null], function (clip) {
                         setupProcess(this);
                         if (clip === '') throw Error(`sound cannot be empty`);
@@ -563,7 +584,7 @@
                         }
                         this.runAsyncFn(async () => {
                             
-                            await instrumentPrefetch; // wait for all instruments to be loaded
+                            await instrumentPrefetch;
                             const trackName = this.receiver.id;
                             const t = await playClip(trackName, clip, this.musicInfo.t);
                             this.musicInfo.t += t;
@@ -583,12 +604,12 @@
                             }
                         }
                         this.runAsyncFn(async () => {
-                            await instrumentPrefetch; // wait for all instruments to be loaded
+                            await instrumentPrefetch;
                             const trackName = this.receiver.id;
                             await playClipForDuration.apply(this,[trackName,clip,duration]);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play clip %snd for duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration, durationSpecial) {
+                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play clip %snd for duration %duration %durationMod', [null, 'Quarter', ''], function (clip, duration, durationSpecial) {
                         setupProcess(this);
                         let playDuration = availableNoteDurations[duration];
                         if (durationSpecial != '') {
@@ -604,7 +625,7 @@
                             }
                         }
                         this.runAsyncFn(async () => {
-                            await instrumentPrefetch; // wait for all instruments to be loaded
+                            await instrumentPrefetch;
                             const trackName = this.receiver.id;
                             const durationInSecs = audio.convertNoteDurationToSeconds(playDuration);
                             await playClipForDuration.apply(this,[trackName,clip,durationInSecs]);
@@ -614,27 +635,25 @@
                         stopAudio();
                         this.doStopAll();
                     }),
-                    new Extension.Block('hitDrumsOverDuration','command','music','for %noteDurations drum sequence %mult%drums',['Quarter', ['Kick']], function(duration,drum){
+                    new Extension.Block('hitDrumsOverDuration','command','music','for %duration drum sequence %mult%drums',['Quarter', ['Kick']], function(duration,drum){
                         setupProcess(this);
                         if (drum.contents.length === 0) throw Error(`drum cannot be empty`);
-                        if(duration == '') throw Error(`duration cannot be empty`);
+                        if (duration === '') throw Error(`duration cannot be empty`);
                         const durationInBeats = durationToBeats(duration);
                         const numberOfNotes = drum.contents.length;
                         this.runAsyncFn(async () => {
                             const trackName = this.receiver.id;
                             const drumTrackName = trackName+'Drum';
-                            for(const k of drum.contents){
-                                if(k instanceof List){
+                            for (const k of drum.contents) {
+                                if (k instanceof List) {
                                     await playNoteCommonBeats.apply(this, [drumTrackName,(durationInBeats/numberOfNotes), k.contents,undefined,true]);
-                                }
-                                else{
-                                const noteToPlay = drumToMidiNote(k);
-                                const receivedNote = parseNote(noteToPlay);
-                                await playNoteCommonBeats.apply(this, [drumTrackName,(durationInBeats/numberOfNotes), receivedNote,undefined,true]);
+                                } else {
+                                    const noteToPlay = drumToMidiNote(k);
+                                    const receivedNote = parseNote(noteToPlay);
+                                    await playNoteCommonBeats.apply(this, [drumTrackName,(durationInBeats/numberOfNotes), receivedNote,undefined,true]);
                                 }
                             }
                         }, { args: [], timeout: I32_MAX });
-                        
                     }),
                     new Extension.Block('soundMetaData', 'reporter', 'music', '%soundMetaData of sound %snd', ['duration', ''], function (option, sound) {
                         if (sound === '') throw Error(`sound cannot be empty`);
@@ -669,20 +688,19 @@
                         }
                         return 'OK';
                     }),
-                    new Extension.Block('noteModifierC', 'command', 'music', 'modifier %noteModifiers %c', ['Piano'], function (mod, raw_block) {
-                        if (this.mods === undefined)
-                            this.mods = [];
+                    new Extension.Block('noteModifierC', 'command', 'music', 'modifier %modifier %c', ['Piano'], function (mod, raw_block) {
+                        setupProcess(this);
                         if (!this.context.modFlag) {
                             this.context.modFlag = true;
-                            this.mods.push(mod);
+                            this.musicInfo.mods.push(mod);
                             this.pushContext(raw_block.blockSequence());
                             this.pushContext();
                         } else {
-                            this.mods.pop();
+                            this.musicInfo.mods.pop();
                         }
                     }),
                     new Extension.Block('noteNew', 'reporter', 'music', 'note %note', [60], parseNote),
-                    new Extension.Block('scales', 'reporter', 'music', 'scale %midiNote type %scaleTypes', ['C3', 'Major'], function (rootNote, type) {
+                    new Extension.Block('scales', 'reporter', 'music', 'scale %note type %scaleTypes', ['C3', 'Major'], function (rootNote, type) {
                         rootNote = parseNote(rootNote);
 
                         const pattern = SCALE_PATTERNS[type];
@@ -690,7 +708,7 @@
 
                         return snapify(pattern.map((x) => rootNote + x));
                     }),
-                    new Extension.Block('chords', 'reporter', 'music', 'chord %midiNote type %chordTypes', ['C3', 'Major'], function (rootNote, type) {
+                    new Extension.Block('chords', 'reporter', 'music', 'chord %note type %chordTypes', ['C3', 'Major'], function (rootNote, type) {
                         rootNote = parseNote(rootNote);
 
                         const pattern = CHORD_PATTERNS[type];
@@ -698,13 +716,13 @@
 
                         return snapify(pattern.map((x) => rootNote + x));
                     }),
-                    new Extension.Block('setTrackEffect', 'command', 'music', 'track %supportedEffects effect to %n %', ['Delay', '50'], function (effectName, level) {
+                    new Extension.Block('setTrackEffect', 'command', 'music', 'track %effects effect to %n %', ['Delay', '50'], function (effectName, level) {
                         if (parseInt(level) > 100) level = 100
                         if (parseInt(level) < 0) level = 0
                         if (effectName == 'Echo' && level > 95) level = 95
                         if (effectName == 'Reverb' && level < 10) level = 10
                         this.runAsyncFn(async () => {
-                            await instrumentPrefetch; // wait for all instruments to be loaded
+                            await instrumentPrefetch;
                             const trackName = this.receiver.id;
                             const drumTrackName = trackName+'Drum';
                             await setTrackEffect(trackName, effectName, parseInt(level) / 100);
@@ -713,7 +731,7 @@
                     }),
                     new Extension.Block('clearTrackEffects', 'command', 'music', 'clear track effects', [], function () {
                         this.runAsyncFn(async () => {
-                            await instrumentPrefetch; // wait for all instruments to be loaded
+                            await instrumentPrefetch;
                             const trackName = this.receiver.id;
                             const drumTrackName = trackName+'Drum';
                             for (const effectName in availableEffects) {
@@ -723,17 +741,7 @@
                             appliedEffects = [];
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('makeTempo', 'command', 'music', 'set tempo %n bpm', [60], function (tempo) {
-                        audio.updateTempo(4, tempo, 4, 4);
-                        world.children[0].stage.tempo = tempo;
-                    }),
-                    new Extension.Block('setKeySignature', 'command', 'music', 'set key signature %keySignatures', ['DMajor'], function (key) {
-                        if (availableKeySignatures[key] === undefined) throw Error(`unknown key signature: '${key}'`);
-                        const currentKeySignature = audio.getKeySignature();
-                        if (currentKeySignature != key) {
-                            audio.updateKeySignature(availableKeySignatures[key]);
-                        }
-                    }),
+                    
                     new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
                         if (appliedEffects.length === 0) {
                             return new List();
@@ -745,28 +753,6 @@
                     new Extension.Block('tempo', 'reporter', 'music', 'tempo', [], function () {
                         return getBPM();
                     }).for(SpriteMorph, StageMorph),
-                    new Extension.Block('presetEffect', 'command', 'music', 'preset %fxPreset effects %b', [], function (effect, status) {
-                        const trackName = this.receiver.id;
-                        const drumTrackName = trackName+'Drum';
-                        if (effect != '') {
-                            if (status == 'on') {
-                                this.runAsyncFn(async () => {
-                                    await instrumentPrefetch; // wait for all instruments to be loaded
-                                    await addFxPreset(trackName, effect);
-                                    await addFxPreset(drumTrackName, effect);
-                                });
-                            } else {
-                                const effectName = EffectsPreset[effect][0];
-                                this.runAsyncFn(async () => {
-                                    await instrumentPrefetch; // wait for all instruments to be loaded
-                                    await audio.removeTrackEffect(trackName, effectName);
-                                    await audio.removeTrackEffect(drumTrackName, effectName);
-                                });
-                            }
-                        } else {
-                            throw Error('must select an effect');
-                        }
-                    }),
                     new Extension.Block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
                         const trackName = this.receiver.id;
 
@@ -834,147 +820,85 @@
             getLabelParts() {
                 function identityMap(s) {
                     const res = {};
-                    for (const x of s) res[x] = x;
+                    for (const x of s) {
+                        if (Array.isArray(x)) {
+                            res[x[0]] = x[1];
+                        } else {
+                            res[x] = x;
+                        }
+                    }
+                    return res;
+                }
+                function unionMaps(maps) {
+                    const res = {};
+                    for (const map of maps) {
+                        for (const key in map) res[key] = map[key];
+                    }
                     return res;
                 }
                 return [
-                    new Extension.LabelPart('supportedEffects', () => new InputSlotMorph(
-                        null, //text
-                        false, //numeric
-                        identityMap(['Volume','Delay', 'Reverb', 'Echo', 'Panning']),
-                        true, //readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('midiNote', () => new InputSlotMorph(
-                        null, //text
-                        false, //numeric
-                        {
-                            'Rest': 'Rest',
-                            'C': {
-                                '0': identityMap(['C0bb', 'C0b', 'C0', 'C0s', 'C0ss']),
-                                '1': identityMap(['C1bb', 'C1b', 'C1', 'C1s', 'C1ss']),
-                                '2': identityMap(['C2bb', 'C2b', 'C2', 'C2s', 'C2ss']),
-                                '3': identityMap(['C3bb', 'C3b', 'C3', 'C3s', 'C3ss']),
-                                '4': identityMap(['C4bb', 'C4b', 'C4', 'C4s', 'C4ss']),
-                                '5': identityMap(['C5bb', 'C5b', 'C5', 'C5s', 'C5ss']),
-                                '6': identityMap(['C6bb', 'C6b', 'C6', 'C6s', 'C6ss']),
-                                '7': identityMap(['C7bb', 'C7b', 'C7', 'C7s', 'C7ss']),
-                                '8': identityMap(['C8bb', 'C8b', 'C8', 'C8s', 'C8ss']),
-                                '9': identityMap(['C9bb', 'C9b', 'C9', 'C9s', 'C9ss']),
-                            }, 'D': {
-                                '0': identityMap(['D0bb', 'D0b', 'D0', 'D0s', 'D0ss']),
-                                '1': identityMap(['D1bb', 'D1b', 'D1', 'D1s', 'D1ss']),
-                                '2': identityMap(['D2bb', 'D2b', 'D2', 'D2s', 'D2ss']),
-                                '3': identityMap(['D3bb', 'D3b', 'D3', 'D3s', 'D3ss']),
-                                '4': identityMap(['D4bb', 'D4b', 'D4', 'D4s', 'D4ss']),
-                                '5': identityMap(['D5bb', 'D5b', 'D5', 'D5s', 'D5ss']),
-                                '6': identityMap(['D6bb', 'D6b', 'D6', 'D6s', 'D6ss']),
-                                '7': identityMap(['D7bb', 'D7b', 'D7', 'D7s', 'D7ss']),
-                                '8': identityMap(['D8bb', 'D8b', 'D8', 'D8s', 'D8ss']),
-                                '9': identityMap(['D9bb', 'D9b', 'D9', 'D9s', 'D9ss']),
-                            }, 'E': {
-                                '0': identityMap(['E0bb', 'E0b', 'E0', 'E0s', 'E0ss']),
-                                '1': identityMap(['E1bb', 'E1b', 'E1', 'E1s', 'E1ss']),
-                                '2': identityMap(['E2bb', 'E2b', 'E2', 'E2s', 'E2ss']),
-                                '3': identityMap(['E3bb', 'E3b', 'E3', 'E3s', 'E3ss']),
-                                '4': identityMap(['E4bb', 'E4b', 'E4', 'E4s', 'E4ss']),
-                                '5': identityMap(['E5bb', 'E5b', 'E5', 'E5s', 'E5ss']),
-                                '6': identityMap(['E6bb', 'E6b', 'E6', 'E6s', 'E6ss']),
-                                '7': identityMap(['E7bb', 'E7b', 'E7', 'E7s', 'E7ss']),
-                                '8': identityMap(['E8bb', 'E8b', 'E8', 'E8s', 'E8ss']),
-                                '9': identityMap(['E9bb', 'E9b', 'E9', 'E9s', 'E9ss']),
-                            }, 'F': {
-                                '0': identityMap(['F0bb', 'F0b', 'F0', 'F0s', 'F0ss']),
-                                '1': identityMap(['F1bb', 'F1b', 'F1', 'F1s', 'F1ss']),
-                                '2': identityMap(['F2bb', 'F2b', 'F2', 'F2s', 'F2ss']),
-                                '3': identityMap(['F3bb', 'F3b', 'F3', 'F3s', 'F3ss']),
-                                '4': identityMap(['F4bb', 'F4b', 'F4', 'F4s', 'F4ss']),
-                                '5': identityMap(['F5bb', 'F5b', 'F5', 'F5s', 'F5ss']),
-                                '6': identityMap(['F6bb', 'F6b', 'F6', 'F6s', 'F6ss']),
-                                '7': identityMap(['F7bb', 'F7b', 'F7', 'F7s', 'F7ss']),
-                                '8': identityMap(['F8bb', 'F8b', 'F8', 'F8s', 'F8ss']),
-                                '9': identityMap(['F9bb', 'F9b', 'F9', 'F9s', 'F9ss']),
-                            }, 'G': {
-                                '0': identityMap(['G0bb', 'G0b', 'G0', 'G0s', 'G0ss']),
-                                '1': identityMap(['G1bb', 'G1b', 'G1', 'G1s', 'G1ss']),
-                                '2': identityMap(['G2bb', 'G2b', 'G2', 'G2s', 'G2ss']),
-                                '3': identityMap(['G3bb', 'G3b', 'G3', 'G3s', 'G3ss']),
-                                '4': identityMap(['G4bb', 'G4b', 'G4', 'G4s', 'G4ss']),
-                                '5': identityMap(['G5bb', 'G5b', 'G5', 'G5s', 'G5ss']),
-                                '6': identityMap(['G6bb', 'G6b', 'G6', 'G6s', 'G6ss']),
-                                '7': identityMap(['G7bb', 'G7b', 'G7', 'G7s', 'G7ss']),
-                                '8': identityMap(['G8bb', 'G8b', 'G8', 'G8s', 'G8ss']),
-                                '9': identityMap(['G9bb', 'G9b', 'G9', 'G9s', 'G9ss']),
-                            }, 'A': {
-                                '0': identityMap(['A0bb', 'A0b', 'A0', 'A0s', 'A0ss']),
-                                '1': identityMap(['A1bb', 'A1b', 'A1', 'A1s', 'A1ss']),
-                                '2': identityMap(['A2bb', 'A2b', 'A2', 'A2s', 'A2ss']),
-                                '3': identityMap(['A3bb', 'A3b', 'A3', 'A3s', 'A3ss']),
-                                '4': identityMap(['A4bb', 'A4b', 'A4', 'A4s', 'A4ss']),
-                                '5': identityMap(['A5bb', 'A5b', 'A5', 'A5s', 'A5ss']),
-                                '6': identityMap(['A6bb', 'A6b', 'A6', 'A6s', 'A6ss']),
-                                '7': identityMap(['A7bb', 'A7b', 'A7', 'A7s', 'A7ss']),
-                                '8': identityMap(['A8bb', 'A8b', 'A8', 'A8s', 'A8ss']),
-                                '9': identityMap(['A9bb', 'A9b', 'A9', 'A9s', 'A9ss']),
-                            }, 'B': {
-                                '0': identityMap(['B0bb', 'B0b', 'B0', 'B0s', 'B0ss']),
-                                '1': identityMap(['B1bb', 'B1b', 'B1', 'B1s', 'B1ss']),
-                                '2': identityMap(['B2bb', 'B2b', 'B2', 'B2s', 'B2ss']),
-                                '3': identityMap(['B3bb', 'B3b', 'B3', 'B3s', 'B3ss']),
-                                '4': identityMap(['B4bb', 'B4b', 'B4', 'B4s', 'B4ss']),
-                                '5': identityMap(['B5bb', 'B5b', 'B5', 'B5s', 'B5ss']),
-                                '6': identityMap(['B6bb', 'B6b', 'B6', 'B6s', 'B6ss']),
-                                '7': identityMap(['B7bb', 'B7b', 'B7', 'B7s', 'B7ss']),
-                                '8': identityMap(['B8bb', 'B8b', 'B8', 'B8s', 'B8ss']),
-                                '9': identityMap(['B9bb', 'B9b', 'B9', 'B9s', 'B9ss']),
+                    new Extension.LabelPart('newDuration', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
+                        ((base) => unionMaps([
+                            identityMap(base),
+                            {
+                                'Dotted': identityMap(base.map(x => [x, 'Dotted' + x])),
+                                'DottedDotted': identityMap(base.map(x => [x, 'DottedDotted' + x])),
                             },
-                        },
-                        false, //readonly (no arbitrary text)
+                        ]))(['Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'ThirtySecond', 'SixtyFourth']),
+                        true, // readonly (no arbitrary text)
                     )),
-                    new Extension.LabelPart('noteDurations', () => new InputSlotMorph(
-                        null, //text
-                        false, //numeric
+
+
+
+
+
+                    new Extension.LabelPart('modifier', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
+                        identityMap(['Piano', 'Forte', 'Accent', 'Staccato', 'Triplet', 'TurnUpper', 'TurnLower']),
+                        true, // readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('effects', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
+                        identityMap(['Volume','Delay', 'Reverb', 'Echo', 'Panning']),
+                        true, // readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('duration', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
                         identityMap(['Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'ThirtySecond', 'SixtyFourth']),
-                        true, //readonly (no arbitrary text)
+                        true, // readonly (no arbitrary text)
                     )),
-                    new Extension.LabelPart('noteDurationsSpecial', () => new InputSlotMorph(
-                        null, //text
-                        false, //numeric
+                    new Extension.LabelPart('durationMod', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
                         identityMap(['Dotted', 'DottedDotted']),
-                        true, //readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('chordTypes', () => new InputSlotMorph(
-                        null, //text
-                        false, //numeric
-                        identityMap(['Major', 'Minor', 'Diminished', 'Augmented', 'Major 7th', 'Dominant 7th', 'Minor 7th', 'Diminished 7th']),
-                        true, //readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('scaleTypes', () => new InputSlotMorph(
-                        null, //text
-                        false, //numeric
-                        identityMap(['Major', 'Minor']),
-                        true, //readonly (no arbitrary text)
+                        true, // readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('fxPreset', () => new InputSlotMorph(
                         null, // text
-                        false, //numeric
+                        false, // numeric
                         identityMap(['Under Water', 'Telephone', 'Cave', 'Fan Blade']),
                         true, // readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('soundMetaData', () => new InputSlotMorph(
                         null, // text
-                        false, //numeric
+                        false, // numeric
                         identityMap(['name', 'duration', 'beats', 'samples']),
                         true, // readonly (no arbitrary text)
                     )),
-                    new Extension.LabelPart('webMidiInstrument', () => new InputSlotMorph(
+                    new Extension.LabelPart('instrument', () => new InputSlotMorph(
                         null, // text
-                        false, //numeric
+                        false, // numeric
                         identityMap(midiInstruments),
                         true, // readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('inputDevice', () => new InputSlotMorph(
                         null, // text
-                        false, //numeric
+                        false, // numeric
                         identityMap([...midiDevices, ...audioDevices]),
                         true, // readonly (no arbitrary text)
                     )),
@@ -984,22 +908,28 @@
                         identityMap(Object.keys(availableAnalysisTypes)),
                         true, // readonly (no arbitrary text)
                     )),
-                    new Extension.LabelPart('keySignatures', () => new InputSlotMorph(
+                    new Extension.LabelPart('keys', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
                         identityMap(Object.keys(availableKeySignatures)),
-                        true, // readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('noteModifiers', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(['Piano', 'Forte', 'Accent', 'Staccato', 'Triplet', 'TurnUpper', 'TurnLower']),
                         true, // readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('drums', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
                         identityMap(Object.keys(DRUM_TO_MIDI)),
+                        true, // readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('chordTypes', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
+                        identityMap(['Major', 'Minor', 'Diminished', 'Augmented', 'Major 7th', 'Dominant 7th', 'Minor 7th', 'Diminished 7th']),
+                        true, // readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('scaleTypes', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
+                        identityMap(['Major', 'Minor']),
                         true, // readonly (no arbitrary text)
                     )),
                 ];
