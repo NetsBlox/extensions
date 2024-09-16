@@ -325,7 +325,7 @@
                     new Extension.Palette.Block('setInstrument'),
                     new Extension.Palette.Block('setKey'),
                     new Extension.Palette.Block('setBPM'),
-                    new Extension.Palette.Block('getBPM').withWatcherToggle(),
+                    new Extension.Palette.Block('getBPM'),
                     '-',
                     new Extension.Palette.Block('playNotes'),
                     new Extension.Palette.Block('playDrums'),
@@ -342,7 +342,7 @@
                     new Extension.Palette.Block('audioAnalysis'),
                     new Extension.Palette.Block('soundMetaData'),
                     '-',
-                    new Extension.Palette.Block('appliedEffects').withWatcherToggle(),
+                    new Extension.Palette.Block('appliedEffects'),
                     '-',
                     new Extension.Palette.Block('setInputDevice'),
                     new Extension.Palette.Block('startRecordingInput'),
@@ -383,7 +383,7 @@
                     }),
                     new Extension.Block('getBPM', 'reporter', 'music', 'tempo', [], function () {
                         return audio.getTempo().beatsPerMinute;
-                    }).for(SpriteMorph, StageMorph),
+                    }),
                     new Extension.Block('playNotes', 'command', 'music', 'play %newDuration notes %mult%s', ['Quarter', ['C4']], function (durationName, notes) {
                         this.runAsyncFn(async () => {
                             setupProcess(this);
@@ -600,7 +600,7 @@
 
                         const trackName = this.id;
                         return getEffectValues(trackName, appliedEffects);
-                    }).for(SpriteMorph, StageMorph),
+                    }),
                     new Extension.Block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
                         const trackName = this.receiver.id;
 
