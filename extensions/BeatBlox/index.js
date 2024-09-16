@@ -1,4 +1,32 @@
 (function () {
+    const I32_MAX = 2147483647;
+    const SCHEDULING_WINDOW = 0.02; // seconds
+
+    const PRESET_EFFECTS = {
+        'Under Water': ['LowPassFilter',  { 'cutoffFrequency':  500,  'resonance': 12  }],
+        'Telephone':   ['HighPassFilter', { 'cutoffFrequency':  1800, 'resonance': 10  }],
+        'Cave':        ['Echo',           { 'intensity':        0.4,  'feedback':  0.5 }],
+        'Fan Blade':   ['Tremolo',        { 'tremeloFrequency': 18                     }],
+    };
+
+    const DRUM_TO_NOTE = {
+        'kick': 'A1',
+        'kick #2': 'C2',
+        'snare': 'G1',
+        'side stick snare': 'C#2',
+        'open snare': 'E2',
+        'closed hi-hat': 'F#2',
+        'clap': 'Eb2',
+        'tom': 'C3',
+        'rack tom': 'B2',
+        'floor tom': 'F2',
+        'crash': 'Bb2',
+        'crash #2': 'E3',
+        'ride': 'Eb3',
+        'ride #2': 'F3',
+        'tamborine': 'F#3',
+    };
+
     function absoluteUrl(relative) {
         const defaultSrc = 'https://extensions.netsblox.org/extensions/BeatBlox/webAudioAPI.js';
         const src = JSON.parse(new URLSearchParams(window.location.search).get('extensions') || '[]').find(x => x.includes('BeatBlox/index.js')) || defaultSrc;
@@ -12,9 +40,6 @@
     script.async = false;
     script.src = absoluteUrl('webAudioAPI.js');
     script.onload = () => {
-        const I32_MAX = 2147483647;
-        const SCHEDULING_WINDOW = 0.02; // seconds
-
         const audio = new window.WebAudioAPI();
 
         const availableEffects = audio.getAvailableEffects();
@@ -64,58 +89,6 @@
             }
         })();
 
-        const EffectsPreset = {
-            'Under Water': ['LowPassFilter', {
-                ['cutoffFrequency']: 500,
-                ['resonance']: 12,
-            }],
-            'Telephone': ['HighPassFilter', {
-                ['cutoffFrequency']: 1800,
-                ['resonance']: 10,
-            }],
-            'Cave': ['Echo', {
-                ['feedback']: 0.5,
-                ['intensity']: 0.4,
-            }],
-            'Fan Blade': ['Tremolo', {
-                ['tremeloFrequency'] : 18,
-            }],
-        };
-
-        const CHORD_PATTERNS = {
-            'Major': [0, 4, 7],
-            'Minor': [0, 3, 7],
-            'Diminished': [0, 3, 6],
-            'Augmented': [0, 4, 8],
-            'Major 7th': [0, 4, 7, 11],
-            'Dominant 7th': [0, 4, 7, 10],
-            'Minor 7th': [0, 3, 7, 10],
-            'Diminished 7th': [0, 3, 6, 9],
-        };
-
-        const SCALE_PATTERNS = {
-            'Major': [0, 2, 4, 5, 7, 9, 11, 12],
-            'Minor': [0, 2, 3, 5, 7, 8, 10, 12],
-        };
-
-        const DRUM_TO_NOTE = {
-            'kick': 'A1',
-            'kick #2': 'C2',
-            'snare': 'G1',
-            'side stick snare': 'C#2',
-            'open snare': 'E2',
-            'closed hi-hat': 'F#2',
-            'clap': 'Eb2',
-            'tom': 'C3',
-            'rack tom': 'B2',
-            'floor tom': 'F2',
-            'crash': 'Bb2',
-            'crash #2': 'E3',
-            'ride': 'Eb3',
-            'ride #2': 'F3',
-            'tamborine': 'F#3',
-        };
-
         function connectMidi(trackName, device) {
             if (device !== '') {
                 const mDevice = device.replace('---(midi)', '');
@@ -161,18 +134,13 @@
                 await audio.disconnectMidiDeviceFromTrack(trackName);
         }
 
-        function base64toArrayBuffer(base64) {
-            const binaryString = window.atob(base64.split(',')[1]);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
+        function decodeBase64(base64) {
+            const bin = atob(base64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) {
+                bytes[i] = bin.charCodeAt(i);
             }
             return bytes.buffer;
-        }
-
-        async function playClip(trackName, clip, startTime, duration = undefined) {
-            const buffer = clip.audioBuffer || base64toArrayBuffer(clip.audio.src);
-            return audio.playClip(trackName, buffer, startTime, duration);
         }
 
         function parseNote(note) {
@@ -218,6 +186,7 @@
 
             return natural ? -off : off;
         }
+
         function parseDrumNote(note) {
             if (Array.isArray(note)) return note.map((x) => parseDrumNote(x));
             if (note.contents !== undefined) return note.contents.map((x) => parseDrumNote(x));
@@ -228,20 +197,6 @@
             const res = DRUM_TO_NOTE[note.toLowerCase()];
             if (res === undefined) throw Error(`unknown drum sound: "${note}"`);
             return parseNote(res);
-        }
-
-        function durationToBeats(duration, durationSpecial = ''){
-            let playDuration = availableNoteDurations[duration];
-
-            // Regular durations
-            if(!durationSpecial) {
-                return 4 / playDuration;
-            }
-            else {
-                // Special durations
-                if (durationSpecial === 'Dotted') return (4 / playDuration) * 1.5;
-                if (durationSpecial === 'DottedDotted') return (4 / playDuration) * 1.75;
-            }
         }
 
         async function setTrackEffect(trackName, effectName, level) {
@@ -342,25 +297,6 @@
             await wait(t - audio.getCurrentTime());
         }
 
-        async function playClipForDuration(trackName,clip, duration){
-            const clipDuration = await getAudioObjectDuration(clip.audio);
-            if(duration > clipDuration) {
-                let remainingDuration = duration;
-                while (remainingDuration > 0){
-                    const playingDuration = Math.min(remainingDuration, clipDuration);
-                    const t = await playClip(trackName, clip, this.musicInfo.t, playingDuration);
-                    this.musicInfo.t += t;
-                    await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                    remainingDuration -= playingDuration;
-                }
-            }
-            else {
-                const t = await playClip(trackName, clip, this.musicInfo.t, duration);
-                this.musicInfo.t += t;
-                await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-            }
-        }
-
         // ----------------------------------------------------------------------
 
         class MusicApp extends Extension {
@@ -408,9 +344,7 @@
                     new Extension.Palette.Block('playDrums'),
                     new Extension.Palette.Block('rest'),
                     '-',
-                    new Extension.Palette.Block('playAudioClip'),
-                    new Extension.Palette.Block('playAudioClipForDuration'),
-                    new Extension.Palette.Block('playSampleForDuration'),
+                    new Extension.Palette.Block('playClip'),
                     new Extension.Palette.Block('stopAudio'),
                     '-',
                     new Extension.Palette.Block('soundMetaData'),
@@ -433,9 +367,7 @@
                     new Extension.Palette.Block('stopRecording'),
                     new Extension.Palette.Block('lastRecordedClip'),
                     '-',
-                    new Extension.Palette.Block('noteNew'),
-                    new Extension.Palette.Block('chords'),
-                    new Extension.Palette.Block('scales'),
+                    new Extension.Palette.Block('noteNumber'),
                 ];
                 return [
                     new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -512,12 +444,56 @@
                     new Extension.Block('rest', 'command', 'music', 'rest %newDuration', ['Quarter'], function (durationName) {
                         this.playNotes(durationName, 'Rest');
                     }),
+                    new Extension.Block('playClip', 'command', 'music', 'play sound %snd', [], function (name) {
+                        this.runAsyncFn(async () => {
+                            setupProcess(this);
+                            await instrumentPrefetch;
+
+                            const sound = this.receiver.sounds.contents.find(x => x.name === name);
+                            if (!sound) throw Error(`unknown sound: "${name}"`);
+
+                            const buffer = clip.audioBuffer || decodeBase64(clip.audio.src.split(',')[1]);
+                            return audio.playClip(trackName, buffer, startTime, duration);
+
+                        }, { args: [], timeout: I32_MAX });
+
+
+
+                        // async function playClip(trackName, clip, startTime, duration = undefined) {
+                            
+                        // }
+
+                        // if(clip instanceof List){
+                        //     const newClip = {}
+                        //     const listArray = clip.contents;
+                        //     const bytes = new Float32Array(listArray);
+                        //     const buffer = new AudioContext().createBuffer(1, listArray.length, 44100);
+                        //     buffer.copyToChannel(bytes,0);
+                        //     newClip.audioBuffer = buffer;
+                        //     clip = newClip;
+                        // }
+
+                        // await instrumentPrefetch;
+                        // const trackName = this.receiver.id;
+                        // const t = await playClip(trackName, clip, this.musicInfo.t);
+                        // this.musicInfo.t += t;
+                        // await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                    }),
+
+
+
+
+                    new Extension.Block('stopAudio', 'command', 'music', 'stop all audio', [], function () {
+                        stopAudio();
+                        this.doStopAll();
+                    }),
 
 
 
 
 
 
+                    new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], parseNote),
 
 
 
@@ -531,7 +507,7 @@
                             setupProcess(this);
                             await instrumentPrefetch;
 
-                            const [effect, params] = EffectsPreset[effectName] || [null, null];
+                            const [effect, params] = PRESET_EFFECTS[effectName] || [null, null];
                             if (!effect) throw Error(`unknown effect: "${effectName}"`);
 
                             for (const target of [this.receiver.id, this.receiver.id + 'Drum']) {
@@ -567,79 +543,20 @@
 
 
 
-                    new Extension.Block('playAudioClip', 'command', 'music', 'play clip %snd', [null], function (clip) {
-                        setupProcess(this);
-                        if (clip === '') throw Error(`sound cannot be empty`);
-                        if (this.receiver.sounds.contents.length) {
-                            for (let i = 0; i < this.receiver.sounds.contents.length; i++) {
-                                if (clip === this.receiver.sounds.contents[i].name) {
-                                    clip = this.receiver.sounds.contents[i];
-                                    break;
-                                }
-                            }
-                        }
-                        if(clip instanceof List){
-                            const newClip = {}
-                            const listArray = clip.contents;
-                            const bytes = new Float32Array(listArray);
-                            const buffer = ((new AudioContext()).createBuffer(1, listArray.length, 44100));
-                            buffer.copyToChannel(bytes,0);
-                            newClip.audioBuffer = buffer;
-                            clip = newClip;
-                        }
-                        this.runAsyncFn(async () => {
-                            
-                            await instrumentPrefetch;
-                            const trackName = this.receiver.id;
-                            const t = await playClip(trackName, clip, this.musicInfo.t);
-                            this.musicInfo.t += t;
-                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                        }, { args: [], timeout: I32_MAX });
-                    }),
-                    new Extension.Block('playAudioClipForDuration', 'command', 'music', 'play clip %snd for duration %n secs', [null, 0], function (clip, duration) {
-                        setupProcess(this);
-                        if (clip === '') throw Error(`sound cannot be empty`);
-                        if (duration <= 0) throw Error(`duration must be greater than 0`);
-                        if (this.receiver.sounds.contents.length) {
-                            for (let i = 0; i < this.receiver.sounds.contents.length; i++) {
-                                if (clip === this.receiver.sounds.contents[i].name) {
-                                    clip = this.receiver.sounds.contents[i];
-                                    break;
-                                }
-                            }
-                        }
-                        this.runAsyncFn(async () => {
-                            await instrumentPrefetch;
-                            const trackName = this.receiver.id;
-                            await playClipForDuration.apply(this,[trackName,clip,duration]);
-                        }, { args: [], timeout: I32_MAX });
-                    }),
-                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play clip %snd for duration %duration %durationMod', [null, 'Quarter', ''], function (clip, duration, durationSpecial) {
-                        setupProcess(this);
-                        let playDuration = availableNoteDurations[duration];
-                        if (durationSpecial != '') {
-                            playDuration = availableNoteDurations[durationSpecial + duration];
-                        }
-                        if (clip === '') throw Error(`sound cannot be empty`);
-                        if (this.receiver.sounds.contents.length) {
-                            for (let i = 0; i < this.receiver.sounds.contents.length; i++) {
-                                if (clip === this.receiver.sounds.contents[i].name) {
-                                    clip = this.receiver.sounds.contents[i];
-                                    break;
-                                }
-                            }
-                        }
-                        this.runAsyncFn(async () => {
-                            await instrumentPrefetch;
-                            const trackName = this.receiver.id;
-                            const durationInSecs = audio.convertNoteDurationToSeconds(playDuration);
-                            await playClipForDuration.apply(this,[trackName,clip,durationInSecs]);
-                        }, { args: [], timeout: I32_MAX });
-                    }),
-                    new Extension.Block('stopAudio', 'command', 'music', 'stop all audio', [], function () {
-                        stopAudio();
-                        this.doStopAll();
-                    }),
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    
                     
                     new Extension.Block('soundMetaData', 'reporter', 'music', '%soundMetaData of sound %snd', ['duration', ''], function (option, sound) {
                         if (sound === '') throw Error(`sound cannot be empty`);
@@ -667,14 +584,14 @@
                                 }, { args: [], timeout: I32_MAX });
                             case 'samples':
                                 return this.runAsyncFn(async () => {
-                                    var buffer = base64toArrayBuffer(sound.audio.src);
+                                    var buffer = decodeBase64(sound.audio.src.split(',')[1]);
                                     var timeSeries = await arrayBufferToTimeSeries(buffer);
                                     return snapify(timeSeries);
                                }, { args: [], timeout: I32_MAX });
                         }
                         return 'OK';
                     }),
-                    new Extension.Block('noteModifierC', 'command', 'music', 'modifier %modifier %c', ['Piano'], function (mod, raw_block) {
+                    new Extension.Block('noteModifierC', 'command', 'music', 'modifier %modifier %c', ['Forte'], function (mod, raw_block) {
                         setupProcess(this);
                         if (!this.context.modFlag) {
                             this.context.modFlag = true;
@@ -684,23 +601,6 @@
                         } else {
                             this.musicInfo.mods.pop();
                         }
-                    }),
-                    new Extension.Block('noteNew', 'reporter', 'music', 'note %note', [60], parseNote),
-                    new Extension.Block('scales', 'reporter', 'music', 'scale %note type %scaleTypes', ['C3', 'Major'], function (rootNote, type) {
-                        rootNote = parseNote(rootNote);
-
-                        const pattern = SCALE_PATTERNS[type];
-                        if (!pattern) throw Error(`invalid chord type: '${type}'`);
-
-                        return snapify(pattern.map((x) => rootNote + x));
-                    }),
-                    new Extension.Block('chords', 'reporter', 'music', 'chord %note type %chordTypes', ['C3', 'Major'], function (rootNote, type) {
-                        rootNote = parseNote(rootNote);
-
-                        const pattern = CHORD_PATTERNS[type];
-                        if (!pattern) throw Error(`invalid chord type: '${type}'`);
-
-                        return snapify(pattern.map((x) => rootNote + x));
                     }),
                     new Extension.Block('setTrackEffect', 'command', 'music', 'track %effects effect to %n %', ['Delay', '50'], function (effectName, level) {
                         if (parseInt(level) > 100) level = 100
@@ -727,7 +627,6 @@
                             appliedEffects = [];
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    
                     new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
                         if (appliedEffects.length === 0) {
                             return new List();
@@ -906,21 +805,8 @@
                         identityMap(Object.keys(DRUM_TO_NOTE)),
                         true, // readonly (no arbitrary text)
                     )),
-                    new Extension.LabelPart('chordTypes', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(['Major', 'Minor', 'Diminished', 'Augmented', 'Major 7th', 'Dominant 7th', 'Minor 7th', 'Diminished 7th']),
-                        true, // readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('scaleTypes', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(['Major', 'Minor']),
-                        true, // readonly (no arbitrary text)
-                    )),
                 ];
             }
-
         }
         NetsBloxExtensions.register(MusicApp);
     };
