@@ -31,7 +31,7 @@
         const defaultSrc = 'https://extensions.netsblox.org/extensions/BeatBlox/webAudioAPI.js';
         const src = JSON.parse(new URLSearchParams(window.location.search).get('extensions') || '[]').find(x => x.includes('BeatBlox/index.js')) || defaultSrc;
         const res = `${src.substring(0, src.lastIndexOf('/'))}/${relative}`;
-        console.log(`resolved ${relative} to ${res}`);
+        console.log(`resolved '${relative}' to ${res}`);
         return res;
     }
 
@@ -42,46 +42,46 @@
     script.onload = () => {
         const audio = new window.WebAudioAPI();
 
-        const availableEffects = audio.getAvailableEffects();
-        const availableNoteDurations = audio.getAvailableNoteDurations();
-        const availableNotes = audio.getAvailableNotes();
-        const availableAnalysisTypes = audio.getAvailableAnalysisTypes();
-        const availableKeySignatures = audio.getAvailableKeySignatures();
-        const availableEncoders = audio.getAvailableEncoders();
-        const availableNoteModifiers = audio.getAvailableNoteModifications()
+        const DURATIONS = audio.getAvailableNoteDurations();
+        const MODIFIERS = audio.getAvailableNoteModifications()
+        const ANALYSES = audio.getAvailableAnalysisTypes();
+        const ENCODERS = audio.getAvailableEncoders();
+        const EFFECTS = audio.getAvailableEffects();
+        const NOTES = audio.getAvailableNotes();
+        const KEYS = audio.getAvailableKeySignatures();
+
+        let INPUT_DEVICES = [];
+        let MIDI_DEVICES = [];
+        let INSTRUMENTS = [];
 
         let lastRecordedClip = null;
         let currentDeviceType = null;
-        let appliedEffects = [];
-        let midiDevices = [];
-        let audioDevices = [];
-        let midiInstruments = [];
 
         audio.start();
 
         const instrumentPrefetch = (async () => {
             try {
-                midiDevices = (await audio.getAvailableMidiDevices()).map((x) => `${x}---(midi)`);
+                MIDI_DEVICES = (await audio.getAvailableMidiDevices()).map((x) => `${x}---(midi)`);
             } catch (e) {
                 console.error('failed to load midi devices', e);
             }
 
             try {
-                audioDevices = await audio.getAvailableAudioInputDevices();
+                INPUT_DEVICES = await audio.getAvailableAudioInputDevices();
             } catch (e) {
                 console.error('failed to load audio input devices', e);
             }
 
             try {
-                midiInstruments = await audio.getAvailableInstruments(absoluteUrl('instruments'));
+                INSTRUMENTS = await audio.getAvailableInstruments(absoluteUrl('instruments'));
 
-                const indexOfDrumKit = midiInstruments.indexOf('Drum Kit');
-                midiInstruments.splice(indexOfDrumKit, 1);
+                const indexOfDrumKit = INSTRUMENTS.indexOf('Drum Kit');
+                INSTRUMENTS.splice(indexOfDrumKit, 1);
 
                 console.log('beginning instrument pre-fetch...');
                 const tempTrack = '<<<temp-track>>>';
                 audio.createTrack(tempTrack);
-                await Promise.all(midiInstruments.map((x) => audio.updateInstrument(tempTrack, x)));
+                await Promise.all(INSTRUMENTS.map((x) => audio.updateInstrument(tempTrack, x)));
                 audio.removeTrack(tempTrack);
                 console.log('instrument pre-fetch completed');
             } catch (e) {
@@ -109,7 +109,7 @@
         }
 
         async function clipToSnap(clip) {
-            const blob = await clip.getEncodedData(availableEncoders['WAV']);
+            const blob = await clip.getEncodedData(ENCODERS['WAV']);
             const audio = new Audio(URL.createObjectURL(blob, { type: 'audio/wav' }));
             return new Sound(audio, 'netsblox-sound');
         }
@@ -128,9 +128,9 @@
 
         async function disconnectDevices(trackName) {
             console.log('device disconnected');
-            if (audioDevices.length > 0)
+            if (INPUT_DEVICES.length > 0)
                 await audio.disconnectAudioInputDeviceFromTrack(trackName);
-            if (midiDevices.length > 0)
+            if (MIDI_DEVICES.length > 0)
                 await audio.disconnectMidiDeviceFromTrack(trackName);
         }
 
@@ -148,7 +148,7 @@
             if (note.contents !== undefined) return note.contents.map((x) => parseNote(x));
             if (typeof (note) === 'number' && Number.isInteger(note)) return note;
             if (typeof (note) !== 'string' || note === '') throw Error(`expected a note, got '${note}'`);
-            if (note === 'Rest') return availableNotes[note];
+            if (note === 'Rest') return NOTES[note];
 
             const v = Number(note);
             if (Number.isInteger(v) && note == v) return v;
@@ -178,7 +178,7 @@
             if (octave == null) throw Error(`expected a note, got '${note}' (missing octave number)`);
             if (natural && delta != 0) throw Error(`naturals cannot be sharp/flat, got '${note}'`);
 
-            const base = availableNotes[`${letter}${octave}`.toUpperCase()];
+            const base = NOTES[`${letter}${octave}`.toUpperCase()];
             if (base === undefined) throw Error(`expected a note, got '${note}'`);
 
             const off = base + delta;
@@ -192,7 +192,7 @@
             if (note.contents !== undefined) return note.contents.map((x) => parseDrumNote(x));
             if (typeof (note) === 'number' && Number.isInteger(note)) return note;
             if (typeof (note) !== 'string' || note === '') throw Error(`expected a drum note, got '${note}'`);
-            if (note === 'Rest') return availableNotes[note];
+            if (note === 'Rest') return NOTES[note];
 
             const res = DRUM_TO_NOTE[note.toLowerCase()];
             if (res === undefined) throw Error(`unknown drum sound: "${note}"`);
@@ -200,7 +200,7 @@
         }
 
         async function setTrackEffect(trackName, effectName, level) {
-            const effectType = availableEffects[effectName];
+            const effectType = EFFECTS[effectName];
             if (!appliedEffects.includes(trackName + effectName)) {
                 await audio.applyTrackEffect(trackName, effectName, effectType);
                 appliedEffects.push(trackName + effectName);
@@ -212,12 +212,6 @@
                 effectOptions[parameters[i].name] = level;
             }
             await audio.updateTrackEffect(trackName, effectName, effectOptions);
-        }
-
-        function getBPM() {
-            var tempoObject = audio.getTempo();
-            var bpm = tempoObject.beatsPerMinute
-            return bpm;
         }
 
         function secondsToBeats(seconds, bpm) {
@@ -267,13 +261,12 @@
             return snapify(res);
         }
 
-        function setupTrack(name) {
-            instrumentPrefetch.then(() => {
-                audio.createTrack(name);
-                audio.createTrack(name + 'Drum');
-                audio.updateInstrument(name, 'Grand Piano');
-                audio.updateInstrument(name + 'Drum', 'Drum Kit');
-            });
+        async function setupEntity(name) {
+            await instrumentPrefetch;
+            audio.createTrack(name);
+            audio.createTrack(name + 'Drum');
+            audio.updateInstrument(name, 'Grand Piano');
+            audio.updateInstrument(name + 'Drum', 'Drum Kit');
         }
         function setupProcess(proc) {
             if (proc.musicInfo) return;
@@ -310,18 +303,16 @@
 
             onOpenRole() {
                 for (const sprite of this.ide.sprites.contents) {
-                    setupTrack(sprite.id);
+                    setupEntity(sprite.id);
                 }
-                setupTrack(this.ide.stage.id);
+                setupEntity(this.ide.stage.id);
 
                 audio.updateTempo(4, this.ide.stage.tempo);
             }
 
             onNewSprite(sprite) {
-                setupTrack(sprite.id);
+                setupEntity(sprite.id);
             }
-
-            getMenu() { return {}; }
 
             getCategories() {
                 return [
@@ -334,6 +325,7 @@
                     new Extension.Palette.Block('setInstrument'),
                     new Extension.Palette.Block('setKey'),
                     new Extension.Palette.Block('setBPM'),
+                    new Extension.Palette.Block('getBPM').withWatcherToggle(),
                     '-',
                     new Extension.Palette.Block('playNotes'),
                     new Extension.Palette.Block('playDrums'),
@@ -351,7 +343,6 @@
                     new Extension.Palette.Block('soundMetaData'),
                     '-',
                     new Extension.Palette.Block('appliedEffects').withWatcherToggle(),
-                    new Extension.Palette.Block('tempo').withWatcherToggle(),
                     '-',
                     new Extension.Palette.Block('setInputDevice'),
                     new Extension.Palette.Block('startRecordingInput'),
@@ -375,34 +366,37 @@
                             setupProcess(this);
                             await instrumentPrefetch;
 
-                            if (midiInstruments.indexOf(instrument) < 0) throw Error(`unknown instrument: "${instrument}"`);
+                            if (INSTRUMENTS.indexOf(instrument) < 0) throw Error(`unknown instrument: "${instrument}"`);
 
                             await audio.updateInstrument(this.receiver.id, instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('setKey', 'command', 'music', 'set key %keys', ['CMajor'], function (key) {
-                        if (availableKeySignatures[key] === undefined) throw Error(`unknown key: '${key}'`);
+                        if (KEYS[key] === undefined) throw Error(`unknown key: '${key}'`);
 
-                        audio.updateKeySignature(availableKeySignatures[key]);
+                        audio.updateKeySignature(KEYS[key]);
                     }),
                     new Extension.Block('setBPM', 'command', 'music', 'set tempo %n bpm', [60], function (tempo) {
                         tempo = Math.max(tempo, 1);
                         audio.updateTempo(4, tempo, 4, 4);
                         world.children[0].stage.tempo = tempo;
                     }),
+                    new Extension.Block('getBPM', 'reporter', 'music', 'tempo', [], function () {
+                        return audio.getTempo().beatsPerMinute;
+                    }).for(SpriteMorph, StageMorph),
                     new Extension.Block('playNotes', 'command', 'music', 'play %newDuration notes %mult%s', ['Quarter', ['C4']], function (durationName, notes) {
                         this.runAsyncFn(async () => {
                             setupProcess(this);
                             await instrumentPrefetch;
 
-                            const duration = availableNoteDurations[durationName];
+                            const duration = DURATIONS[durationName];
                             if (!duration) throw Error(`unknown note duration: "${durationName}"`);
 
                             notes = parseNote(notes);
                             if (!Array.isArray(notes)) notes = [notes];
                             if (notes.length === 0) notes = [parseNote('Rest')];
 
-                            const mods = this.musicInfo.mods.map(x => audio.getModification(availableNoteModifiers[x]));
+                            const mods = this.musicInfo.mods.map(x => audio.getModification(MODIFIERS[x]));
 
                             let t = Infinity;
                             for (const note of notes) {
@@ -417,14 +411,14 @@
                             setupProcess(this);
                             await instrumentPrefetch;
 
-                            const duration = availableNoteDurations[durationName];
+                            const duration = DURATIONS[durationName];
                             if (!duration) throw Error(`unknown note duration: "${durationName}"`);
 
                             notes = parseDrumNote(notes);
                             if (!Array.isArray(notes)) notes = [notes];
                             if (notes.length === 0) notes = [parseDrumNote('Rest')];
 
-                            const mods = this.musicInfo.mods.map(x => audio.getModification(availableNoteModifiers[x]));
+                            const mods = this.musicInfo.mods.map(x => audio.getModification(MODIFIERS[x]));
 
                             const t = await audio.playNote(this.receiver.id + 'Drum', parseDrumNote('Rest'), this.musicInfo.t, duration, mods);
                             for (let i = 0; i < notes.length; ++i) {
@@ -460,7 +454,7 @@
 
 
 
-                    
+
 
 
 
@@ -484,7 +478,7 @@
 
                             for (const target of [this.receiver.id, this.receiver.id + 'Drum']) {
                                 if (enable) {
-                                    await audio.applyTrackEffect(target, effect, availableEffects[effect]);
+                                    await audio.applyTrackEffect(target, effect, EFFECTS[effect]);
                                     await audio.updateTrackEffect(target, effect, params);
                                 } else {
                                     await audio.removeTrackEffect(target, effect);
@@ -550,9 +544,9 @@
                                 }, { args: [], timeout: I32_MAX });
                             case 'beats':
                                 return this.runAsyncFn(async () => {
-                                    var currentBPM = getBPM();
+                                    var currentBPM = audio.getTempo().beatsPerMinute;
                                     var clipDuration = await getAudioObjectDuration(sound.audio);
-                                    return secondsToBeats(clipDuration,currentBPM);
+                                    return secondsToBeats(clipDuration, currentBPM);
                                 }, { args: [], timeout: I32_MAX });
                             case 'samples':
                                 return this.runAsyncFn(async () => {
@@ -592,7 +586,7 @@
                             await instrumentPrefetch;
                             const trackName = this.receiver.id;
                             const drumTrackName = trackName+'Drum';
-                            for (const effectName in availableEffects) {
+                            for (const effectName in EFFECTS) {
                                 await audio.removeTrackEffect(trackName, effectName);
                                 await audio.removeTrackEffect(drumTrackName, effectName);
                             }
@@ -607,9 +601,6 @@
                         const trackName = this.id;
                         return getEffectValues(trackName, appliedEffects);
                     }).for(SpriteMorph, StageMorph),
-                    new Extension.Block('tempo', 'reporter', 'music', 'tempo', [], function () {
-                        return getBPM();
-                    }).for(SpriteMorph, StageMorph),
                     new Extension.Block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
                         const trackName = this.receiver.id;
 
@@ -617,15 +608,15 @@
                             this.runAsyncFn(async () => {
                                 disconnectDevices(trackName);
                             }, { args: [], timeout: I32_MAX });
-                        else if (midiDevices.indexOf(device) != -1)
+                        else if (MIDI_DEVICES.indexOf(device) != -1)
                             connectMidi(trackName, device);
-                        else if (audioDevices.indexOf(device != -1))
+                        else if (INPUT_DEVICES.indexOf(device != -1))
                             connectAudioInput(trackName, device);
                         else
                             throw Error('device not found');
 
-                        if (midiInstruments.length > 0) {
-                            audio.updateInstrument(trackName, midiInstruments[0]).then(() => {
+                        if (INSTRUMENTS.length > 0) {
+                            audio.updateInstrument(trackName, INSTRUMENTS[0]).then(() => {
                                 console.log('default instrument set');
                             });
                         } else {
@@ -663,13 +654,13 @@
 
                         return this.runAsyncFn(async () => {
                             let temp = await clipToSnap(lastRecordedClip);
-                            temp.audioBuffer = await lastRecordedClip.getEncodedData(availableEncoders['WAV']);
+                            temp.audioBuffer = await lastRecordedClip.getEncodedData(ENCODERS['WAV']);
                             return temp;
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('audioAnalysis', 'reporter', 'music', 'get output %analysisType', ['TimeSeries'], function (ty) {
-                        if (!availableAnalysisTypes[ty]) throw Error(`unknown audio analysis type: '${ty}'`);
-                        return snapify(audio.analyzeAudio(availableAnalysisTypes[ty]));
+                        if (!ANALYSES[ty]) throw Error(`unknown audio analysis type: '${ty}'`);
+                        return snapify(audio.analyzeAudio(ANALYSES[ty]));
                     }),
                 ];
             }
@@ -750,25 +741,25 @@
                     new Extension.LabelPart('instrument', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
-                        identityMap(midiInstruments),
+                        identityMap(INSTRUMENTS),
                         true, // readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('inputDevice', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
-                        identityMap([...midiDevices, ...audioDevices]),
+                        identityMap([...MIDI_DEVICES, ...INPUT_DEVICES]),
                         true, // readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('analysisType', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
-                        identityMap(Object.keys(availableAnalysisTypes)),
+                        identityMap(Object.keys(ANALYSES)),
                         true, // readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('keys', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
-                        identityMap(Object.keys(availableKeySignatures)),
+                        identityMap(Object.keys(KEYS)),
                         true, // readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('drums', () => new InputSlotMorph(
