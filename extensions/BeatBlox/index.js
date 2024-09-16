@@ -267,11 +267,6 @@
             return snapify(res);
         }
 
-        function stopAudio() {
-            audio.stop();
-            audio.clearAllTracks();
-            audio.start();
-        }
         function setupTrack(name) {
             instrumentPrefetch.then(() => {
                 audio.createTrack(name);
@@ -309,7 +304,7 @@
                 const _runStopScripts = StageMorph.prototype.runStopScripts;
                 StageMorph.prototype.runStopScripts = function () {
                     _runStopScripts.call(this);
-                    stopAudio();
+                    audio.clearAllTracks();
                 };
             }
 
@@ -345,9 +340,6 @@
                     new Extension.Palette.Block('rest'),
                     '-',
                     new Extension.Palette.Block('playClip'),
-                    new Extension.Palette.Block('stopAudio'),
-                    '-',
-                    new Extension.Palette.Block('soundMetaData'),
                     '-',
                     new Extension.Palette.Block('noteModifierC'),
                     '-',
@@ -356,6 +348,7 @@
                     new Extension.Palette.Block('clearTrackEffects'),
                     '-',
                     new Extension.Palette.Block('audioAnalysis'),
+                    new Extension.Palette.Block('soundMetaData'),
                     '-',
                     new Extension.Palette.Block('appliedEffects').withWatcherToggle(),
                     new Extension.Palette.Block('tempo').withWatcherToggle(),
@@ -452,43 +445,22 @@
                             const sound = this.receiver.sounds.contents.find(x => x.name === name);
                             if (!sound) throw Error(`unknown sound: "${name}"`);
 
-                            const buffer = clip.audioBuffer || decodeBase64(clip.audio.src.split(',')[1]);
-                            return audio.playClip(trackName, buffer, startTime, duration);
-
+                            const buffer = sound.audioBuffer || decodeBase64(sound.audio.src.split(',')[1]);
+                            const t = await audio.playClip(this.receiver.id, buffer, this.musicInfo.t);
+                            this.musicInfo.t += t;
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
-
-
-
-                        // async function playClip(trackName, clip, startTime, duration = undefined) {
-                            
-                        // }
-
-                        // if(clip instanceof List){
-                        //     const newClip = {}
-                        //     const listArray = clip.contents;
-                        //     const bytes = new Float32Array(listArray);
-                        //     const buffer = new AudioContext().createBuffer(1, listArray.length, 44100);
-                        //     buffer.copyToChannel(bytes,0);
-                        //     newClip.audioBuffer = buffer;
-                        //     clip = newClip;
-                        // }
-
-                        // await instrumentPrefetch;
-                        // const trackName = this.receiver.id;
-                        // const t = await playClip(trackName, clip, this.musicInfo.t);
-                        // this.musicInfo.t += t;
-                        // await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                     }),
 
 
 
 
-                    new Extension.Block('stopAudio', 'command', 'music', 'stop all audio', [], function () {
-                        stopAudio();
-                        this.doStopAll();
-                    }),
 
 
+
+
+
+                    
 
 
 
