@@ -371,7 +371,6 @@
                                 });
                             } else if (query === 'samples') {
                                 const buffer = sound.audioBuffer || decodeBase64(sound.audio.src.split(',')[1]);
-                                console.log('here', sound, buffer);
                                 const decoded = await audio.decodeAudioClip(buffer);
 
                                 const res = [];
@@ -415,7 +414,7 @@
                             const buffer = audio.createAudioBufferFromSamples(sampleRate, samples);
                             const blob = await audio.encodeAudioAs(ENCODERS['WAV'], buffer);
                             const res = new Sound(new Audio(URL.createObjectURL(blob, { type: 'audio/wav' })), 'netsblox-sound');
-                            res.audioBuffer = buffer;
+                            res.audioBuffer = blob;
                             return res;
                         }, { args: [], timeout: I32_MAX });
                     }),
@@ -500,8 +499,7 @@
                             await recording.finalize();
 
                             const blob = await recording.getEncodedData(ENCODERS['WAV']);
-                            const src = new Audio(URL.createObjectURL(blob, { type: 'audio/wav' }));
-                            const res = new Sound(src, 'netsblox-sound');
+                            const res = new Sound(new Audio(URL.createObjectURL(blob, { type: 'audio/wav' })), 'netsblox-sound');
                             res.audioBuffer = blob;
                             return res;
                         }, { args: [], timeout: I32_MAX });
