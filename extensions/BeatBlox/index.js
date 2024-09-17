@@ -539,73 +539,24 @@
                     }
                     return res;
                 }
+                const basicEnum = (name, values) => new Extension.LabelPart(name, () => new InputSlotMorph(null, false, values, true));
                 return [
-                    new Extension.LabelPart('instrument', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(INSTRUMENTS),
-                        true, // readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('key', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(Object.keys(KEYS)),
-                        true, // readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('noteDuration', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        ((base) => unionMaps([
-                            identityMap(base),
-                            {
-                                'Dotted': identityMap(base.map(x => [x, 'Dotted' + x])),
-                                'DottedDotted': identityMap(base.map(x => [x, 'DottedDotted' + x])),
-                            },
-                        ]))(['Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'ThirtySecond', 'SixtyFourth']),
-                        true, // readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('drum', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(Object.keys(DRUM_TO_NOTE)),
-                        true, // readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('noteModifier', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(['Piano', 'Forte', 'Accent', 'Staccato', 'Triplet', 'TurnUpper', 'TurnLower']),
-                        true, // readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('audioQuery', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(['name', 'duration', 'samples', 'sample rate']),
-                        true, // readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('audioEffect', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(Object.keys(EFFECT_PARAMS)),
-                        true, // readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('audioInput', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap([...MIDI_DEVICES, ...INPUT_DEVICES]),
-                        true, // readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('io', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(['input', 'output']),
-                        true, // readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('audioAnalysis', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(Object.keys(ANALYSES)),
-                        true, // readonly (no arbitrary text)
-                    )),
+                    basicEnum('instrument', identityMap(INSTRUMENTS)),
+                    basicEnum('key', identityMap(Object.keys(KEYS))),
+                    basicEnum('noteDuration', (base => unionMaps([
+                        identityMap(base),
+                        {
+                            'Dotted': identityMap(base.map(x => [x, 'Dotted' + x])),
+                            'DottedDotted': identityMap(base.map(x => [x, 'DottedDotted' + x])),
+                        },
+                    ]))(['Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'ThirtySecond', 'SixtyFourth'])),
+                    basicEnum('drum', identityMap(Object.keys(DRUM_TO_NOTE))),
+                    basicEnum('noteModifier', identityMap(['Piano', 'Forte', 'Accent', 'Staccato', 'Triplet', 'TurnUpper', 'TurnLower'])),
+                    basicEnum('audioQuery', identityMap(['name', 'duration', 'samples', 'sample rate'])),
+                    basicEnum('audioEffect', identityMap(Object.keys(EFFECT_PARAMS))),
+                    basicEnum('audioInput', identityMap([...MIDI_DEVICES, ...INPUT_DEVICES])),
+                    basicEnum('io', identityMap(['input', 'output'])),
+                    basicEnum('audioAnalysis', identityMap(Object.keys(ANALYSES))),
                 ];
             }
         }
