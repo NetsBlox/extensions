@@ -247,7 +247,7 @@
                     '-',
                     new Extension.Palette.Block('setAudioInput'),
                     new Extension.Palette.Block('startRecording'),
-                    new Extension.Palette.Block('stopRecording'),
+                    new Extension.Palette.Block('finishRecording'),
                     new Extension.Palette.Block('isRecording'),
                     '-',
                     new Extension.Palette.Block('audioAnalysis'),
@@ -490,7 +490,7 @@
                             }
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('stopRecording', 'reporter', 'music', 'stop recording', [], function () {
+                    new Extension.Block('finishRecording', 'reporter', 'music', 'finish recording', [], function () {
                         return this.runAsyncFn(async () => {
                             const recording = activeRecording;
                             activeRecording = null;
