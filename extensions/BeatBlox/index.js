@@ -126,7 +126,9 @@
                 if (v === '+' || v === '-' || (v >= '0' && v <= '9')) {
                     if (octave != null) throw Error(`expected a note, got '${note}' (multiple octaves listed)`);
                     ++i;
-                    for (; i < note.length && note[i] >= '0' && note[i] <= '9'; ++i) v += note[i];
+                    for (; i < note.length && note[i] >= '0' && note[i] <= '9'; ++i) {
+                        v += note[i];
+                    }
                     --i;
                     octave = parseInt(v);
                 } else if (v === 's' || v === '#' || v === '♯') {
@@ -164,6 +166,7 @@
 
         async function setupEntity(entity) {
             if (entity.musicInfo) return;
+
             entity.musicInfo = {
                 effects: {},
             };
@@ -176,6 +179,7 @@
         }
         function setupProcess(proc) {
             if (proc.musicInfo) return;
+
             proc.musicInfo = {
                 t: audio.getCurrentTime() + 0.001,
                 mods: [],
@@ -529,7 +533,9 @@
                 function unionMaps(maps) {
                     const res = {};
                     for (const map of maps) {
-                        for (const key in map) res[key] = map[key];
+                        for (const key in map) {
+                            res[key] = map[key];
+                        }
                     }
                     return res;
                 }
