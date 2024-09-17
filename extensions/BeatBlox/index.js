@@ -2,11 +2,17 @@
     const I32_MAX = 2147483647;
     const SCHEDULING_WINDOW = 0.02; // seconds
 
-    const PRESET_EFFECTS = {
-        'Under Water': ['LowPassFilter',  { 'cutoffFrequency':  500,  'resonance': 12  }],
-        'Telephone':   ['HighPassFilter', { 'cutoffFrequency':  1800, 'resonance': 10  }],
-        'Cave':        ['Echo',           { 'intensity':        0.4,  'feedback':  0.5 }],
-        'Fan Blade':   ['Tremolo',        { 'tremeloFrequency': 18                     }],
+    function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
+    function lerp(x, a, b) { return (1 - x) * a + x * b; }
+    const EFFECT_PARAMS = {
+        'Volume':     ['Volume' ,        x => ({ 'intensity': clamp(x, 0, 1) })],
+        'Delay':      ['Delay',          x => ({ 'delay': clamp(x, 0, 1), 'attenuation': 0.5 })],
+        'Reverb':     ['Reverb',         x => ({ 'decay': 0.3, 'roomSize': 0.1, 'intensity': clamp(x, 0, 1) })],
+        'Echo':       ['Echo',           x => ({ 'echoTime': 0.5, 'intensity': clamp(x, 0, 1) * 0.4 })],
+        'Panning':    ['Panning',        x => ({ 'leftToRightRatio': clamp(x, 0, 1) })],
+        'Underwater': ['LowPassFilter',  x => ({ 'cutoffFrequency': lerp(Math.pow(clamp(x, 0, 1), 0.1666), 22050, 500), 'resonance': 12 })],
+        'Telephone':  ['HighPassFilter', x => ({ 'cutoffFrequency': Math.pow(clamp(x, 0, 1), 1.4) * 1800, 'resonance': 10 })],
+        'Fan':        ['Tremolo',        x => ({ 'rate': 15, 'intensity': Math.pow(clamp(x, 0, 1), 0.7) })],
     };
 
     const DRUM_TO_NOTE = {
@@ -173,12 +179,17 @@
             return parseNote(res);
         }
 
-        async function setupEntity(name) {
+        async function setupEntity(entity) {
+            if (entity.musicInfo) return;
+            entity.musicInfo = {
+                effects: {},
+            };
+
             await instrumentPrefetch;
-            audio.createTrack(name);
-            audio.createTrack(name + 'Drum');
-            audio.updateInstrument(name, 'Grand Piano');
-            audio.updateInstrument(name + 'Drum', 'Drum Kit');
+            audio.createTrack(entity.id);
+            audio.createTrack(entity.id + 'Drum');
+            audio.updateInstrument(entity.id, 'Grand Piano');
+            audio.updateInstrument(entity.id + 'Drum', 'Drum Kit');
         }
         function setupProcess(proc) {
             if (proc.musicInfo) return;
@@ -213,15 +224,15 @@
 
             onOpenRole() {
                 for (const sprite of this.ide.sprites.contents) {
-                    setupEntity(sprite.id);
+                    setupEntity(sprite);
                 }
-                setupEntity(this.ide.stage.id);
+                setupEntity(this.ide.stage);
 
                 audio.updateTempo(4, this.ide.stage.tempo);
             }
 
             onNewSprite(sprite) {
-                setupEntity(sprite.id);
+                setupEntity(sprite);
             }
 
             getCategories() {
@@ -245,9 +256,9 @@
                     '-',
                     new Extension.Palette.Block('noteMod'),
                     '-',
-                    new Extension.Palette.Block('presetEffect'),
-                    new Extension.Palette.Block('setTrackEffect'),
-                    new Extension.Palette.Block('clearTrackEffects'),
+                    new Extension.Palette.Block('setAudioEffect'),
+                    new Extension.Palette.Block('clearAudioEffects'),
+                    new Extension.Palette.Block('getAudioEffects'),
                     '-',
                     new Extension.Palette.Block('audioAnalysis'),
                     new Extension.Palette.Block('soundMetaData'),
@@ -364,6 +375,44 @@
                             this.musicInfo.mods.pop();
                         }
                     }),
+                    new Extension.Block('setAudioEffect', 'command', 'music', 'set %effect effect to %n %', ['Volume', 100], function (effect, rawValue) {
+                        this.runAsyncFn(async () => {
+                            setupProcess(this);
+                            await instrumentPrefetch;
+
+                            const [effectTy, params] = EFFECT_PARAMS[effect] || [null, null];
+                            if (!effectTy || !params) throw Error(`unknown effect: "${effect}"`);
+
+                            const value = rawValue / 100;
+                            if (isNaN(value)) throw Error(`expected a number, got "${rawValue}"`);
+
+                            const targets = [this.receiver.id, this.receiver.id + 'Drum'];
+                            if (this.receiver.musicInfo.effects[effect] === undefined) {
+                                for (const target of targets) {
+                                    await audio.applyTrackEffect(target, effect, EFFECTS[effectTy]);
+                                }
+                            }
+                            this.receiver.musicInfo.effects[effect] = 100 * value;
+                            for (const target of targets) {
+                                await audio.updateTrackEffect(target, effect, params(value));
+                            }
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('clearAudioEffects', 'command', 'music', 'clear track effects', [], function () {
+                        for (const effect in EFFECT_PARAMS) {
+                            for (const target of [this.receiver.id, this.receiver.id + 'Drum']) {
+                                audio.removeTrackEffect(target, effect);
+                            }
+                        }
+                        this.receiver.musicInfo.effects = {};
+                    }),
+                    new Extension.Block('getAudioEffects', 'reporter', 'music', 'effects', [], function () {
+                        return snapify(this.receiver.musicInfo.effects);
+                    }),
+
+
+
+
 
 
 
@@ -399,30 +448,6 @@
 
 
 
-
-
-
-
-
-
-                    new Extension.Block('presetEffect', 'command', 'music', 'preset %fxPreset effect %b', [], function (effectName, enable) {
-                        this.runAsyncFn(async () => {
-                            setupProcess(this);
-                            await instrumentPrefetch;
-
-                            const [effect, params] = PRESET_EFFECTS[effectName] || [null, null];
-                            if (!effect) throw Error(`unknown effect: "${effectName}"`);
-
-                            for (const target of [this.receiver.id, this.receiver.id + 'Drum']) {
-                                if (enable) {
-                                    await audio.applyTrackEffect(target, effect, EFFECTS[effect]);
-                                    await audio.updateTrackEffect(target, effect, params);
-                                } else {
-                                    await audio.removeTrackEffect(target, effect);
-                                }
-                            }
-                        }, { args: [], timeout: I32_MAX });
-                    }),
 
 
 
@@ -522,45 +547,7 @@
                         }
                         return 'OK';
                     }),
-                    new Extension.Block('setTrackEffect', 'command', 'music', 'track %effects effect to %n %', ['Delay', '50'], function (effectName, level) {
-                        async function setTrackEffect(trackName, effectName, level) {
-                            const effectType = EFFECTS[effectName];
-                            if (!appliedEffects.includes(trackName + effectName)) {
-                                await audio.applyTrackEffect(trackName, effectName, effectType);
-                                appliedEffects.push(trackName + effectName);
-                            }
-                
-                            const parameters = audio.getAvailableEffectParameters(effectType);
-                            const effectOptions = {};
-                            for (let i = 0; i < parameters.length; i++) {
-                                effectOptions[parameters[i].name] = level;
-                            }
-                            await audio.updateTrackEffect(trackName, effectName, effectOptions);
-                        }
-
-                        if (parseInt(level) > 100) level = 100
-                        if (parseInt(level) < 0) level = 0
-                        if (effectName == 'Echo' && level > 95) level = 95
-                        if (effectName == 'Reverb' && level < 10) level = 10
-                        this.runAsyncFn(async () => {
-                            await instrumentPrefetch;
-                            const trackName = this.receiver.id;
-                            const drumTrackName = trackName+'Drum';
-                            await setTrackEffect(trackName, effectName, parseInt(level) / 100);
-                            await setTrackEffect(drumTrackName, effectName, parseInt(level) / 100);
-                        }, { args: [], timeout: I32_MAX });
-                    }),
-                    new Extension.Block('clearTrackEffects', 'command', 'music', 'clear track effects', [], function () {
-                        this.runAsyncFn(async () => {
-                            await instrumentPrefetch;
-                            const trackName = this.receiver.id;
-                            const drumTrackName = trackName+'Drum';
-                            for (const effectName in EFFECTS) {
-                                await audio.removeTrackEffect(trackName, effectName);
-                                await audio.removeTrackEffect(drumTrackName, effectName);
-                            }
-                        }, { args: [], timeout: I32_MAX });
-                    }),
+                    
                     new Extension.Block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
                         async function disconnectDevices(trackName) {
                             console.log('device disconnected');
@@ -704,40 +691,32 @@
                         identityMap(Object.keys(DRUM_TO_NOTE)),
                         true, // readonly (no arbitrary text)
                     )),
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                     new Extension.LabelPart('modifier', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
                         identityMap(['Piano', 'Forte', 'Accent', 'Staccato', 'Triplet', 'TurnUpper', 'TurnLower']),
                         true, // readonly (no arbitrary text)
                     )),
-                    new Extension.LabelPart('effects', () => new InputSlotMorph(
+                    new Extension.LabelPart('effect', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
-                        identityMap(['Volume','Delay', 'Reverb', 'Echo', 'Panning']),
+                        identityMap(Object.keys(EFFECT_PARAMS)),
                         true, // readonly (no arbitrary text)
                     )),
-                    new Extension.LabelPart('fxPreset', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(['Under Water', 'Telephone', 'Cave', 'Fan Blade']),
-                        true, // readonly (no arbitrary text)
-                    )),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     new Extension.LabelPart('soundMetaData', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
