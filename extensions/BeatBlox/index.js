@@ -353,7 +353,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('noteMod', 'command', 'music', 'modifier %modifier %c', ['TurnUpper'], function (mod, code) {
+                    new Extension.Block('noteMod', 'command', 'music', 'note modifier %modifier %c', ['TurnUpper'], function (mod, code) {
                         setupProcess(this);
                         if (!this.context.modFlag) {
                             this.context.modFlag = true;
@@ -387,7 +387,7 @@
                             }
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('clearAudioEffects', 'command', 'music', 'clear track effects', [], function () {
+                    new Extension.Block('clearAudioEffects', 'command', 'music', 'clear audio effects', [], function () {
                         for (const effect in EFFECT_PARAMS) {
                             for (const target of [this.receiver.id, this.receiver.id + 'Drum']) {
                                 audio.removeTrackEffect(target, effect);
@@ -395,7 +395,7 @@
                         }
                         this.receiver.musicInfo.effects = {};
                     }),
-                    new Extension.Block('getAudioEffects', 'reporter', 'music', 'effects', [], function () {
+                    new Extension.Block('getAudioEffects', 'reporter', 'music', 'audio effects', [], function () {
                         return snapify(this.receiver.musicInfo.effects);
                     }),
 
