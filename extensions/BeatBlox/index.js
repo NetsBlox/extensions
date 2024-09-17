@@ -70,15 +70,15 @@
             try {
                 INSTRUMENTS = await audio.getAvailableInstruments(absoluteUrl('instruments'));
 
-                const indexOfDrumKit = INSTRUMENTS.indexOf('Drum Kit');
-                INSTRUMENTS.splice(indexOfDrumKit, 1);
-
                 console.log('beginning instrument pre-fetch...');
                 const tempTrack = '<<<temp-track>>>';
                 audio.createTrack(tempTrack);
                 await Promise.all(INSTRUMENTS.map((x) => audio.updateInstrument(tempTrack, x)));
                 audio.removeTrack(tempTrack);
                 console.log('instrument pre-fetch completed');
+
+                const p = INSTRUMENTS.indexOf('Drum Kit');
+                if (p >= 0) INSTRUMENTS.splice(p, 1);
             } catch (e) {
                 console.error('failed to load instruments', e);
             }
@@ -240,17 +240,17 @@
                     new Extension.Palette.Block('playNotes'),
                     new Extension.Palette.Block('playDrums'),
                     new Extension.Palette.Block('rest'),
+                    new Extension.Palette.Block('noteMod'),
                     '-',
                     new Extension.Palette.Block('playClip'),
-                    '-',
-                    new Extension.Palette.Block('noteMod'),
+                    new Extension.Palette.Block('queryClip'),
+                    new Extension.Palette.Block('createClip'),
                     '-',
                     new Extension.Palette.Block('setAudioEffect'),
                     new Extension.Palette.Block('clearAudioEffects'),
                     new Extension.Palette.Block('getAudioEffects'),
                     '-',
                     new Extension.Palette.Block('audioAnalysis'),
-                    new Extension.Palette.Block('soundMetaData'),
                     '-',
                     new Extension.Palette.Block('setInputDevice'),
                     new Extension.Palette.Block('startRecordingInput'),
@@ -292,7 +292,7 @@
                     new Extension.Block('getBPM', 'reporter', 'music', 'tempo', [], function () {
                         return audio.getTempo().beatsPerMinute;
                     }),
-                    new Extension.Block('playNotes', 'command', 'music', 'play %duration notes %mult%s', ['Quarter', ['C4']], function (durationName, notes) {
+                    new Extension.Block('playNotes', 'command', 'music', 'play %noteDuration notes %mult%s', ['Quarter', ['C4']], function (durationName, notes) {
                         this.runAsyncFn(async () => {
                             setupProcess(this);
                             await instrumentPrefetch;
@@ -314,7 +314,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playDrums', 'command', 'music', 'hit %duration note drums %mult%drum', ['Quarter', ['Kick']], function (durationName, notes) {
+                    new Extension.Block('playDrums', 'command', 'music', 'hit %noteDuration note drums %mult%drum', ['Quarter', ['Kick']], function (durationName, notes) {
                         this.runAsyncFn(async () => {
                             setupProcess(this);
                             await instrumentPrefetch;
@@ -336,24 +336,10 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('rest', 'command', 'music', 'rest %duration', ['Quarter'], function (durationName) {
+                    new Extension.Block('rest', 'command', 'music', 'rest %noteDuration', ['Quarter'], function (durationName) {
                         this.playNotes(durationName, 'Rest');
                     }),
-                    new Extension.Block('playClip', 'command', 'music', 'play sound %snd', [], function (name) {
-                        this.runAsyncFn(async () => {
-                            setupProcess(this);
-                            await instrumentPrefetch;
-
-                            const sound = this.receiver.sounds.contents.find(x => x.name === name);
-                            if (!sound) throw Error(`unknown sound: "${name}"`);
-
-                            const buffer = sound.audioBuffer || decodeBase64(sound.audio.src.split(',')[1]);
-                            const t = await audio.playClip(this.receiver.id, buffer, this.musicInfo.t);
-                            this.musicInfo.t += t;
-                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                        }, { args: [], timeout: I32_MAX });
-                    }),
-                    new Extension.Block('noteMod', 'command', 'music', 'note modifier %modifier %c', ['TurnUpper'], function (mod, code) {
+                    new Extension.Block('noteMod', 'command', 'music', 'note modifier %noteModifier %c', ['TurnUpper'], function (mod, code) {
                         setupProcess(this);
                         if (!this.context.modFlag) {
                             this.context.modFlag = true;
@@ -364,7 +350,91 @@
                             this.musicInfo.mods.pop();
                         }
                     }),
-                    new Extension.Block('setAudioEffect', 'command', 'music', 'set %effect effect to %n %', ['Volume', 100], function (effect, rawValue) {
+                    new Extension.Block('playClip', 'command', 'music', 'play sound %snd', [], function (rawSound) {
+                        this.runAsyncFn(async () => {
+                            setupProcess(this);
+                            await instrumentPrefetch;
+
+                            const sound = typeof(rawSound) === 'string' ? this.receiver.sounds.contents.find(x => x.name === rawSound) : rawSound;
+                            if (!sound) throw Error(typeof(rawSound) === 'string' ? `unknown sound: "${rawSound}"` : 'input must be a sound');
+
+                            const buffer = sound.audioBuffer || decodeBase64(sound.audio.src.split(',')[1]);
+                            const t = await audio.playClip(this.receiver.id, buffer, this.musicInfo.t);
+                            this.musicInfo.t += t;
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('queryClip', 'reporter', 'music', '%audioQuery of sound %snd', ['name'], function (query, rawSound) {
+                        return this.runAsyncFn(async () => {
+                            const sound = typeof(rawSound) === 'string' ? this.receiver.sounds.contents.find(x => x.name === rawSound) : rawSound;
+                            if (!sound) throw Error(typeof(rawSound) === 'string' ? `unknown sound: "${rawSound}"` : 'input must be a sound');
+
+                            if (query === 'name') {
+                                return sound.name || 'untitled';
+                            } else if (query === 'duration') {
+                                return await new Promise((resolve, reject) => {
+                                    sound.audio.addEventListener('loadedmetadata', () => resolve(sound.audio.duration), { once: true });
+                                    sound.audio.addEventListener('error', () => reject('Error loading audio metadata'), { once: true });
+                                    if (sound.audio.readyState >= 1) return resolve(sound.audio.duration);
+                                });
+                            } else if (query === 'samples') {
+                                const buffer = sound.audioBuffer || decodeBase64(sound.audio.src.split(',')[1]);
+                                const decoded = await audio.decodeAudioClip(buffer);
+
+                                const res = [];
+                                for (let i = 0; i < decoded.numberOfChannels; ++i) {
+                                    res.push(Array.from(decoded.getChannelData(i)));
+                                }
+                                return snapify(res);
+                            } else if (query === 'sample rate') {
+                                const buffer = sound.audioBuffer || decodeBase64(sound.audio.src.split(',')[1]);
+                                const decoded = await audio.decodeAudioClip(buffer);
+                                return decoded.sampleRate;
+                            } else {
+                                throw Error(`unknown sound property: "${query}"`);
+                            }
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('createClip', 'reporter', 'music', 'samples %l at %n Hz', [null, 44100], function (samples, sampleRate) {
+                        return this.runAsyncFn(async () => {
+                            sampleRate = +sampleRate;
+                            if (isNaN(sampleRate) || !isFinite(sampleRate) || sampleRate < 1) throw Error('invalid sample rate');
+
+                            if (samples.contents !== undefined) samples = samples.contents;
+                            if (!Array.isArray(samples)) throw Error(`expected a list, got ${typeof(samples)}`);
+                            if (samples.every(x => x.contents === undefined && !Array.isArray(x))) samples = [samples];
+                            samples = [...samples];
+
+                            let maxLen = 0;
+                            for (let i = 0; i < samples.length; ++i) {
+                                if (samples[i].contents !== undefined) samples[i] = samples[i].contents;
+                                if (!Array.isArray(samples[i])) throw Error(`expected a list, got ${typeof(samples[i])}`);
+                                samples[i] = samples[i].map(x => +x);
+                                if (samples[i].some(x => isNaN(x) || !isFinite(x))) throw Error('samples must be numbers');
+                                maxLen = Math.max(maxLen, samples[i].length);
+                            }
+                            for (const channel of samples) {
+                                for (let i = channel.length; i < maxLen; ++i) {
+                                    channel.push(0);
+                                }
+                            }
+
+                            const buffer = new AudioContext().createBuffer(samples.length, maxLen, sampleRate);
+                            for (let i = 0; i < samples.length; ++i) {
+                                const res = buffer.getChannelData(i);
+                                for (let j = 0; j < samples[i].length; ++j) {
+                                    res[j] = clamp(samples[i][j], -1, 1);
+                                }
+                            }
+
+                            const blob = await window.getEncoderFor(ENCODERS['WAV']).encode(buffer);
+                            const src = new Audio(URL.createObjectURL(blob, { type: 'audio/wav' }));
+                            const res = new Sound(src, 'netsblox-sound');
+                            res.audioBuffer = buffer;
+                            return res;
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('setAudioEffect', 'command', 'music', 'set %audioEffect effect to %n %', ['Volume', 100], function (effect, rawValue) {
                         this.runAsyncFn(async () => {
                             setupProcess(this);
                             await instrumentPrefetch;
@@ -474,69 +544,6 @@
 
 
 
-                    new Extension.Block('soundMetaData', 'reporter', 'music', '%soundMetaData of sound %snd', ['duration', ''], function (option, sound) {
-                        function getAudioObjectDuration(audioElement) {
-                            return new Promise((resolve, reject) => {
-                                if (audioElement.readyState >= 1) {
-                                    resolve(audioElement.duration);
-                                } else {
-                                    audioElement.addEventListener('loadedmetadata', () => {
-                                        resolve(audioElement.duration);
-                                    }, { once: true });
-                                    audioElement.addEventListener('error', (err) => {
-                                        reject('Error loading audio metadata');
-                                    }, { once: true });
-                                }
-                            });
-                        }
-
-                        if (sound === '') throw Error(`sound cannot be empty`);
-
-                        for (const element of this.receiver.sounds.contents) {
-                            if (sound === element.name) {
-                                sound = element;
-                                break;
-                            }
-                        }
-
-                        switch (option) {
-                            case 'name':
-                                return sound.name;
-                            case 'duration':
-                                return this.runAsyncFn(async () => {
-                                    const duration = await getAudioObjectDuration(sound.audio);
-                                    return duration;
-                                }, { args: [], timeout: I32_MAX });
-                            case 'beats':
-                                return this.runAsyncFn(async () => {
-                                    const currentBPM = audio.getTempo().beatsPerMinute;
-                                    const clipDuration = await getAudioObjectDuration(sound.audio);
-                                    return (clipDuration * currentBPM) / 60;
-                                }, { args: [], timeout: I32_MAX });
-                            case 'samples':
-                                return this.runAsyncFn(async () => {
-                                    async function arrayBufferToTimeSeries(arrayBuffer) {
-                                        const audioBuffer = await audio.decodeAudioClip(arrayBuffer);
-                                        if (audioBuffer.numberOfChannels > 1) {
-                                            const result = [];
-                                            for (let i = 0; i < audioBuffer.numberOfChannels; i += 1) {
-                                                result.push(Array.from(audioBuffer.getChannelData(i)));
-                                            }
-                                            return result;
-                                        }
-                            
-                                        const result = Array.from(audioBuffer.getChannelData(0));
-                                        return result;
-                                    }
-
-                                    const buffer = decodeBase64(sound.audio.src.split(',')[1]);
-                                    const timeSeries = await arrayBufferToTimeSeries(buffer);
-                                    return snapify(timeSeries);
-                               }, { args: [], timeout: I32_MAX });
-                        }
-                        return 'OK';
-                    }),
-                    
                     new Extension.Block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
                         async function disconnectDevices(trackName) {
                             console.log('device disconnected');
@@ -662,7 +669,7 @@
                         identityMap(Object.keys(KEYS)),
                         true, // readonly (no arbitrary text)
                     )),
-                    new Extension.LabelPart('duration', () => new InputSlotMorph(
+                    new Extension.LabelPart('noteDuration', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
                         ((base) => unionMaps([
@@ -680,13 +687,19 @@
                         identityMap(Object.keys(DRUM_TO_NOTE)),
                         true, // readonly (no arbitrary text)
                     )),
-                    new Extension.LabelPart('modifier', () => new InputSlotMorph(
+                    new Extension.LabelPart('noteModifier', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
                         identityMap(['Piano', 'Forte', 'Accent', 'Staccato', 'Triplet', 'TurnUpper', 'TurnLower']),
                         true, // readonly (no arbitrary text)
                     )),
-                    new Extension.LabelPart('effect', () => new InputSlotMorph(
+                    new Extension.LabelPart('audioQuery', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
+                        identityMap(['name', 'duration', 'samples', 'sample rate']),
+                        true, // readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('audioEffect', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
                         identityMap(Object.keys(EFFECT_PARAMS)),
@@ -706,12 +719,10 @@
 
 
 
-                    new Extension.LabelPart('soundMetaData', () => new InputSlotMorph(
-                        null, // text
-                        false, // numeric
-                        identityMap(['name', 'duration', 'beats', 'samples']),
-                        true, // readonly (no arbitrary text)
-                    )),
+
+
+
+
                     new Extension.LabelPart('inputDevice', () => new InputSlotMorph(
                         null, // text
                         false, // numeric

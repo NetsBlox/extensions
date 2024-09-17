@@ -7746,5 +7746,6 @@ class WebAudioAPI {
 
 // Attach a WebAudioAPI reference to "window" so that it can be accessed from non-module Javascript files
 window.WebAudioAPI = WebAudioAPI;
+window.getEncoderFor = getEncoderFor;
 
 export { WebAudioAPI };
