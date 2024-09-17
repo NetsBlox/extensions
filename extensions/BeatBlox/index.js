@@ -89,25 +89,6 @@
             }
         })();
 
-        function connectMidi(trackName, device) {
-            if (device !== '') {
-                const mDevice = device.replace('---(midi)', '');
-                audio.connectMidiDeviceToTrack(trackName, mDevice).then(() => {
-                    console.log('Connected to MIDI device!');
-                });
-                currentDeviceType = 'midi';
-            }
-        }
-
-        function connectAudioInput(trackName, device) {
-            if (device != '') {
-                audio.connectAudioInputDeviceToTrack(trackName, device).then(() => {
-                    console.log('Connected to audio device!');
-                });
-                currentDeviceType = 'audio';
-            }
-        }
-
         async function clipToSnap(clip) {
             const blob = await clip.getEncodedData(ENCODERS['WAV']);
             const audio = new Audio(URL.createObjectURL(blob, { type: 'audio/wav' }));
@@ -116,22 +97,16 @@
 
         function snapify(value) {
             if (typeof (value.map) === 'function') {
-                return new List(value.map((x) => snapify(x)));
+                return new List(value.map(x => snapify(x)));
             } else if (typeof (value) === 'object') {
                 const res = [];
-                for (const key in value) res.push(new List([key, snapify(value[key])]));
+                for (const key in value) {
+                    res.push(new List([key, snapify(value[key])]));
+                }
                 return new List(res);
             } else {
                 return value;
             }
-        }
-
-        async function disconnectDevices(trackName) {
-            console.log('device disconnected');
-            if (INPUT_DEVICES.length > 0)
-                await audio.disconnectAudioInputDeviceFromTrack(trackName);
-            if (MIDI_DEVICES.length > 0)
-                await audio.disconnectMidiDeviceFromTrack(trackName);
         }
 
         function decodeBase64(base64) {
@@ -186,7 +161,6 @@
 
             return natural ? -off : off;
         }
-
         function parseDrumNote(note) {
             if (Array.isArray(note)) return note.map((x) => parseDrumNote(x));
             if (note.contents !== undefined) return note.contents.map((x) => parseDrumNote(x));
@@ -197,50 +171,6 @@
             const res = DRUM_TO_NOTE[note.toLowerCase()];
             if (res === undefined) throw Error(`unknown drum sound: "${note}"`);
             return parseNote(res);
-        }
-
-        async function setTrackEffect(trackName, effectName, level) {
-            const effectType = EFFECTS[effectName];
-            if (!appliedEffects.includes(trackName + effectName)) {
-                await audio.applyTrackEffect(trackName, effectName, effectType);
-                appliedEffects.push(trackName + effectName);
-            }
-
-            const parameters = audio.getAvailableEffectParameters(effectType);
-            const effectOptions = {};
-            for (let i = 0; i < parameters.length; i++) {
-                effectOptions[parameters[i].name] = level;
-            }
-            await audio.updateTrackEffect(trackName, effectName, effectOptions);
-        }
-
-        async function arrayBufferToTimeSeries(arrayBuffer) {
-            const audioBuffer = await audio.decodeAudioClip(arrayBuffer);
-            if (audioBuffer.numberOfChannels > 1) {
-                const result = [];
-                for (let i = 0; i < audioBuffer.numberOfChannels; i += 1) {
-                    result.push(Array.from(audioBuffer.getChannelData(i)));
-                }
-                return result;
-            }
-
-            const result = Array.from(audioBuffer.getChannelData(0));
-            return result;
-        }
-
-        function getAudioObjectDuration(audioElement) {
-            return new Promise((resolve, reject) => {
-                if (audioElement.readyState >= 1) {
-                    resolve(audioElement.duration);
-                } else {
-                    audioElement.addEventListener('loadedmetadata', () => {
-                        resolve(audioElement.duration);
-                    }, { once: true });
-                    audioElement.addEventListener('error', (err) => {
-                        reject('Error loading audio metadata');
-                    }, { once: true });
-                }
-            });
         }
 
         async function setupEntity(name) {
@@ -259,9 +189,7 @@
         }
 
         async function wait(duration) {
-            return new Promise(resolve => {
-                setTimeout(resolve, duration * 1000);
-            })
+            return duration <= 0 ? undefined : new Promise(resolve => setTimeout(resolve, duration * 1000));
         }
         async function waitUntil(t) {
             await wait(t - audio.getCurrentTime());
@@ -533,6 +461,21 @@
 
 
                     new Extension.Block('soundMetaData', 'reporter', 'music', '%soundMetaData of sound %snd', ['duration', ''], function (option, sound) {
+                        function getAudioObjectDuration(audioElement) {
+                            return new Promise((resolve, reject) => {
+                                if (audioElement.readyState >= 1) {
+                                    resolve(audioElement.duration);
+                                } else {
+                                    audioElement.addEventListener('loadedmetadata', () => {
+                                        resolve(audioElement.duration);
+                                    }, { once: true });
+                                    audioElement.addEventListener('error', (err) => {
+                                        reject('Error loading audio metadata');
+                                    }, { once: true });
+                                }
+                            });
+                        }
+
                         if (sound === '') throw Error(`sound cannot be empty`);
 
                         for (const element of this.receiver.sounds.contents) {
@@ -558,6 +501,20 @@
                                 }, { args: [], timeout: I32_MAX });
                             case 'samples':
                                 return this.runAsyncFn(async () => {
+                                    async function arrayBufferToTimeSeries(arrayBuffer) {
+                                        const audioBuffer = await audio.decodeAudioClip(arrayBuffer);
+                                        if (audioBuffer.numberOfChannels > 1) {
+                                            const result = [];
+                                            for (let i = 0; i < audioBuffer.numberOfChannels; i += 1) {
+                                                result.push(Array.from(audioBuffer.getChannelData(i)));
+                                            }
+                                            return result;
+                                        }
+                            
+                                        const result = Array.from(audioBuffer.getChannelData(0));
+                                        return result;
+                                    }
+
                                     const buffer = decodeBase64(sound.audio.src.split(',')[1]);
                                     const timeSeries = await arrayBufferToTimeSeries(buffer);
                                     return snapify(timeSeries);
@@ -566,6 +523,21 @@
                         return 'OK';
                     }),
                     new Extension.Block('setTrackEffect', 'command', 'music', 'track %effects effect to %n %', ['Delay', '50'], function (effectName, level) {
+                        async function setTrackEffect(trackName, effectName, level) {
+                            const effectType = EFFECTS[effectName];
+                            if (!appliedEffects.includes(trackName + effectName)) {
+                                await audio.applyTrackEffect(trackName, effectName, effectType);
+                                appliedEffects.push(trackName + effectName);
+                            }
+                
+                            const parameters = audio.getAvailableEffectParameters(effectType);
+                            const effectOptions = {};
+                            for (let i = 0; i < parameters.length; i++) {
+                                effectOptions[parameters[i].name] = level;
+                            }
+                            await audio.updateTrackEffect(trackName, effectName, effectOptions);
+                        }
+
                         if (parseInt(level) > 100) level = 100
                         if (parseInt(level) < 0) level = 0
                         if (effectName == 'Echo' && level > 95) level = 95
@@ -590,18 +562,47 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
+                        async function disconnectDevices(trackName) {
+                            console.log('device disconnected');
+                            if (INPUT_DEVICES.length > 0) {
+                                await audio.disconnectAudioInputDeviceFromTrack(trackName);
+                            }
+                            if (MIDI_DEVICES.length > 0) {
+                                await audio.disconnectMidiDeviceFromTrack(trackName);
+                            }
+                        }
+                        function connectMidi(trackName, device) {
+                            if (device !== '') {
+                                const mDevice = device.replace('---(midi)', '');
+                                audio.connectMidiDeviceToTrack(trackName, mDevice).then(() => {
+                                    console.log('Connected to MIDI device!');
+                                });
+                                currentDeviceType = 'midi';
+                            }
+                        }
+                        function connectAudioInput(trackName, device) {
+                            if (device != '') {
+                                audio.connectAudioInputDeviceToTrack(trackName, device).then(() => {
+                                    console.log('Connected to audio device!');
+                                });
+                                currentDeviceType = 'audio';
+                            }
+                        }
+
+
                         const trackName = this.receiver.id;
 
-                        if (device === '')
+                        if (device === '') {
                             this.runAsyncFn(async () => {
                                 disconnectDevices(trackName);
                             }, { args: [], timeout: I32_MAX });
-                        else if (MIDI_DEVICES.indexOf(device) != -1)
+                        } else if (MIDI_DEVICES.indexOf(device) != -1) {
                             connectMidi(trackName, device);
-                        else if (INPUT_DEVICES.indexOf(device != -1))
+                        } else if (INPUT_DEVICES.indexOf(device != -1)) {
                             connectAudioInput(trackName, device);
-                        else
+                        } else {
                             throw Error('device not found');
+                        }
 
                         if (INSTRUMENTS.length > 0) {
                             audio.updateInstrument(trackName, INSTRUMENTS[0]).then(() => {
