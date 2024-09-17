@@ -49,8 +49,8 @@
         let MIDI_DEVICES = [];
         let INSTRUMENTS = [];
 
-        let lastRecordedClip = null;
-        let currentDeviceType = null;
+        let connectedDevice = null;
+        let activeRecording = null;
 
         audio.start();
 
@@ -83,12 +83,6 @@
                 console.error('failed to load instruments', e);
             }
         })();
-
-        async function clipToSnap(clip) {
-            const blob = await clip.getEncodedData(ENCODERS['WAV']);
-            const audio = new Audio(URL.createObjectURL(blob, { type: 'audio/wav' }));
-            return new Sound(audio, 'netsblox-sound');
-        }
 
         function snapify(value) {
             if (typeof (value.map) === 'function') {
@@ -241,6 +235,7 @@
                     new Extension.Palette.Block('playDrums'),
                     new Extension.Palette.Block('rest'),
                     new Extension.Palette.Block('noteMod'),
+                    new Extension.Palette.Block('noteNumber'),
                     '-',
                     new Extension.Palette.Block('playClip'),
                     new Extension.Palette.Block('queryClip'),
@@ -250,16 +245,12 @@
                     new Extension.Palette.Block('clearAudioEffects'),
                     new Extension.Palette.Block('getAudioEffects'),
                     '-',
-                    new Extension.Palette.Block('audioAnalysis'),
-                    '-',
-                    new Extension.Palette.Block('setInputDevice'),
-                    new Extension.Palette.Block('startRecordingInput'),
-                    new Extension.Palette.Block('startRecordingOutput'),
-                    new Extension.Palette.Block('recordOutputForDuration'),
+                    new Extension.Palette.Block('setAudioInput'),
+                    new Extension.Palette.Block('startRecording'),
                     new Extension.Palette.Block('stopRecording'),
-                    new Extension.Palette.Block('lastRecordedClip'),
+                    new Extension.Palette.Block('isRecording'),
                     '-',
-                    new Extension.Palette.Block('noteNumber'),
+                    new Extension.Palette.Block('audioAnalysis'),
                 ];
                 return [
                     new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -350,6 +341,7 @@
                             this.musicInfo.mods.pop();
                         }
                     }),
+                    new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], parseNote),
                     new Extension.Block('playClip', 'command', 'music', 'play sound %snd', [], function (rawSound) {
                         this.runAsyncFn(async () => {
                             setupProcess(this);
@@ -379,6 +371,7 @@
                                 });
                             } else if (query === 'samples') {
                                 const buffer = sound.audioBuffer || decodeBase64(sound.audio.src.split(',')[1]);
+                                console.log('here', sound, buffer);
                                 const decoded = await audio.decodeAudioClip(buffer);
 
                                 const res = [];
@@ -468,169 +461,63 @@
                     new Extension.Block('getAudioEffects', 'reporter', 'music', 'audio effects', [], function () {
                         return snapify(this.receiver.musicInfo.effects);
                     }),
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], parseNote),
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    new Extension.Block('setInputDevice', 'command', 'music', 'set input device: %inputDevice', [''], function (device) {
-                        async function disconnectDevices(trackName) {
-                            console.log('device disconnected');
-                            if (INPUT_DEVICES.length > 0) {
-                                await audio.disconnectAudioInputDeviceFromTrack(trackName);
-                            }
-                            if (MIDI_DEVICES.length > 0) {
-                                await audio.disconnectMidiDeviceFromTrack(trackName);
-                            }
-                        }
-                        function connectMidi(trackName, device) {
-                            if (device !== '') {
-                                const mDevice = device.replace('---(midi)', '');
-                                audio.connectMidiDeviceToTrack(trackName, mDevice).then(() => {
-                                    console.log('Connected to MIDI device!');
-                                });
-                                currentDeviceType = 'midi';
-                            }
-                        }
-                        function connectAudioInput(trackName, device) {
-                            if (device != '') {
-                                audio.connectAudioInputDeviceToTrack(trackName, device).then(() => {
-                                    console.log('Connected to audio device!');
-                                });
-                                currentDeviceType = 'audio';
-                            }
-                        }
-
-
-                        const trackName = this.receiver.id;
-
-                        if (device === '') {
-                            this.runAsyncFn(async () => {
-                                disconnectDevices(trackName);
-                            }, { args: [], timeout: I32_MAX });
-                        } else if (MIDI_DEVICES.indexOf(device) != -1) {
-                            connectMidi(trackName, device);
-                        } else if (INPUT_DEVICES.indexOf(device != -1)) {
-                            connectAudioInput(trackName, device);
-                        } else {
-                            throw Error('device not found');
-                        }
-
-                        if (INSTRUMENTS.length > 0) {
-                            audio.updateInstrument(trackName, INSTRUMENTS[0]).then(() => {
-                                console.log('default instrument set');
-                            });
-                        } else {
-                            console.log('no default instruments');
-                        }
-                    }),
-                    new Extension.Block('startRecordingInput', 'command', 'music', 'start recording input', [], function () {
-                        const trackName = this.receiver.id;
-                        switch (currentDeviceType) {
-                            case 'midi':
-                                lastRecordedClip = audio.recordMidiClip(
-                                    trackName, audio.getCurrentTime()
-                                );
-                                break;
-                            case 'audio':
-                                lastRecordedClip = audio.recordAudioClip(
-                                    trackName, audio.getCurrentTime()
-                                );
-                                break;
-                        }
-                    }),
-                    new Extension.Block('stopRecording', 'command', 'music', 'stop recording', [], function () {
+                    new Extension.Block('setAudioInput', 'command', 'music', 'use input %audioInput', [], function (device) {
                         this.runAsyncFn(async () => {
-                            await lastRecordedClip.finalize();
+                            if (device === '') {
+                                await audio.disconnectAudioInputDeviceFromTrack(this.receiver.id);
+                                await audio.disconnectMidiDeviceFromTrack(this.receiver.id);
+                                connectedDevice = null;
+                            } else if (MIDI_DEVICES.indexOf(device) !== -1) {
+                                await audio.connectMidiDeviceToTrack(this.receiver.id, device.replace('---(midi)', ''));
+                                connectedDevice = 'midi';
+                            } else if (INPUT_DEVICES.indexOf(device !== -1)) {
+                                await audio.connectAudioInputDeviceToTrack(this.receiver.id, device);
+                                connectedDevice = 'audio';
+                            } else {
+                                throw Error(`device not found: ${device}`);
+                            }
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('startRecordingOutput', 'command', 'music', 'start recording output', [], function () {
-                        lastRecordedClip = audio.recordOutput();
-                    }),
-                    new Extension.Block('recordOutputForDuration', 'command', 'music', 'record output for %n seconds', [0], function (time) {
-                        lastRecordedClip = audio.recordOutput(null, null, time);
-                    }),
-                    new Extension.Block('lastRecordedClip', 'reporter', 'music', 'last recorded clip', [], function () {
-                        if (lastRecordedClip == null) throw Error('no recording found');
+                    new Extension.Block('startRecording', 'command', 'music', 'start recording %io', ['output'], function (io) {
+                        this.runAsyncFn(async () => {
+                            if (activeRecording) throw Error('recording already in progress');
 
-                        return this.runAsyncFn(async () => {
-                            let temp = await clipToSnap(lastRecordedClip);
-                            temp.audioBuffer = await lastRecordedClip.getEncodedData(ENCODERS['WAV']);
-                            return temp;
+                            if (io === 'input') {
+                                if (!connectedDevice) {
+                                    throw Error('no connected input device');
+                                } else if (connectedDevice === 'midi') {
+                                    activeRecording = audio.recordMidiClip(this.receiver.id, audio.getCurrentTime());
+                                } else if (connectedDevice === 'audio') {
+                                    activeRecording = audio.recordAudioClip(this.receiver.id, audio.getCurrentTime());
+                                } else {
+                                    throw Error(`unknown connected device type: "${connectedDevice}"`);
+                                }
+                            } else if (io === 'output') {
+                                activeRecording = audio.recordOutput();
+                            } else {
+                                throw Error(`unknown audio direction: ${io}`);
+                            }
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('audioAnalysis', 'reporter', 'music', 'get output %analysisType', ['TimeSeries'], function (ty) {
+                    new Extension.Block('stopRecording', 'reporter', 'music', 'stop recording', [], function () {
+                        return this.runAsyncFn(async () => {
+                            const recording = activeRecording;
+                            activeRecording = null;
+                            if (!recording) throw Error('no recording in progress');
+
+                            await recording.finalize();
+
+                            const blob = await recording.getEncodedData(ENCODERS['WAV']);
+                            const src = new Audio(URL.createObjectURL(blob, { type: 'audio/wav' }));
+                            const res = new Sound(src, 'netsblox-sound');
+                            res.audioBuffer = blob;
+                            return res;
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('isRecording', 'predicate', 'music', 'recording?', [], function () {
+                        return !!activeRecording;
+                    }),
+                    new Extension.Block('audioAnalysis', 'reporter', 'music', 'get output %audioAnalysis', ['TimeSeries'], function (ty) {
                         if (!ANALYSES[ty]) throw Error(`unknown audio analysis type: '${ty}'`);
                         return snapify(audio.analyzeAudio(ANALYSES[ty]));
                     }),
@@ -705,31 +592,19 @@
                         identityMap(Object.keys(EFFECT_PARAMS)),
                         true, // readonly (no arbitrary text)
                     )),
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    new Extension.LabelPart('inputDevice', () => new InputSlotMorph(
+                    new Extension.LabelPart('audioInput', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
                         identityMap([...MIDI_DEVICES, ...INPUT_DEVICES]),
                         true, // readonly (no arbitrary text)
                     )),
-                    new Extension.LabelPart('analysisType', () => new InputSlotMorph(
+                    new Extension.LabelPart('io', () => new InputSlotMorph(
+                        null, // text
+                        false, // numeric
+                        identityMap(['input', 'output']),
+                        true, // readonly (no arbitrary text)
+                    )),
+                    new Extension.LabelPart('audioAnalysis', () => new InputSlotMorph(
                         null, // text
                         false, // numeric
                         identityMap(Object.keys(ANALYSES)),
