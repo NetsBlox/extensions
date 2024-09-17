@@ -11,34 +11,34 @@
  */
 const Note = {   Rest: 0,
    C0: 12,   C0n: -12,  D0bb: 12,   C0s: 13,   D0b: 13,     D0: 14,   D0n: -14, C0ss: 14,  E0bb: 14,
-  D0s: 15,   E0b: 15,   F0bb: 15,    E0: 16,   E0n: -16,  D0ss: 16,   F0b: 16,    F0: 17,   F0n: -17, E0s: 17,   G0bb: 17,
+  D0s: 15,   E0b: 15,   F0bb: 15,    E0: 16,   E0n: -16,  D0ss: 16,   F0b: 16,    F0: 17,   F0n: -17,  E0s: 17,   G0bb: 17,
   F0s: 18,  E0ss: 18,    G0b: 18,    G0: 19,   G0n: -19,  F0ss: 19,  A0bb: 19,   G0s: 20,   A0b: 20,
-   A0: 21,   A0n: -21,  G0ss: 21,  B0bb: 21,   A0s: 22,    B0b: 22,  C1bb: 22,    B0: 23,   B0n: -23, A0ss: 23,   C1b: 23,
-   C1: 24,   C1n: -24,   B0s: 24,  D1bb: 24,   C1s: 25,   B0ss: 25,   D1b: 25,    D1: 26,   D1n: -26, C1ss: 26,  E1bb: 26,
-  D1s: 27,   E1b: 27,   F1bb: 27,    E1: 28,   E1n: -28,  D1ss: 28,   F1b: 28,    F1: 29,   F1n: -29,  E1s: 29,  G1bb: 29,
+   A0: 21,   A0n: -21,  G0ss: 21,  B0bb: 21,   A0s: 22,    B0b: 22,  C1bb: 22,    B0: 23,   B0n: -23,  A0ss: 23,   C1b: 23,
+   C1: 24,   C1n: -24,   B0s: 24,  D1bb: 24,   C1s: 25,   B0ss: 25,   D1b: 25,    D1: 26,   D1n: -26,  C1ss: 26,  E1bb: 26,
+  D1s: 27,   E1b: 27,   F1bb: 27,    E1: 28,   E1n: -28,  D1ss: 28,   F1b: 28,    F1: 29,   F1n: -29,   E1s: 29,  G1bb: 29,
   F1s: 30,  E1ss: 30,    G1b: 30,    G1: 31,   G1n: -31,  F1ss: 31,  A1bb: 31,   G1s: 32,   A1b: 32,
-   A1: 33,   A1n: -33,  G1ss: 33,  B1bb: 33,   A1s: 34,    B1b: 34,  C2bb: 34,    B1: 35,   B1n: -35, A1ss: 35,   C2b: 35,
-   C2: 36,   C2n: -36,   B1s: 36,  D2bb: 36,   C2s: 37,   B1ss: 37,   D2b: 37,    D2: 38,   D2n: -38, C2ss: 38,  E2bb: 38,
-  D2s: 39,   E2b: 39,   F2bb: 39,    E2: 40,   E2n: -40,  D2ss: 40,   F2b: 40,    F2: 41,   F2n: -41,  E2s: 41,  G2bb: 41,
+   A1: 33,   A1n: -33,  G1ss: 33,  B1bb: 33,   A1s: 34,    B1b: 34,  C2bb: 34,    B1: 35,   B1n: -35,  A1ss: 35,   C2b: 35,
+   C2: 36,   C2n: -36,   B1s: 36,  D2bb: 36,   C2s: 37,   B1ss: 37,   D2b: 37,    D2: 38,   D2n: -38,  C2ss: 38,  E2bb: 38,
+  D2s: 39,   E2b: 39,   F2bb: 39,    E2: 40,   E2n: -40,  D2ss: 40,   F2b: 40,    F2: 41,   F2n: -41,   E2s: 41,  G2bb: 41,
   F2s: 42,  E2ss: 42,    G2b: 42,    G2: 43,   G2n: -43,  F2ss: 43,  A2bb: 43,   G2s: 44,   A2b: 44,
-   A2: 45,   A2n: -45,  G2ss: 45,  B2bb: 45,   A2s: 46,    B2b: 46,  C3bb: 46,    B2: 47,   B2n: -47, A2ss: 47,   C3b: 47,
-   C3: 48,   C3n: -48,   B2s: 48,  D3bb: 48,   C3s: 49,   B2ss: 49,   D3b: 49,    D3: 50,   D3n: -50, C3ss: 50,  E3bb: 50,
-  D3s: 51,   E3b: 51,   F3bb: 51,    E3: 52,   E3n: -52,  D3ss: 52,   F3b: 52,    F3: 53,   F3n: -53,  E3s: 53,  G3bb: 53,
+   A2: 45,   A2n: -45,  G2ss: 45,  B2bb: 45,   A2s: 46,    B2b: 46,  C3bb: 46,    B2: 47,   B2n: -47,  A2ss: 47,   C3b: 47,
+   C3: 48,   C3n: -48,   B2s: 48,  D3bb: 48,   C3s: 49,   B2ss: 49,   D3b: 49,    D3: 50,   D3n: -50,  C3ss: 50,  E3bb: 50,
+  D3s: 51,   E3b: 51,   F3bb: 51,    E3: 52,   E3n: -52,  D3ss: 52,   F3b: 52,    F3: 53,   F3n: -53,   E3s: 53,  G3bb: 53,
   F3s: 54,  E3ss: 54,    G3b: 54,    G3: 55,   G3n: -55,  F3ss: 55,  A3bb: 55,   G3s: 56,   A3b: 56,
-   A3: 57,   A3n: -57,  G3ss: 57,  B3bb: 57,   A3s: 58,    B3b: 58,  C4bb: 58,    B3: 59,   B3n: -59, A3ss: 59,   C4b: 59,
-   C4: 60,   C4n: -60,   B3s: 60,  D4bb: 60,   C4s: 61,   B3ss: 61,   D4b: 61,    D4: 62,   D4n: -62, C4ss: 62,  E4bb: 62,
-  D4s: 63,   E4b: 63,   F4bb: 63,    E4: 64,   E4n: -64,  D4ss: 64,   F4b: 64,    F4: 65,   F4n: -65,  E4s: 65,  G4bb: 65,
+   A3: 57,   A3n: -57,  G3ss: 57,  B3bb: 57,   A3s: 58,    B3b: 58,  C4bb: 58,    B3: 59,   B3n: -59,  A3ss: 59,   C4b: 59,
+   C4: 60,   C4n: -60,   B3s: 60,  D4bb: 60,   C4s: 61,   B3ss: 61,   D4b: 61,    D4: 62,   D4n: -62,  C4ss: 62,  E4bb: 62,
+  D4s: 63,   E4b: 63,   F4bb: 63,    E4: 64,   E4n: -64,  D4ss: 64,   F4b: 64,    F4: 65,   F4n: -65,   E4s: 65,  G4bb: 65,
   F4s: 66,  E4ss: 66,    G4b: 66,    G4: 67,   G4n: -67,  F4ss: 67,  A4bb: 67,   G4s: 68,   A4b: 68,
-   A4: 69,   A4n: -69,  G4ss: 69,  B4bb: 69,   A4s: 70,    B4b: 70,  C5bb: 70,    B4: 71,   B4n: -71, A4ss: 71,   C5b: 71,
-   C5: 72,   C5n: -72,   B4s: 72,  D5bb: 72,   C5s: 73,   B4ss: 73,   D5b: 73,    D5: 74,   D5n: -74, C5ss: 74,  E5bb: 74,
-  D5s: 75,   E5b: 75,   F5bb: 75,    E5: 76,   E5n: -76,  D5ss: 76,   F5b: 76,    F5: 77,   F5n: -77,  E5s: 77,  G5bb: 77,
+   A4: 69,   A4n: -69,  G4ss: 69,  B4bb: 69,   A4s: 70,    B4b: 70,  C5bb: 70,    B4: 71,   B4n: -71,  A4ss: 71,   C5b: 71,
+   C5: 72,   C5n: -72,   B4s: 72,  D5bb: 72,   C5s: 73,   B4ss: 73,   D5b: 73,    D5: 74,   D5n: -74,  C5ss: 74,  E5bb: 74,
+  D5s: 75,   E5b: 75,   F5bb: 75,    E5: 76,   E5n: -76,  D5ss: 76,   F5b: 76,    F5: 77,   F5n: -77,   E5s: 77,  G5bb: 77,
   F5s: 78,  E5ss: 78,    G5b: 78,    G5: 79,   G5n: -79,  F5ss: 79,  A5bb: 79,   G5s: 80,   A5b: 80,
-   A5: 81,   A5n: -81,  G5ss: 81,  B5bb: 81,   A5s: 82,    B5b: 82,  C6bb: 82,    B5: 83,   B5n: -83, A5ss: 83,   C6b: 83,
-   C6: 84,   C6n: -84,   B5s: 84,  D6bb: 84,   C6s: 85,   B5ss: 85,   D6b: 85,    D6: 86,   D6n: -86, C6ss: 86,  E6bb: 86,
-  D6s: 87,   E6b: 87,   F6bb: 87,    E6: 88,   E6n: -88,  D6ss: 88,   F6b: 88,    F6: 89,   F6n: -89,  E6s: 89,  G6bb: 89,
+   A5: 81,   A5n: -81,  G5ss: 81,  B5bb: 81,   A5s: 82,    B5b: 82,  C6bb: 82,    B5: 83,   B5n: -83,  A5ss: 83,   C6b: 83,
+   C6: 84,   C6n: -84,   B5s: 84,  D6bb: 84,   C6s: 85,   B5ss: 85,   D6b: 85,    D6: 86,   D6n: -86,  C6ss: 86,  E6bb: 86,
+  D6s: 87,   E6b: 87,   F6bb: 87,    E6: 88,   E6n: -88,  D6ss: 88,   F6b: 88,    F6: 89,   F6n: -89,   E6s: 89,  G6bb: 89,
   F6s: 90,  E6ss: 90,    G6b: 90,    G6: 91,   G6n: -91,  F6ss: 91,  A6bb: 91,   G6s: 92,   A6b: 92,
-   A6: 93,   A6n: -93,  G6ss: 93,  B6bb: 93,   A6s: 94,    B6b: 94,  C7bb: 94,    B6: 95,   B6n: -95, A6ss: 95,   C7b: 95,
-   C7: 96,   C7n: -96,   B6s: 96,   D7bb: 96,  C7s: 97,   B6ss: 97,   D7b: 97,    D7: 98,   D7n: -98, C7ss: 98,  E7bb: 98,
+   A6: 93,   A6n: -93,  G6ss: 93,  B6bb: 93,   A6s: 94,    B6b: 94,  C7bb: 94,    B6: 95,   B6n: -95,  A6ss: 95,   C7b: 95,
+   C7: 96,   C7n: -96,   B6s: 96,   D7bb: 96,  C7s: 97,   B6ss: 97,   D7b: 97,    D7: 98,   D7n: -98,  C7ss: 98,  E7bb: 98,
   D7s: 99,   E7b: 99,   F7bb: 99,    E7: 100,  E7n: -100, D7ss: 100,  F7b: 100,   F7: 101,  F7n: -101,  E7s: 101, G7bb: 101,
   F7s: 102, E7ss: 102,   G7b: 102,   G7: 103,  G7n: -103, F7ss: 103, A7bb: 103,  G7s: 104,  A7b: 104,
    A7: 105,  A7n: -105, G7ss: 105, B7bb: 105,  A7s: 106,   B7b: 106, C8bb: 106,   B7: 107,  B7n: -107, A7ss: 107,  C8b: 107,
@@ -139,7 +139,7 @@ const AnalysisType = {
  * @constant {Object<string, number>}
  */
 const EncodingType = {
-   WAV: 1
+   WAV: 1, WEBM: 2
 };
 
 /**
@@ -4884,6 +4884,52 @@ class WavFileEncoder extends EncoderBase {
    }
 }
 
+var di=Object.defineProperty;var Pe=Object.getOwnPropertySymbols;var li=Object.prototype.hasOwnProperty,ui=Object.prototype.propertyIsEnumerable;var p=Math.pow,ve=(l,e,i)=>e in l?di(l,e,{enumerable:!0,configurable:!0,writable:!0,value:i}):l[e]=i,Me=(l,e)=>{for(var i in e||={})li.call(e,i)&&ve(l,i,e[i]);if(Pe)for(var i of Pe(e))ui.call(e,i)&&ve(l,i,e[i]);return l};var ge=(l,e,i)=>{if(!e.has(l))throw TypeError("Cannot "+i)};var t=(l,e,i)=>(ge(l,e,"read from private field"),i?i.call(l):e.get(l)),a=(l,e,i)=>{if(e.has(l))throw TypeError("Cannot add the same private member more than once");e instanceof WeakSet?e.add(l):e.set(l,i);},u=(l,e,i,s)=>(ge(l,e,"write to private field"),s?s.call(l,i):e.set(l,i),i);var h=(l,e,i)=>(ge(l,e,"access private method"),i);var J=class{constructor(e){this.value=e;}},O=class{constructor(e){this.value=e;}};var we=l=>l<1<<8?1:l<1<<16?2:l<1<<24?3:l<p(2,32)?4:l<p(2,40)?5:6,Re=l=>{if(l<(1<<7)-1)return 1;if(l<(1<<14)-1)return 2;if(l<(1<<21)-1)return 3;if(l<(1<<28)-1)return 4;if(l<p(2,35)-1)return 5;if(l<p(2,42)-1)return 6;throw new Error("EBML VINT size not supported "+l)};var W=(l,e,i)=>{let s=0;for(let r=e;r<i;r++){let n=Math.floor(r/8),o=l[n],c=7-(r&7),b=(o&1<<c)>>c;s<<=1,s|=b;}return s},Fe=(l,e,i,s)=>{for(let r=e;r<i;r++){let n=Math.floor(r/8),o=l[n],c=7-(r&7);o&=~(1<<c),o|=(s&1<<i-r-1)>>i-r-1<<c,l[n]=o;}};var Wt=class{constructor(){this.buffer=null;}},I=class{constructor(e){this.options=e;}},Ht=class{constructor(e,i){this.stream=e;this.options=i;}};var A,m,Lt,_e,Yt,Ne,Zt,Oe,yt,ye,qt,We,$t=class{constructor(){a(this,Lt);a(this,Yt);a(this,Zt);a(this,yt);a(this,qt);this.pos=0;a(this,A,new Uint8Array(8));a(this,m,new DataView(t(this,A).buffer));this.offsets=new WeakMap;this.dataOffsets=new WeakMap;}seek(e){this.pos=e;}writeEBMLVarInt(e,i=Re(e)){let s=0;switch(i){case 1:t(this,m).setUint8(s++,1<<7|e);break;case 2:t(this,m).setUint8(s++,1<<6|e>>8),t(this,m).setUint8(s++,e);break;case 3:t(this,m).setUint8(s++,1<<5|e>>16),t(this,m).setUint8(s++,e>>8),t(this,m).setUint8(s++,e);break;case 4:t(this,m).setUint8(s++,1<<4|e>>24),t(this,m).setUint8(s++,e>>16),t(this,m).setUint8(s++,e>>8),t(this,m).setUint8(s++,e);break;case 5:t(this,m).setUint8(s++,1<<3|e/p(2,32)&7),t(this,m).setUint8(s++,e>>24),t(this,m).setUint8(s++,e>>16),t(this,m).setUint8(s++,e>>8),t(this,m).setUint8(s++,e);break;case 6:t(this,m).setUint8(s++,1<<2|e/p(2,40)&3),t(this,m).setUint8(s++,e/p(2,32)|0),t(this,m).setUint8(s++,e>>24),t(this,m).setUint8(s++,e>>16),t(this,m).setUint8(s++,e>>8),t(this,m).setUint8(s++,e);break;default:throw new Error("Bad EBML VINT size "+i)}this.write(t(this,A).subarray(0,s));}writeEBML(e){var i,s;if(e!==null)if(e instanceof Uint8Array)this.write(e);else if(Array.isArray(e))for(let r of e)this.writeEBML(r);else if(this.offsets.set(e,this.pos),h(this,yt,ye).call(this,e.id),Array.isArray(e.data)){let r=this.pos,n=e.size===-1?1:(i=e.size)!=null?i:4;e.size===-1?h(this,Lt,_e).call(this,255):this.seek(this.pos+n);let o=this.pos;if(this.dataOffsets.set(e,o),this.writeEBML(e.data),e.size!==-1){let c=this.pos-o,b=this.pos;this.seek(r),this.writeEBMLVarInt(c,n),this.seek(b);}}else if(typeof e.data=="number"){let r=(s=e.size)!=null?s:we(e.data);this.writeEBMLVarInt(r),h(this,yt,ye).call(this,e.data,r);}else typeof e.data=="string"?(this.writeEBMLVarInt(e.data.length),h(this,qt,We).call(this,e.data)):e.data instanceof Uint8Array?(this.writeEBMLVarInt(e.data.byteLength,e.size),this.write(e.data)):e.data instanceof J?(this.writeEBMLVarInt(4),h(this,Yt,Ne).call(this,e.data.value)):e.data instanceof O&&(this.writeEBMLVarInt(8),h(this,Zt,Oe).call(this,e.data.value));}};A=new WeakMap,m=new WeakMap,Lt=new WeakSet,_e=function(e){t(this,m).setUint8(0,e),this.write(t(this,A).subarray(0,1));},Yt=new WeakSet,Ne=function(e){t(this,m).setFloat32(0,e,!1),this.write(t(this,A).subarray(0,4));},Zt=new WeakSet,Oe=function(e){t(this,m).setFloat64(0,e,!1),this.write(t(this,A));},yt=new WeakSet,ye=function(e,i=we(e)){let s=0;switch(i){case 6:t(this,m).setUint8(s++,e/p(2,40)|0);case 5:t(this,m).setUint8(s++,e/p(2,32)|0);case 4:t(this,m).setUint8(s++,e>>24);case 3:t(this,m).setUint8(s++,e>>16);case 2:t(this,m).setUint8(s++,e>>8);case 1:t(this,m).setUint8(s++,e);break;default:throw new Error("Bad UINT size "+i)}this.write(t(this,A).subarray(0,s));},qt=new WeakSet,We=function(e){this.write(new Uint8Array(e.split("").map(i=>i.charCodeAt(0))));};var kt,P,tt,Ct,ke,Kt=class extends $t{constructor(i){super();a(this,Ct);a(this,kt,void 0);a(this,P,new ArrayBuffer(p(2,16)));a(this,tt,new Uint8Array(t(this,P)));u(this,kt,i);}write(i){h(this,Ct,ke).call(this,this.pos+i.byteLength),t(this,tt).set(i,this.pos),this.pos+=i.byteLength;}finalize(){h(this,Ct,ke).call(this,this.pos),t(this,kt).buffer=t(this,P).slice(0,this.pos);}};kt=new WeakMap,P=new WeakMap,tt=new WeakMap,Ct=new WeakSet,ke=function(i){let s=t(this,P).byteLength;for(;s<i;)s*=2;if(s===t(this,P).byteLength)return;let r=new ArrayBuffer(s),n=new Uint8Array(r);n.set(t(this,tt),0),u(this,P,r),u(this,tt,n);};var H,k,C,v,U=class extends $t{constructor(i){super();this.target=i;a(this,H,!1);a(this,k,void 0);a(this,C,void 0);a(this,v,void 0);}write(i){if(!t(this,H))return;let s=this.pos;if(s<t(this,C)){if(s+i.byteLength<=t(this,C))return;i=i.subarray(t(this,C)-s),s=0;}let r=s+i.byteLength-t(this,C),n=t(this,k).byteLength;for(;n<r;)n*=2;if(n!==t(this,k).byteLength){let o=new Uint8Array(n);o.set(t(this,k),0),u(this,k,o);}t(this,k).set(i,s-t(this,C)),u(this,v,Math.max(t(this,v),s+i.byteLength));}startTrackingWrites(){u(this,H,!0),u(this,k,new Uint8Array(p(2,10))),u(this,C,this.pos),u(this,v,this.pos);}getTrackedWrites(){if(!t(this,H))throw new Error("Can't get tracked writes since nothing was tracked.");let s={data:t(this,k).subarray(0,t(this,v)-t(this,C)),start:t(this,C),end:t(this,v)};return u(this,k,void 0),u(this,H,!1),s}};H=new WeakMap,k=new WeakMap,C=new WeakMap,v=new WeakMap;var M,Tt,xt,gt=class extends U{constructor(i,s){super(i);a(this,M,[]);a(this,Tt,0);a(this,xt,void 0);u(this,xt,s);}write(i){super.write(i),t(this,M).push({data:i.slice(),start:this.pos}),this.pos+=i.byteLength;}flush(){var r,n;if(t(this,M).length===0)return;let i=[],s=[...t(this,M)].sort((o,c)=>o.start-c.start);i.push({start:s[0].start,size:s[0].data.byteLength});for(let o=1;o<s.length;o++){let c=i[i.length-1],b=s[o];b.start<=c.start+c.size?c.size=Math.max(c.size,b.start+b.data.byteLength-c.start):i.push({start:b.start,size:b.data.byteLength});}for(let o of i){o.data=new Uint8Array(o.size);for(let c of t(this,M))o.start<=c.start&&c.start<o.start+o.size&&o.data.set(c.data,c.start-o.start);if(t(this,xt)&&o.start<t(this,Tt))throw new Error("Internal error: Monotonicity violation.");(n=(r=this.target.options).onData)==null||n.call(r,o.data,o.start),u(this,Tt,o.start+o.data.byteLength);}t(this,M).length=0;}finalize(){}};M=new WeakMap,Tt=new WeakMap,xt=new WeakMap;var fi=p(2,24),ci=2,y,w,St,At,Ut,Ce,Qt,He,Xt,Be,et,Bt,wt=class extends U{constructor(i,s){var r,n;super(i);a(this,Ut);a(this,Qt);a(this,Xt);a(this,et);a(this,y,void 0);a(this,w,[]);a(this,St,0);a(this,At,void 0);if(u(this,y,(n=(r=i.options)==null?void 0:r.chunkSize)!=null?n:fi),u(this,At,s),!Number.isInteger(t(this,y))||t(this,y)<p(2,10))throw new Error("Invalid StreamTarget options: chunkSize must be an integer not smaller than 1024.")}write(i){super.write(i),h(this,Ut,Ce).call(this,i,this.pos),h(this,et,Bt).call(this),this.pos+=i.byteLength;}finalize(){h(this,et,Bt).call(this,!0);}};y=new WeakMap,w=new WeakMap,St=new WeakMap,At=new WeakMap,Ut=new WeakSet,Ce=function(i,s){let r=t(this,w).findIndex(g=>g.start<=s&&s<g.start+t(this,y));r===-1&&(r=h(this,Xt,Be).call(this,s));let n=t(this,w)[r],o=s-n.start,c=i.subarray(0,Math.min(t(this,y)-o,i.byteLength));n.data.set(c,o);let b={start:o,end:o+c.byteLength};if(h(this,Qt,He).call(this,n,b),n.written[0].start===0&&n.written[0].end===t(this,y)&&(n.shouldFlush=!0),t(this,w).length>ci){for(let g=0;g<t(this,w).length-1;g++)t(this,w)[g].shouldFlush=!0;h(this,et,Bt).call(this);}c.byteLength<i.byteLength&&h(this,Ut,Ce).call(this,i.subarray(c.byteLength),s+c.byteLength);},Qt=new WeakSet,He=function(i,s){let r=0,n=i.written.length-1,o=-1;for(;r<=n;){let c=Math.floor(r+(n-r+1)/2);i.written[c].start<=s.start?(r=c+1,o=c):n=c-1;}for(i.written.splice(o+1,0,s),(o===-1||i.written[o].end<s.start)&&o++;o<i.written.length-1&&i.written[o].end>=i.written[o+1].start;)i.written[o].end=Math.max(i.written[o].end,i.written[o+1].end),i.written.splice(o+1,1);},Xt=new WeakSet,Be=function(i){let r={start:Math.floor(i/t(this,y))*t(this,y),data:new Uint8Array(t(this,y)),written:[],shouldFlush:!1};return t(this,w).push(r),t(this,w).sort((n,o)=>n.start-o.start),t(this,w).indexOf(r)},et=new WeakSet,Bt=function(i=!1){var s,r;for(let n=0;n<t(this,w).length;n++){let o=t(this,w)[n];if(!(!o.shouldFlush&&!i)){for(let c of o.written){if(t(this,At)&&o.start+c.start<t(this,St))throw new Error("Internal error: Monotonicity violation.");(r=(s=this.target.options).onData)==null||r.call(s,o.data.subarray(c.start,c.end),o.start+c.start),u(this,St,o.start+c.end);}t(this,w).splice(n--,1);}}};var Gt=class extends wt{constructor(e,i){var s;super(new I({onData:(r,n)=>e.stream.write({type:"write",data:r,position:n}),chunked:!0,chunkSize:(s=e.options)==null?void 0:s.chunkSize}),i);}};var it=1,Et=2,jt=3,mi=1,bi=2,pi=17,Te=p(2,15),zt=p(2,12),$e="https://github.com/Vanilagy/webm-muxer",Ke=6,Ge=5,gi=["strict","offset","permissive"],f,d,at,nt,x,B,$,R,K,z,G,L,S,Y,Z,V,D,F,ot,ht,q,Q,Dt,dt,lt,ie,Le,se,Ye,re,Ze,ae,qe,ne,Qe,oe,Xe,he,je,Pt,Se,vt,Ae,de,Je,_,st,N,rt,le,Ie,ue,ti,ut,Jt,ft,It,fe,ei,T,E,X,Vt,ct,te,ce,ii,Mt,Ue,mt,ee,xe=class{constructor(e){a(this,ie);a(this,se);a(this,re);a(this,ae);a(this,ne);a(this,oe);a(this,he);a(this,Pt);a(this,vt);a(this,de);a(this,_);a(this,N);a(this,le);a(this,ue);a(this,ut);a(this,ft);a(this,fe);a(this,T);a(this,X);a(this,ct);a(this,ce);a(this,Mt);a(this,mt);a(this,f,void 0);a(this,d,void 0);a(this,at,void 0);a(this,nt,void 0);a(this,x,void 0);a(this,B,void 0);a(this,$,void 0);a(this,R,void 0);a(this,K,void 0);a(this,z,void 0);a(this,G,void 0);a(this,L,void 0);a(this,S,void 0);a(this,Y,void 0);a(this,Z,0);a(this,V,[]);a(this,D,[]);a(this,F,[]);a(this,ot,void 0);a(this,ht,void 0);a(this,q,-1);a(this,Q,-1);a(this,Dt,-1);a(this,dt,void 0);a(this,lt,!1);var s;h(this,ie,Le).call(this,e),u(this,f,Me({type:"webm",firstTimestampBehavior:"strict"},e)),this.target=e.target;let i=!!t(this,f).streaming;if(e.target instanceof Wt)u(this,d,new Kt(e.target));else if(e.target instanceof I)u(this,d,(s=e.target.options)!=null&&s.chunked?new wt(e.target,i):new gt(e.target,i));else if(e.target instanceof Ht)u(this,d,new Gt(e.target,i));else throw new Error(`Invalid target: ${e.target}`);h(this,se,Ye).call(this);}addVideoChunk(e,i,s){let r=new Uint8Array(e.byteLength);e.copyTo(r),this.addVideoChunkRaw(r,e.type,s!=null?s:e.timestamp,i);}addVideoChunkRaw(e,i,s,r){if(h(this,mt,ee).call(this),!t(this,f).video)throw new Error("No video track declared.");t(this,ot)===void 0&&u(this,ot,s),r&&h(this,le,Ie).call(this,r);let n=h(this,ft,It).call(this,e,i,s,it);for(t(this,f).video.codec==="V_VP9"&&h(this,ue,ti).call(this,n),u(this,q,n.timestamp);t(this,D).length>0&&t(this,D)[0].timestamp<=n.timestamp;){let o=t(this,D).shift();h(this,T,E).call(this,o,!1);}!t(this,f).audio||n.timestamp<=t(this,Q)?h(this,T,E).call(this,n,!0):t(this,V).push(n),h(this,ut,Jt).call(this),h(this,_,st).call(this);}addAudioChunk(e,i,s){let r=new Uint8Array(e.byteLength);e.copyTo(r),this.addAudioChunkRaw(r,e.type,s!=null?s:e.timestamp,i);}addAudioChunkRaw(e,i,s,r){if(h(this,mt,ee).call(this),!t(this,f).audio)throw new Error("No audio track declared.");t(this,ht)===void 0&&u(this,ht,s),r!=null&&r.decoderConfig&&(t(this,f).streaming?u(this,z,h(this,X,Vt).call(this,r.decoderConfig.description)):h(this,ct,te).call(this,t(this,z),r.decoderConfig.description));let n=h(this,ft,It).call(this,e,i,s,Et);for(u(this,Q,n.timestamp);t(this,V).length>0&&t(this,V)[0].timestamp<=n.timestamp;){let o=t(this,V).shift();h(this,T,E).call(this,o,!0);}!t(this,f).video||n.timestamp<=t(this,q)?h(this,T,E).call(this,n,!t(this,f).video):t(this,D).push(n),h(this,ut,Jt).call(this),h(this,_,st).call(this);}addSubtitleChunk(e,i,s){if(h(this,mt,ee).call(this),!t(this,f).subtitles)throw new Error("No subtitle track declared.");i!=null&&i.decoderConfig&&(t(this,f).streaming?u(this,G,h(this,X,Vt).call(this,i.decoderConfig.description)):h(this,ct,te).call(this,t(this,G),i.decoderConfig.description));let r=h(this,ft,It).call(this,e.body,"key",s!=null?s:e.timestamp,jt,e.duration,e.additions);u(this,Dt,r.timestamp),t(this,F).push(r),h(this,ut,Jt).call(this),h(this,_,st).call(this);}finalize(){if(t(this,lt))throw new Error("Cannot finalize a muxer more than once.");for(;t(this,V).length>0;)h(this,T,E).call(this,t(this,V).shift(),!0);for(;t(this,D).length>0;)h(this,T,E).call(this,t(this,D).shift(),!0);for(;t(this,F).length>0&&t(this,F)[0].timestamp<=t(this,Z);)h(this,T,E).call(this,t(this,F).shift(),!1);if(t(this,f).streaming||h(this,Mt,Ue).call(this),t(this,d).writeEBML(t(this,L)),!t(this,f).streaming){let e=t(this,d).pos,i=t(this,d).pos-t(this,N,rt);t(this,d).seek(t(this,d).offsets.get(t(this,at))+4),t(this,d).writeEBMLVarInt(i,Ke),t(this,$).data=new O(t(this,Z)),t(this,d).seek(t(this,d).offsets.get(t(this,$))),t(this,d).writeEBML(t(this,$)),t(this,x).data[0].data[1].data=t(this,d).offsets.get(t(this,L))-t(this,N,rt),t(this,x).data[1].data[1].data=t(this,d).offsets.get(t(this,nt))-t(this,N,rt),t(this,x).data[2].data[1].data=t(this,d).offsets.get(t(this,B))-t(this,N,rt),t(this,d).seek(t(this,d).offsets.get(t(this,x))),t(this,d).writeEBML(t(this,x)),t(this,d).seek(e);}h(this,_,st).call(this),t(this,d).finalize(),u(this,lt,!0);}};f=new WeakMap,d=new WeakMap,at=new WeakMap,nt=new WeakMap,x=new WeakMap,B=new WeakMap,$=new WeakMap,R=new WeakMap,K=new WeakMap,z=new WeakMap,G=new WeakMap,L=new WeakMap,S=new WeakMap,Y=new WeakMap,Z=new WeakMap,V=new WeakMap,D=new WeakMap,F=new WeakMap,ot=new WeakMap,ht=new WeakMap,q=new WeakMap,Q=new WeakMap,Dt=new WeakMap,dt=new WeakMap,lt=new WeakMap,ie=new WeakSet,Le=function(e){if(e.type&&e.type!=="webm"&&e.type!=="matroska")throw new Error(`Invalid type: ${e.type}`);if(e.firstTimestampBehavior&&!gi.includes(e.firstTimestampBehavior))throw new Error(`Invalid first timestamp behavior: ${e.firstTimestampBehavior}`)},se=new WeakSet,Ye=function(){t(this,d)instanceof U&&t(this,d).target.options.onHeader&&t(this,d).startTrackingWrites(),h(this,re,Ze).call(this),t(this,f).streaming||h(this,oe,Xe).call(this),h(this,he,je).call(this),h(this,ae,qe).call(this),h(this,ne,Qe).call(this),t(this,f).streaming||(h(this,Pt,Se).call(this),h(this,vt,Ae).call(this)),h(this,de,Je).call(this),h(this,_,st).call(this);},re=new WeakSet,Ze=function(){var i;let e={id:440786851,data:[{id:17030,data:1},{id:17143,data:1},{id:17138,data:4},{id:17139,data:8},{id:17026,data:(i=t(this,f).type)!=null?i:"webm"},{id:17031,data:2},{id:17029,data:2}]};t(this,d).writeEBML(e);},ae=new WeakSet,qe=function(){u(this,K,{id:236,size:4,data:new Uint8Array(zt)}),u(this,z,{id:236,size:4,data:new Uint8Array(zt)}),u(this,G,{id:236,size:4,data:new Uint8Array(zt)});},ne=new WeakSet,Qe=function(){u(this,R,{id:21936,data:[{id:21937,data:2},{id:21946,data:2},{id:21947,data:2},{id:21945,data:0}]});},oe=new WeakSet,Xe=function(){let e=new Uint8Array([28,83,187,107]),i=new Uint8Array([21,73,169,102]),s=new Uint8Array([22,84,174,107]),r={id:290298740,data:[{id:19899,data:[{id:21419,data:e},{id:21420,size:5,data:0}]},{id:19899,data:[{id:21419,data:i},{id:21420,size:5,data:0}]},{id:19899,data:[{id:21419,data:s},{id:21420,size:5,data:0}]}]};u(this,x,r);},he=new WeakSet,je=function(){let e={id:17545,data:new O(0)};u(this,$,e);let i={id:357149030,data:[{id:2807729,data:1e6},{id:19840,data:$e},{id:22337,data:$e},t(this,f).streaming?null:e]};u(this,nt,i);},Pt=new WeakSet,Se=function(){let e={id:374648427,data:[]};u(this,B,e),t(this,f).video&&e.data.push({id:174,data:[{id:215,data:it},{id:29637,data:it},{id:131,data:mi},{id:134,data:t(this,f).video.codec},t(this,K),t(this,f).video.frameRate?{id:2352003,data:1e9/t(this,f).video.frameRate}:null,{id:224,data:[{id:176,data:t(this,f).video.width},{id:186,data:t(this,f).video.height},t(this,f).video.alpha?{id:21440,data:1}:null,t(this,R)]}]}),t(this,f).audio&&(u(this,z,t(this,f).streaming?t(this,z)||null:{id:236,size:4,data:new Uint8Array(zt)}),e.data.push({id:174,data:[{id:215,data:Et},{id:29637,data:Et},{id:131,data:bi},{id:134,data:t(this,f).audio.codec},t(this,z),{id:225,data:[{id:181,data:new J(t(this,f).audio.sampleRate)},{id:159,data:t(this,f).audio.numberOfChannels},t(this,f).audio.bitDepth?{id:25188,data:t(this,f).audio.bitDepth}:null]}]})),t(this,f).subtitles&&e.data.push({id:174,data:[{id:215,data:jt},{id:29637,data:jt},{id:131,data:pi},{id:134,data:t(this,f).subtitles.codec},t(this,G)]});},vt=new WeakSet,Ae=function(){let e={id:408125543,size:t(this,f).streaming?-1:Ke,data:[t(this,f).streaming?null:t(this,x),t(this,nt),t(this,B)]};if(u(this,at,e),t(this,d).writeEBML(e),t(this,d)instanceof U&&t(this,d).target.options.onHeader){let{data:i,start:s}=t(this,d).getTrackedWrites();t(this,d).target.options.onHeader(i,s);}},de=new WeakSet,Je=function(){u(this,L,{id:475249515,data:[]});},_=new WeakSet,st=function(){t(this,d)instanceof gt&&t(this,d).flush();},N=new WeakSet,rt=function(){return t(this,d).dataOffsets.get(t(this,at))},le=new WeakSet,Ie=function(e){if(!!e.decoderConfig){if(e.decoderConfig.colorSpace){let i=e.decoderConfig.colorSpace;if(u(this,dt,i),t(this,R).data=[{id:21937,data:{rgb:1,bt709:1,bt470bg:5,smpte170m:6}[i.matrix]},{id:21946,data:{bt709:1,smpte170m:6,"iec61966-2-1":13}[i.transfer]},{id:21947,data:{bt709:1,bt470bg:5,smpte170m:6}[i.primaries]},{id:21945,data:[1,2][Number(i.fullRange)]}],!t(this,f).streaming){let s=t(this,d).pos;t(this,d).seek(t(this,d).offsets.get(t(this,R))),t(this,d).writeEBML(t(this,R)),t(this,d).seek(s);}}e.decoderConfig.description&&(t(this,f).streaming?u(this,K,h(this,X,Vt).call(this,e.decoderConfig.description)):h(this,ct,te).call(this,t(this,K),e.decoderConfig.description));}},ue=new WeakSet,ti=function(e){if(e.type!=="key"||!t(this,dt))return;let i=0;if(W(e.data,0,2)!==2)return;i+=2;let s=(W(e.data,i+1,i+2)<<1)+W(e.data,i+0,i+1);i+=2,s===3&&i++;let r=W(e.data,i+0,i+1);if(i++,r)return;let n=W(e.data,i+0,i+1);if(i++,n!==0)return;i+=2;let o=W(e.data,i+0,i+24);if(i+=24,o!==4817730)return;s>=2&&i++;let c={rgb:7,bt709:2,bt470bg:1,smpte170m:3}[t(this,dt).matrix];Fe(e.data,i+0,i+3,c);},ut=new WeakSet,Jt=function(){let e=Math.min(t(this,f).video?t(this,q):1/0,t(this,f).audio?t(this,Q):1/0),i=t(this,F);for(;i.length>0&&i[0].timestamp<=e;)h(this,T,E).call(this,i.shift(),!t(this,f).video&&!t(this,f).audio);},ft=new WeakSet,It=function(e,i,s,r,n,o){let c=h(this,fe,ei).call(this,s,r);return {data:e,additions:o,type:i,timestamp:c,duration:n,trackNumber:r}},fe=new WeakSet,ei=function(e,i){let s=i===it?t(this,q):i===Et?t(this,Q):t(this,Dt);if(i!==jt){let r=i===it?t(this,ot):t(this,ht);if(t(this,f).firstTimestampBehavior==="strict"&&s===-1&&e!==0)throw new Error(`The first chunk for your media track must have a timestamp of 0 (received ${e}). Non-zero first timestamps are often caused by directly piping frames or audio data from a MediaStreamTrack into the encoder. Their timestamps are typically relative to the age of the document, which is probably what you want.
+
+If you want to offset all timestamps of a track such that the first one is zero, set firstTimestampBehavior: 'offset' in the options.
+If you want to allow non-zero first timestamps, set firstTimestampBehavior: 'permissive'.
+`);t(this,f).firstTimestampBehavior==="offset"&&(e-=r);}if(e<s)throw new Error(`Timestamps must be monotonically increasing (went from ${s} to ${e}).`);if(e<0)throw new Error(`Timestamps must be non-negative (received ${e}).`);return e},T=new WeakSet,E=function(e,i){t(this,f).streaming&&!t(this,B)&&(h(this,Pt,Se).call(this),h(this,vt,Ae).call(this));let s=Math.floor(e.timestamp/1e3),r=i&&e.type==="key"&&s-t(this,Y)>=1e3;(!t(this,S)||r)&&h(this,ce,ii).call(this,s);let n=s-t(this,Y);if(n<0)return;if(n>=Te)throw new Error(`Current Matroska cluster exceeded its maximum allowed length of ${Te} milliseconds. In order to produce a correct WebM file, you must pass in a key frame at least every ${Te} milliseconds.`);let c=new Uint8Array(4),b=new DataView(c.buffer);if(b.setUint8(0,128|e.trackNumber),b.setInt16(1,n,!1),e.duration===void 0&&!e.additions){b.setUint8(3,Number(e.type==="key")<<7);let g={id:163,data:[c,e.data]};t(this,d).writeEBML(g);}else {let g=Math.floor(e.duration/1e3),pt={id:160,data:[{id:161,data:[c,e.data]},e.duration!==void 0?{id:155,data:g}:null,e.additions?{id:30113,data:e.additions}:null]};t(this,d).writeEBML(pt);}u(this,Z,Math.max(t(this,Z),s));},X=new WeakSet,Vt=function(e){return {id:25506,size:4,data:new Uint8Array(e)}},ct=new WeakSet,te=function(e,i){let s=t(this,d).pos;t(this,d).seek(t(this,d).offsets.get(e));let r=2+4+i.byteLength,n=zt-r;if(n<0){let o=i.byteLength+n;i instanceof ArrayBuffer?i=i.slice(0,o):i=i.buffer.slice(0,o),n=0;}e=[h(this,X,Vt).call(this,i),{id:236,size:4,data:new Uint8Array(n)}],t(this,d).writeEBML(e),t(this,d).seek(s);},ce=new WeakSet,ii=function(e){t(this,S)&&!t(this,f).streaming&&h(this,Mt,Ue).call(this),t(this,d)instanceof U&&t(this,d).target.options.onCluster&&t(this,d).startTrackingWrites(),u(this,S,{id:524531317,size:t(this,f).streaming?-1:Ge,data:[{id:231,data:e}]}),t(this,d).writeEBML(t(this,S)),u(this,Y,e);let i=t(this,d).offsets.get(t(this,S))-t(this,N,rt);t(this,L).data.push({id:187,data:[{id:179,data:e},t(this,f).video?{id:183,data:[{id:247,data:it},{id:241,data:i}]}:null,t(this,f).audio?{id:183,data:[{id:247,data:Et},{id:241,data:i}]}:null]});},Mt=new WeakSet,Ue=function(){let e=t(this,d).pos-t(this,d).dataOffsets.get(t(this,S)),i=t(this,d).pos;if(t(this,d).seek(t(this,d).offsets.get(t(this,S))+4),t(this,d).writeEBMLVarInt(e,Ge),t(this,d).seek(i),t(this,d)instanceof U&&t(this,d).target.options.onCluster){let{data:s,start:r}=t(this,d).getTrackedWrites();t(this,d).target.options.onCluster(s,r,t(this,Y));}},mt=new WeakSet,ee=function(){if(t(this,lt))throw new Error("Cannot add new video or audio chunks after the file has been finalized.")};new TextEncoder;
+
+/**
+ * Class containing all Webm/Opus encoding functionality.
+ * @extends EncoderBase
+ */
+class WebmOpusEncoder extends EncoderBase {
+
+   /**
+    * Constructs a new {@link WebmOpusEncoder} object.
+    */
+   constructor() {
+      super();
+   }
+
+   async encode(audioData, encodingOptions) {
+      const webmMuxer = new xe({
+         target: new Wt(),
+         audio: { codec: 'A_OPUS', numberOfChannels: 1, sampleRate: audioData.sampleRate }
+      });
+      const audioInputData = new ArrayBuffer(4 * audioData.numberOfChannels * audioData.length);
+      const audioInputDataFloats = new Float32Array(audioInputData);
+      for (let ch = 0; ch < audioData.numberOfChannels; ++ch)
+         audioInputDataFloats.set(audioData.getChannelData(ch), ch * audioData.length);
+      const audioInput = new AudioData({ format: 'f32-planar',
+         sampleRate: audioData.sampleRate,
+         numberOfFrames: audioData.length,
+         numberOfChannels: audioData.numberOfChannels,
+         timestamp: 0,
+         data: audioInputData,
+         transfer: [audioInputData] });
+      const bitRate = (encodingOptions && ('bitRate' in encodingOptions)) ? encodingOptions.bitRate : 96000;
+      const audioEncoder = new AudioEncoder({ output: (chunk, meta) => webmMuxer.addAudioChunk(chunk, meta), error: e => console.error(e) });
+      audioEncoder.configure({ codec: 'opus', sampleRate: audioData.sampleRate, numberOfChannels: 1, bitrate: bitRate });
+      audioEncoder.encode(audioInput);
+      await audioEncoder.flush();
+      audioEncoder.close();
+      webmMuxer.finalize();
+      return new Blob([webmMuxer.target.buffer], { type: 'audio/webm;codecs=opus' });
+   }
+}
+
 /**
  * Module containing functionality to create and utilize {@link WebAudioAPI} data encoders.
  * @module Encoder
@@ -4892,6 +4938,7 @@ class WavFileEncoder extends EncoderBase {
 
 const EncoderClasses = {
    [EncodingType.WAV]: WavFileEncoder,
+   [EncodingType.WEBM]: WebmOpusEncoder,
 };
 
 /**
@@ -7728,6 +7775,46 @@ class WebAudioAPI {
    }
 
    /**
+    * Encodes a 2D array of floating point `samples` into a {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+    * containing raw audio data according to the specified `sampleRate` and {@link module:Constants.EncodingType EncodingType}
+    * specified in the `encodingType` parameter.
+    * 
+    * @param {number} encodingType - Numeric value corresponding to the desired {@link module:Constants.EncodingType EncodingType}
+    * @param {number} sampleRate - Sample rate at which the audio data was recorded
+    * @param {Array<Array<number>>} samples - 2D array of floating point audio samples to encode
+    * @returns {Blob} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio data
+    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+    * @see {@link module:Constants.EncodingType EncodingType}
+    */
+   async encodeAudioAs(encodingType, audioBuffer) {
+      if (!Object.values(EncodingType).includes(Number(encodingType)))
+         throw new WebAudioTargetError(`An encoder for the target type identifier (${encodingType}) does not exist`);
+      if (!(audioBuffer instanceof AudioBuffer))
+         throw new WebAudioValueError('The passed-in audio buffer is not a valid AudioBuffer object');
+      return await getEncoderFor(Number(encodingType)).encode(audioBuffer);
+   }
+
+   /**
+    * Converts a 2D array of floating point `samples` into an {@link AudioBuffer} object with the specified `sampleRate`.
+    * 
+    * @param {number} sampleRate - Sample rate at which the audio data was recorded
+    * @param {Array<Array<number>>} samples - 2D array of floating point audio samples to encode
+    * @returns {AudioBuffer} Newly created {@link AudioBuffer} containing the audio data
+    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer AudioBuffer}
+    */
+   createAudioBufferFromSamples(sampleRate, samples) {
+      if (!samples || !samples.length || !Array.isArray(samples) || !(Array.isArray(samples[0])) || !samples[0].length)
+         throw new WebAudioValueError('Cannot encode audio samples as they are not a 2D array of floats');
+      const audioBuffer = this.#audioContext.createBuffer(samples.length, samples[0].length, sampleRate);
+      for (let ch = 0; ch < samples.length; ++ch) {
+         const channel_data = audioBuffer.getChannelData(ch);
+         for (let i = 0; i < samples[ch].length; ++i)
+            channel_data[i] = Math.min(Math.max(samples[ch][i], -1), 1);
+      }
+      return audioBuffer;
+   }
+
+   /**
     * Starts the {@link WebAudioAPI} library and allows audio playback to resume.
     */
    async start() {
@@ -7746,6 +7833,5 @@ class WebAudioAPI {
 
 // Attach a WebAudioAPI reference to "window" so that it can be accessed from non-module Javascript files
 window.WebAudioAPI = WebAudioAPI;
-window.getEncoderFor = getEncoderFor;
 
 export { WebAudioAPI };

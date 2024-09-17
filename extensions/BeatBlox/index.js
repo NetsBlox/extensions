@@ -412,17 +412,9 @@
                                 }
                             }
 
-                            const buffer = new AudioContext().createBuffer(samples.length, maxLen, sampleRate);
-                            for (let i = 0; i < samples.length; ++i) {
-                                const res = buffer.getChannelData(i);
-                                for (let j = 0; j < samples[i].length; ++j) {
-                                    res[j] = clamp(samples[i][j], -1, 1);
-                                }
-                            }
-
-                            const blob = await window.getEncoderFor(ENCODERS['WAV']).encode(buffer);
-                            const src = new Audio(URL.createObjectURL(blob, { type: 'audio/wav' }));
-                            const res = new Sound(src, 'netsblox-sound');
+                            const buffer = audio.createAudioBufferFromSamples(sampleRate, samples);
+                            const blob = await audio.encodeAudioAs(ENCODERS['WAV'], buffer);
+                            const res = new Sound(new Audio(URL.createObjectURL(blob, { type: 'audio/wav' })), 'netsblox-sound');
                             res.audioBuffer = buffer;
                             return res;
                         }, { args: [], timeout: I32_MAX });
