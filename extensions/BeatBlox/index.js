@@ -16,21 +16,10 @@
     };
 
     const DRUM_TO_NOTE = {
-        'kick':             'A1',
-        'kick #2':          'C2',
-        'snare':            'G1',
-        'side stick snare': 'C#2',
-        'open snare':       'E2',
-        'closed hi-hat':    'F#2',
-        'clap':             'Eb2',
-        'tom':              'C3',
-        'rack tom':         'B2',
-        'floor tom':        'F2',
-        'crash':            'Bb2',
-        'crash #2':         'E3',
-        'ride':             'Eb3',
-        'ride #2':          'F3',
-        'tamborine':        'F#3',
+        'kick':       'A1',  'kick #2':       'C2',  'snare':      'G1',  'side stick snare': 'C#2',
+        'open snare': 'E2',  'closed hi-hat': 'F#2', 'clap':       'Eb2', 'tom':              'C3',
+        'rack tom':   'B2',  'floor tom':     'F2',  'crash':      'Bb2', 'crash #2':         'E3',
+        'ride':       'Eb3', 'ride #2':       'F3',  'tamborine':  'F#3',
     };
 
     function absoluteUrl(relative) {
