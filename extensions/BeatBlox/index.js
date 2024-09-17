@@ -54,7 +54,7 @@
 
         audio.start();
 
-        const instrumentPrefetch = (async () => {
+        const PREFETCH = (async () => {
             try {
                 MIDI_DEVICES = (await audio.getAvailableMidiDevices()).map((x) => `${x}---(midi)`);
             } catch (e) {
@@ -165,25 +165,30 @@
         }
 
         async function setupEntity(entity) {
-            if (entity.musicInfo) return;
+            if (!(entity instanceof SpriteMorph) && !(entity instanceof StageMorph)) throw Error('internal error');
 
-            entity.musicInfo = {
-                effects: {},
-            };
+            if (entity.musicInfo === undefined) {
+                entity.musicInfo = {
+                    effects: {},
+                };
 
-            await instrumentPrefetch;
-            audio.createTrack(entity.id);
-            audio.createTrack(entity.id + 'Drum');
-            audio.updateInstrument(entity.id, 'Grand Piano');
-            audio.updateInstrument(entity.id + 'Drum', 'Drum Kit');
+                audio.createTrack(entity.id);
+                audio.createTrack(entity.id + 'Drum');
+
+                await PREFETCH;
+                audio.updateInstrument(entity.id, 'Grand Piano');
+                audio.updateInstrument(entity.id + 'Drum', 'Drum Kit');
+            }
         }
         function setupProcess(proc) {
-            if (proc.musicInfo) return;
+            if (!(proc instanceof Process)) throw Error('internal error');
 
-            proc.musicInfo = {
-                t: audio.getCurrentTime() + 0.001,
-                mods: [],
-            };
+            if (proc.musicInfo === undefined) {
+                proc.musicInfo = {
+                    t: audio.getCurrentTime() + SCHEDULING_WINDOW,
+                    mods: [],
+                };
+            }
         }
 
         async function wait(duration) {
@@ -210,16 +215,7 @@
             }
 
             onOpenRole() {
-                for (const sprite of this.ide.sprites.contents) {
-                    setupEntity(sprite);
-                }
-                setupEntity(this.ide.stage);
-
                 audio.updateTempo(4, this.ide.stage.tempo);
-            }
-
-            onNewSprite(sprite) {
-                setupEntity(sprite);
             }
 
             getCategories() {
@@ -266,8 +262,8 @@
                 return [
                     new Extension.Block('setInstrument', 'command', 'music', 'set instrument %instrument', ['Grand Piano'], function (instrument) {
                         this.runAsyncFn(async () => {
+                            await setupEntity(this.receiver);
                             setupProcess(this);
-                            await instrumentPrefetch;
 
                             if (INSTRUMENTS.indexOf(instrument) < 0) throw Error(`unknown instrument: "${instrument}"`);
 
@@ -276,7 +272,6 @@
                     }),
                     new Extension.Block('setKey', 'command', 'music', 'set key %key', ['CMajor'], function (key) {
                         if (KEYS[key] === undefined) throw Error(`unknown key: '${key}'`);
-
                         audio.updateKeySignature(KEYS[key]);
                     }),
                     new Extension.Block('setBPM', 'command', 'music', 'set tempo %n bpm', [60], function (tempo) {
@@ -289,8 +284,8 @@
                     }),
                     new Extension.Block('playNotes', 'command', 'music', 'play %noteDuration notes %mult%s', ['Quarter', ['C4']], function (durationName, notes) {
                         this.runAsyncFn(async () => {
+                            await setupEntity(this.receiver);
                             setupProcess(this);
-                            await instrumentPrefetch;
 
                             const duration = DURATIONS[durationName];
                             if (!duration) throw Error(`unknown note duration: "${durationName}"`);
@@ -311,8 +306,8 @@
                     }),
                     new Extension.Block('playDrums', 'command', 'music', 'hit %noteDuration note drums %mult%drum', ['Quarter', ['Kick']], function (durationName, notes) {
                         this.runAsyncFn(async () => {
+                            await setupEntity(this.receiver);
                             setupProcess(this);
-                            await instrumentPrefetch;
 
                             const duration = DURATIONS[durationName];
                             if (!duration) throw Error(`unknown note duration: "${durationName}"`);
@@ -348,8 +343,8 @@
                     new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], parseNote),
                     new Extension.Block('playClip', 'command', 'music', 'play sound %snd', [], function (rawSound) {
                         this.runAsyncFn(async () => {
+                            await setupEntity(this.receiver);
                             setupProcess(this);
-                            await instrumentPrefetch;
 
                             const sound = typeof(rawSound) === 'string' ? this.receiver.sounds.contents.find(x => x.name === rawSound) : rawSound;
                             if (!sound) throw Error(typeof(rawSound) === 'string' ? `unknown sound: "${rawSound}"` : 'input must be a sound');
@@ -424,8 +419,8 @@
                     }),
                     new Extension.Block('setAudioEffect', 'command', 'music', 'set %audioEffect effect to %n %', ['Volume', 100], function (effect, rawValue) {
                         this.runAsyncFn(async () => {
+                            await setupEntity(this.receiver);
                             setupProcess(this);
-                            await instrumentPrefetch;
 
                             const [effectTy, params] = EFFECT_PARAMS[effect] || [null, null];
                             if (!effectTy || !params) throw Error(`unknown effect: "${effect}"`);
@@ -446,18 +441,31 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('clearAudioEffects', 'command', 'music', 'clear audio effects', [], function () {
-                        for (const effect in EFFECT_PARAMS) {
-                            for (const target of [this.receiver.id, this.receiver.id + 'Drum']) {
-                                audio.removeTrackEffect(target, effect);
+                        this.runAsyncFn(async () => {
+                            await setupEntity(this.receiver);
+                            setupProcess(this);
+
+                            for (const effect in EFFECT_PARAMS) {
+                                for (const target of [this.receiver.id, this.receiver.id + 'Drum']) {
+                                    audio.removeTrackEffect(target, effect);
+                                }
                             }
-                        }
-                        this.receiver.musicInfo.effects = {};
+                            this.receiver.musicInfo.effects = {};
+                        }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('getAudioEffects', 'reporter', 'music', 'audio effects', [], function () {
-                        return snapify(this.receiver.musicInfo.effects);
+                        return this.runAsyncFn(async () => {
+                            await setupEntity(this.receiver);
+                            setupProcess(this);
+
+                            return snapify(this.receiver.musicInfo.effects);
+                        }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('setAudioInput', 'command', 'music', 'use input %audioInput', [], function (device) {
                         this.runAsyncFn(async () => {
+                            await setupEntity(this.receiver);
+                            setupProcess(this);
+
                             if (device === '') {
                                 await audio.disconnectAudioInputDeviceFromTrack(this.receiver.id);
                                 await audio.disconnectMidiDeviceFromTrack(this.receiver.id);
@@ -475,6 +483,9 @@
                     }),
                     new Extension.Block('startRecording', 'command', 'music', 'start recording %io', ['output'], function (io) {
                         this.runAsyncFn(async () => {
+                            await setupEntity(this.receiver);
+                            setupProcess(this);
+
                             if (activeRecording) throw Error('recording already in progress');
 
                             if (io === 'input') {
