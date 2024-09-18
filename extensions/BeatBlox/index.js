@@ -282,52 +282,53 @@
                     new Extension.Block('getBPM', 'reporter', 'music', 'tempo', [], function () {
                         return audio.getTempo().beatsPerMinute;
                     }),
-                    new Extension.Block('playNotes', 'command', 'music', 'play %noteDuration notes %mult%s', ['Quarter', ['C4']], function (durationName, notes) {
+                    new Extension.Block('playNotes', 'command', 'music', 'play %noteDuration note %mult%s', ['Quarter', ['C4']], function (duration, notes) {
                         return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
-
-                            const duration = DURATIONS[durationName];
-                            if (!duration) throw Error(`unknown note duration: "${durationName}"`);
 
                             notes = parseNote(notes);
                             if (!Array.isArray(notes)) notes = [notes];
                             if (notes.length === 0) notes = [parseNote('Rest')];
 
+                            if (duration.contents !== undefined) duration = duration.contents;
+                            if (!Array.isArray(duration)) duration = notes.map(() => duration);
+                            if (duration.some(x => DURATIONS[x] === undefined)) throw Error('unknown note duration');
+                            if (duration.length !== notes.length) throw Error('number of durations and notes must match');
+
                             const mods = this.musicInfo.mods.map(x => audio.getModification(MODIFIERS[x]));
 
                             let t = Infinity;
-                            for (const note of notes) {
-                                t = Math.min(t, await audio.playNote(this.receiver.id, note, this.musicInfo.t, duration, mods));
+                            for (let i = 0; i < notes.length; ++i) {
+                                t = Math.min(t, await audio.playNote(this.receiver.id, notes[i], this.musicInfo.t, DURATIONS[duration[i]], mods));
                             }
                             this.musicInfo.t += t;
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playDrums', 'command', 'music', 'hit %noteDuration note drums %mult%drum', ['Quarter', ['Kick']], function (durationName, notes) {
+                    new Extension.Block('playDrums', 'command', 'music', 'hit %noteDuration note drums %mult%drum', ['Quarter', ['Kick']], function (duration, notes) {
                         return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
-
-                            const duration = DURATIONS[durationName];
-                            if (!duration) throw Error(`unknown note duration: "${durationName}"`);
 
                             notes = parseDrumNote(notes);
                             if (!Array.isArray(notes)) notes = [notes];
                             if (notes.length === 0) notes = [parseDrumNote('Rest')];
 
+                            if (DURATIONS[duration] === undefined) throw Error(`unknown note duration: "${duration}"`);
+
                             const mods = this.musicInfo.mods.map(x => audio.getModification(MODIFIERS[x]));
 
-                            const t = await audio.playNote(this.receiver.id + 'Drum', parseDrumNote('Rest'), this.musicInfo.t, duration, mods);
+                            const t = await audio.playNote(this.receiver.id + 'Drum', parseDrumNote('Rest'), this.musicInfo.t, DURATIONS[duration], mods);
                             for (let i = 0; i < notes.length; ++i) {
-                                await audio.playNote(this.receiver.id + 'Drum', notes[i], this.musicInfo.t + t * (i / notes.length), duration, mods, true);
+                                await audio.playNote(this.receiver.id + 'Drum', notes[i], this.musicInfo.t + t * (i / notes.length), DURATIONS[duration], mods, true);
                             }
                             this.musicInfo.t += t;
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('rest', 'command', 'music', 'rest %noteDuration', ['Quarter'], function (durationName) {
-                        this.playNotes(durationName, 'Rest');
+                    new Extension.Block('rest', 'command', 'music', 'rest %noteDuration', ['Quarter'], function (duration) {
+                        this.playNotes(duration, 'Rest');
                     }),
                     new Extension.Block('noteMod', 'command', 'music', 'note modifier %noteModifier %c', ['TurnUpper'], function (mod, code) {
                         setupProcess(this);
