@@ -176,8 +176,8 @@
                 audio.createTrack(entity.id + 'Drum');
 
                 await PREFETCH;
-                audio.updateInstrument(entity.id, 'Grand Piano');
-                audio.updateInstrument(entity.id + 'Drum', 'Drum Kit');
+                await audio.updateInstrument(entity.id, 'Grand Piano');
+                await audio.updateInstrument(entity.id + 'Drum', 'Drum Kit');
             }
         }
         function setupProcess(proc) {
@@ -261,7 +261,7 @@
             getBlocks() {
                 return [
                     new Extension.Block('setInstrument', 'command', 'music', 'set instrument %instrument', ['Grand Piano'], function (instrument) {
-                        this.runAsyncFn(async () => {
+                        return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
@@ -283,7 +283,7 @@
                         return audio.getTempo().beatsPerMinute;
                     }),
                     new Extension.Block('playNotes', 'command', 'music', 'play %noteDuration notes %mult%s', ['Quarter', ['C4']], function (durationName, notes) {
-                        this.runAsyncFn(async () => {
+                        return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
@@ -305,7 +305,7 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('playDrums', 'command', 'music', 'hit %noteDuration note drums %mult%drum', ['Quarter', ['Kick']], function (durationName, notes) {
-                        this.runAsyncFn(async () => {
+                        return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
@@ -342,7 +342,7 @@
                     }),
                     new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], parseNote),
                     new Extension.Block('playClip', 'command', 'music', 'play sound %snd', [], function (rawSound) {
-                        this.runAsyncFn(async () => {
+                        return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
@@ -418,7 +418,7 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('setAudioEffect', 'command', 'music', 'set %audioEffect effect to %n %', ['Volume', 100], function (effect, rawValue) {
-                        this.runAsyncFn(async () => {
+                        return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
@@ -441,7 +441,7 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('clearAudioEffects', 'command', 'music', 'clear audio effects', [], function () {
-                        this.runAsyncFn(async () => {
+                        return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
@@ -462,7 +462,7 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('setAudioInput', 'command', 'music', 'use input %audioInput', [], function (device) {
-                        this.runAsyncFn(async () => {
+                        return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
@@ -482,7 +482,7 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('startRecording', 'command', 'music', 'start recording %io', ['output'], function (io) {
-                        this.runAsyncFn(async () => {
+                        return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
