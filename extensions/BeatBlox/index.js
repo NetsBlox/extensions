@@ -331,15 +331,26 @@
                     new Extension.Block('rest', 'command', 'music', 'rest %noteDuration', ['Quarter'], function (duration) {
                         this.playNotes(duration, 'Rest');
                     }),
-                    new Extension.Block('noteMod', 'command', 'music', 'note modifier %noteModifier %c', ['TurnUpper'], function (mod, code) {
+                    new Extension.Block('noteMod', 'command', 'music', 'note modifiers %mult%noteModifier %c', [['TurnUpper']], function (mods, code) {
                         setupProcess(this);
-                        if (!this.context.modFlag) {
-                            this.context.modFlag = true;
-                            this.musicInfo.mods.push(mod);
+
+                        if (mods.contents !== undefined) mods = mods.contents;
+                        if (!Array.isArray(mods)) mods = [mods];
+                        if (mods.some(x => MODIFIERS[x] === undefined)) throw Error('unknown note modifier');
+
+                        if (!this.context.modInfo) {
+                            this.context.modInfo = { count: mods.length };
+
+                            for (const mod of mods) {
+                                this.musicInfo.mods.push(mod);
+                            }
+
                             this.pushContext(code?.blockSequence() || []);
                             this.pushContext();
                         } else {
-                            this.musicInfo.mods.pop();
+                            for (let i = 0; i < this.context.modInfo.count; ++i) {
+                                this.musicInfo.mods.pop();
+                            }
                         }
                     }),
                     new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], parseNote),
