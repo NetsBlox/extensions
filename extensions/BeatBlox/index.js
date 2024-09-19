@@ -4,15 +4,15 @@
 
     function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
     function lerp(x, a, b) { return (1 - x) * a + x * b; }
-    const EFFECT_PARAMS = {
-        'Volume':     ['Volume' ,        x => ({ 'intensity': clamp(x, 0, 1) })],
-        'Delay':      ['Delay',          x => ({ 'delay': clamp(x, 0, 1), 'attenuation': 0.5 })],
-        'Reverb':     ['Reverb',         x => ({ 'decay': 0.3, 'roomSize': 0.1, 'intensity': clamp(x, 0, 1) })],
-        'Echo':       ['Echo',           x => ({ 'echoTime': 0.5, 'intensity': clamp(x, 0, 1) * 0.4 })],
-        'Panning':    ['Panning',        x => ({ 'leftToRightRatio': clamp(x, 0, 1) })],
-        'Underwater': ['LowPassFilter',  x => ({ 'cutoffFrequency': lerp(Math.pow(clamp(x, 0, 1), 0.1666), 22050, 500), 'resonance': 12 })],
-        'Telephone':  ['HighPassFilter', x => ({ 'cutoffFrequency': Math.pow(clamp(x, 0, 1), 1.4) * 1800, 'resonance': 10 })],
-        'Fan':        ['Tremolo',        x => ({ 'rate': 15, 'intensity': Math.pow(clamp(x, 0, 1), 0.7) })],
+    const EFFECT_INFO = {
+        'Volume':     { type: 'Volume' ,        identity: 1.0, params: x => ({ 'intensity': clamp(x, 0, 1) }) },
+        'Delay':      { type: 'Delay',          identity: 0.0, params: x => ({ 'delay': clamp(x, 0, 1), 'attenuation': 0.5 }) },
+        'Reverb':     { type: 'Reverb',         identity: 0.0, params: x => ({ 'decay': 0.3, 'roomSize': 0.1, 'intensity': clamp(x, 0, 1) }) },
+        'Echo':       { type: 'Echo',           identity: 0.0, params: x => ({ 'echoTime': 0.5, 'intensity': clamp(x, 0, 1) * 0.4 }) },
+        'Panning':    { type: 'Panning',        identity: 0.5, params: x => ({ 'leftToRightRatio': clamp(x, 0, 1) }) },
+        'Underwater': { type: 'LowPassFilter',  identity: 0.0, params: x => ({ 'cutoffFrequency': lerp(Math.pow(clamp(x, 0, 1), 0.1666), 22050, 500), 'resonance': 12 }) },
+        'Telephone':  { type: 'HighPassFilter', identity: 0.0, params: x => ({ 'cutoffFrequency': Math.pow(clamp(x, 0, 1), 1.4) * 1800, 'resonance': 10 }) },
+        'Fan':        { type: 'Tremolo',        identity: 0.0, params: x => ({ 'rate': 15, 'intensity': Math.pow(clamp(x, 0, 1), 0.7) }) },
     };
 
     const DRUM_TO_NOTE = {
@@ -243,8 +243,8 @@
                     new Extension.Palette.Block('createClip'),
                     '-',
                     new Extension.Palette.Block('setAudioEffect'),
+                    new Extension.Palette.Block('getAudioEffect'),
                     new Extension.Palette.Block('clearAudioEffects'),
-                    new Extension.Palette.Block('getAudioEffects'),
                     '-',
                     new Extension.Palette.Block('setAudioInput'),
                     new Extension.Palette.Block('startRecording'),
@@ -424,8 +424,8 @@
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
-                            const [effectTy, params] = EFFECT_PARAMS[effect] || [null, null];
-                            if (!effectTy || !params) throw Error(`unknown effect: "${effect}"`);
+                            const { type, params } = EFFECT_INFO[effect] || {};
+                            if (type === undefined || params === undefined) throw Error(`unknown effect: "${effect}"`);
 
                             const value = rawValue / 100;
                             if (isNaN(value)) throw Error(`expected a number, got "${rawValue}"`);
@@ -433,12 +433,33 @@
                             const targets = [this.receiver.id, this.receiver.id + 'Drum'];
                             if (this.receiver.musicInfo.effects[effect] === undefined) {
                                 for (const target of targets) {
-                                    await audio.applyTrackEffect(target, effect, EFFECTS[effectTy]);
+                                    await audio.applyTrackEffect(target, effect, EFFECTS[type]);
                                 }
                             }
-                            this.receiver.musicInfo.effects[effect] = 100 * value;
+                            this.receiver.musicInfo.effects[effect] = value;
                             for (const target of targets) {
                                 await audio.updateTrackEffect(target, effect, params(value));
+                            }
+                        }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('getAudioEffect', 'reporter', 'music', 'get %audioEffectAug effect', ['Volume'], function (effect) {
+                        return this.runAsyncFn(async () => {
+                            await setupEntity(this.receiver);
+                            setupProcess(this);
+
+                            const getSingle = effect => {
+                                const { identity } = EFFECT_INFO[effect] || {};
+                                if (identity === undefined) throw Error(`unknown effect: "${effect}"`);
+
+                                return { value: this.receiver.musicInfo.effects[effect] ?? identity, identity };
+                            };
+
+                            if (effect === 'every') {
+                                return snapify(Object.keys(EFFECT_INFO).map(x => [x, 100 * getSingle(x).value]));
+                            } else if (effect === 'every active') {
+                                return snapify(Object.keys(EFFECT_INFO).map(x => [x, getSingle(x)]).filter(x => x[1].value !== x[1].identity).map(x => [x[0], 100 * x[1].value]));
+                            } else {
+                                return 100 * getSingle(effect).value;
                             }
                         }, { args: [], timeout: I32_MAX });
                     }),
@@ -447,20 +468,12 @@
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
-                            for (const effect in EFFECT_PARAMS) {
+                            for (const effect in EFFECT_INFO) {
                                 for (const target of [this.receiver.id, this.receiver.id + 'Drum']) {
                                     audio.removeTrackEffect(target, effect);
                                 }
                             }
                             this.receiver.musicInfo.effects = {};
-                        }, { args: [], timeout: I32_MAX });
-                    }),
-                    new Extension.Block('getAudioEffects', 'reporter', 'music', 'audio effects', [], function () {
-                        return this.runAsyncFn(async () => {
-                            await setupEntity(this.receiver);
-                            setupProcess(this);
-
-                            return snapify(this.receiver.musicInfo.effects);
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('setAudioInput', 'command', 'music', 'use input %audioInput', [], function (device) {
@@ -569,7 +582,8 @@
                     basicEnum('drum', identityMap(Object.keys(DRUM_TO_NOTE))),
                     basicEnum('noteModifier', identityMap(['Piano', 'Forte', 'Accent', 'Staccato', 'Triplet', 'TurnUpper', 'TurnLower'])),
                     basicEnum('audioQuery', identityMap(['name', 'duration', 'samples', 'sample rate'])),
-                    basicEnum('audioEffect', identityMap(Object.keys(EFFECT_PARAMS))),
+                    basicEnum('audioEffect', identityMap(Object.keys(EFFECT_INFO))),
+                    basicEnum('audioEffectAug', identityMap([...Object.keys(EFFECT_INFO), 'every', 'every active'])),
                     basicEnum('audioInput', identityMap([...MIDI_DEVICES, ...INPUT_DEVICES])),
                     basicEnum('io', identityMap(['input', 'output'])),
                     basicEnum('audioAnalysis', identityMap(Object.keys(ANALYSES))),
