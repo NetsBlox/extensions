@@ -4,6 +4,7 @@
 
     function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
     function lerp(x, a, b) { return (1 - x) * a + x * b; }
+
     const EFFECT_INFO = {
         'Volume':     { type: 'Volume' ,        identity: 1.0, params: x => ({ 'intensity': clamp(x, 0, 1) }) },
         'Delay':      { type: 'Delay',          identity: 0.0, params: x => ({ 'delay': clamp(x, 0, 1), 'attenuation': 0.5 }) },
@@ -13,6 +14,11 @@
         'Underwater': { type: 'LowPassFilter',  identity: 0.0, params: x => ({ 'cutoffFrequency': lerp(Math.pow(clamp(x, 0, 1), 0.1666), 22050, 500), 'resonance': 12 }) },
         'Telephone':  { type: 'HighPassFilter', identity: 0.0, params: x => ({ 'cutoffFrequency': Math.pow(clamp(x, 0, 1), 1.4) * 1800, 'resonance': 10 }) },
         'Fan':        { type: 'Tremolo',        identity: 0.0, params: x => ({ 'rate': 15, 'intensity': Math.pow(clamp(x, 0, 1), 0.7) }) },
+    };
+
+    const ANALYSIS_INFO = {
+        'samples':  { type: 'TimeSeries',    transform: x => Array.from(x).map(v => (v - 128) / 128) },
+        'spectrum': { type: 'PowerSpectrum', transform: x => Array.from(x).map(v => v / 255) }
     };
 
     const DRUM_TO_NOTE = {
@@ -56,7 +62,7 @@
 
         const PREFETCH = (async () => {
             try {
-                MIDI_DEVICES = (await audio.getAvailableMidiDevices()).map((x) => `${x}---(midi)`);
+                MIDI_DEVICES = (await audio.getAvailableMidiDevices()).map(x => `${x}---(midi)`);
             } catch (e) {
                 console.error('failed to load midi devices', e);
             }
@@ -73,7 +79,7 @@
                 console.log('beginning instrument pre-fetch...');
                 const tempTrack = '<<<temp-track>>>';
                 audio.createTrack(tempTrack);
-                await Promise.all(INSTRUMENTS.map((x) => audio.updateInstrument(tempTrack, x)));
+                await Promise.all(INSTRUMENTS.map(x => audio.updateInstrument(tempTrack, x)));
                 audio.removeTrack(tempTrack);
                 console.log('instrument pre-fetch completed');
 
@@ -86,7 +92,7 @@
 
         function snapify(value) {
             if (typeof (value.map) === 'function') {
-                return new List(value.map(x => snapify(x)));
+                return new List((Array.isArray(value) ? value : Array.from(value)).map(x => snapify(x)));
             } else if (typeof (value) === 'object') {
                 const res = [];
                 for (const key in value) {
@@ -108,8 +114,8 @@
         }
 
         function parseNote(note) {
-            if (Array.isArray(note)) return note.map((x) => parseNote(x));
-            if (note.contents !== undefined) return note.contents.map((x) => parseNote(x));
+            if (Array.isArray(note)) return note.map(x => parseNote(x));
+            if (note.contents !== undefined) return note.contents.map(x => parseNote(x));
             if (typeof (note) === 'number' && Number.isInteger(note)) return note;
             if (typeof (note) !== 'string' || note === '') throw Error(`expected a note, got '${note}'`);
             if (note === 'Rest') return NOTES[note];
@@ -154,8 +160,8 @@
             return accidental ? -off : off;
         }
         function parseDrumNote(note) {
-            if (Array.isArray(note)) return note.map((x) => parseDrumNote(x));
-            if (note.contents !== undefined) return note.contents.map((x) => parseDrumNote(x));
+            if (Array.isArray(note)) return note.map(x => parseDrumNote(x));
+            if (note.contents !== undefined) return note.contents.map(x => parseDrumNote(x));
             if (typeof (note) === 'number' && Number.isInteger(note)) return note;
             if (typeof (note) !== 'string' || note === '') throw Error(`expected a drum note, got '${note}'`);
             if (note === 'Rest') return NOTES[note];
@@ -240,6 +246,7 @@
                     '-',
                     new Extension.Palette.Block('playClip'),
                     new Extension.Palette.Block('queryClip'),
+                    new Extension.Palette.Block('audioAnalysis'),
                     new Extension.Palette.Block('createClip'),
                     '-',
                     new Extension.Palette.Block('setAudioEffect'),
@@ -250,8 +257,6 @@
                     new Extension.Palette.Block('startRecording'),
                     new Extension.Palette.Block('finishRecording'),
                     new Extension.Palette.Block('isRecording'),
-                    '-',
-                    new Extension.Palette.Block('audioAnalysis'),
                 ];
                 return [
                     new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -368,7 +373,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('queryClip', 'reporter', 'music', '%audioQuery of sound %snd', ['name'], function (query, rawSound) {
+                    new Extension.Block('queryClip', 'reporter', 'music', '%audioQuery of sound %snd', ['samples'], function (query, rawSound) {
                         return this.runAsyncFn(async () => {
                             const sound = typeof(rawSound) === 'string' ? this.receiver.sounds.contents.find(x => x.name === rawSound) : rawSound;
                             if (!sound) throw Error(typeof(rawSound) === 'string' ? `unknown sound: "${rawSound}"` : 'input must be a sound');
@@ -398,6 +403,12 @@
                                 throw Error(`unknown sound property: "${query}"`);
                             }
                         }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('audioAnalysis', 'reporter', 'music', 'output %audioAnalysis', ['samples'], function (analysis) {
+                        const { type, transform } = ANALYSIS_INFO[analysis] || {};
+                        if (type === undefined || transform === undefined) throw Error(`unknown audio analysis type: "${analysis}"`);
+
+                        return snapify(transform(audio.analyzeAudio(ANALYSES[type])));
                     }),
                     new Extension.Block('createClip', 'reporter', 'music', 'samples %l at %n Hz', [null, 44100], function (samples, sampleRate) {
                         return this.runAsyncFn(async () => {
@@ -548,10 +559,6 @@
                     new Extension.Block('isRecording', 'predicate', 'music', 'recording?', [], function () {
                         return !!activeRecording;
                     }),
-                    new Extension.Block('audioAnalysis', 'reporter', 'music', 'get output %audioAnalysis', ['TimeSeries'], function (ty) {
-                        if (!ANALYSES[ty]) throw Error(`unknown audio analysis type: '${ty}'`);
-                        return snapify(audio.analyzeAudio(ANALYSES[ty]));
-                    }),
                 ];
             }
 
@@ -597,7 +604,7 @@
                     basicEnum('audioEffectAug', identityMap([...Object.keys(EFFECT_INFO), 'every', 'every active'])),
                     basicEnum('audioInput', identityMap([...MIDI_DEVICES, ...INPUT_DEVICES])),
                     basicEnum('io', identityMap(['input', 'output'])),
-                    basicEnum('audioAnalysis', identityMap(Object.keys(ANALYSES))),
+                    basicEnum('audioAnalysis', identityMap(Object.keys(ANALYSIS_INFO))),
                 ];
             }
         }
