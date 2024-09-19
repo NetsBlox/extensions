@@ -120,7 +120,7 @@
             const letter = note[0];
             let octave = null;
             let delta = 0;
-            let natural = false;
+            let accidental = false;
             for (let i = 1; i < note.length; ++i) {
                 let v = note[i];
                 if (v === '+' || v === '-' || (v >= '0' && v <= '9')) {
@@ -133,16 +133,17 @@
                     octave = parseInt(v);
                 } else if (v === 's' || v === '#' || v === '♯') {
                     delta += 1;
+                    accidental = true;
                 } else if (v === 'b' || v === '♭') {
                     delta -= 1;
+                    accidental = true;
                 } else if (v === 'n') {
-                    natural = true;
+                    accidental = true;
                 } else {
                     throw Error(`expected a note, got '${note}' (unknown character '${v}')`);
                 }
             }
             if (octave == null) throw Error(`expected a note, got '${note}' (missing octave number)`);
-            if (natural && delta != 0) throw Error(`naturals cannot be sharp/flat, got '${note}'`);
 
             const base = NOTES[`${letter}${octave}`.toUpperCase()];
             if (base === undefined) throw Error(`expected a note, got '${note}'`);
@@ -150,7 +151,7 @@
             const off = base + delta;
             if (off <= 0 || off >= 128) throw Error(`Note outside of valid range, got ${note}`);
 
-            return natural ? -off : off;
+            return accidental ? -off : off;
         }
         function parseDrumNote(note) {
             if (Array.isArray(note)) return note.map((x) => parseDrumNote(x));
@@ -270,7 +271,7 @@
                             await audio.updateInstrument(this.receiver.id, instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('setKey', 'command', 'music', 'set key %key', ['CMajor'], function (key) {
+                    new Extension.Block('setKey', 'command', 'music', 'set key %keySig', ['CMajor'], function (key) {
                         if (KEYS[key] === undefined) throw Error(`unknown key: '${key}'`);
                         audio.updateKeySignature(KEYS[key]);
                     }),
@@ -554,7 +555,10 @@
                 const basicEnum = (name, values) => new Extension.LabelPart(name, () => new InputSlotMorph(null, false, values, true));
                 return [
                     basicEnum('instrument', identityMap(INSTRUMENTS)),
-                    basicEnum('key', identityMap(Object.keys(KEYS))),
+                    basicEnum('keySig', {
+                        'Major': identityMap(Object.keys(KEYS).filter(x => x.endsWith('Major')).map(x => [x.substring(0, x.length - 5), x])),
+                        'Minor': identityMap(Object.keys(KEYS).filter(x => x.endsWith('Minor')).map(x => [x.substring(0, x.length - 5), x])),
+                    }),
                     basicEnum('noteDuration', (base => unionMaps([
                         identityMap(base),
                         {
