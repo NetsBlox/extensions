@@ -118,7 +118,7 @@
             if (note.contents !== undefined) return note.contents.map(x => parseNote(x));
             if (typeof (note) === 'number' && Number.isInteger(note)) return note;
             if (typeof (note) !== 'string' || note === '') throw Error(`expected a note, got '${note}'`);
-            if (note === 'Rest') return NOTES[note];
+            if (note.toLowerCase() === 'rest') return NOTES['Rest'];
 
             const v = Number(note);
             if (Number.isInteger(v) && note == v) return v;
@@ -164,7 +164,7 @@
             if (note.contents !== undefined) return note.contents.map(x => parseDrumNote(x));
             if (typeof (note) === 'number' && Number.isInteger(note)) return note;
             if (typeof (note) !== 'string' || note === '') throw Error(`expected a drum note, got '${note}'`);
-            if (note === 'Rest') return NOTES[note];
+            if (note.toLowerCase() === 'rest') return NOTES['Rest'];
 
             const res = DRUM_TO_NOTE[note.toLowerCase()];
             if (res === undefined) throw Error(`unknown drum sound: "${note}"`);
