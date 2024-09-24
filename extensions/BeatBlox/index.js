@@ -391,6 +391,26 @@
             }
             return snapify(res);
         }
+        function getAppliedEffectsForTrack(trackName, appliedEffects) {
+            if (appliedEffects.length === 0) {
+                return new List();
+            }
+            console.log(appliedEffects);
+        
+            const filteredEffects = appliedEffects.filter(effect => {
+                const startsWithTrackName = effect.startsWith(trackName);
+                const hasCapitalizedSuffix = effect.length > trackName.length && /[A-Z]/.test(effect[trackName.length]);
+                const noDrum = !effect.includes('Drum', trackName.length);
+                return startsWithTrackName && hasCapitalizedSuffix && noDrum;
+            });
+            console.log(filteredEffects);
+        
+            if (filteredEffects.length === 0) {
+                return new List();
+            }
+        
+            return getEffectValues(trackName, filteredEffects);
+        }
 
         function createTrack(trackName) {
             audioAPI.createTrack(trackName);
@@ -785,11 +805,15 @@
                             await instrumentPrefetch; // wait for all instruments to be loaded
                             const trackName = this.receiver.id;
                             const drumTrackName = trackName+"Drum";
-                            for (const effectName in availableEffects) {
-                                await audioAPI.removeTrackEffect(trackName, effectName);
-                                await audioAPI.removeTrackEffect(drumTrackName, effectName);
-                            }
-                            appliedEffects = [];
+                            // for (const effectName in availableEffects) {
+                            //     await audioAPI.removeTrackEffect(trackName, effectName);
+                            //     await audioAPI.removeTrackEffect(drumTrackName, effectName);
+                            // }
+                            const appliedTrackEffects = getAppliedEffectsForTrack(trackName, appliedEffects);
+                            console.log(appliedTrackEffects);
+                            const removedEffects = appliedEffects.filter(effect => !appliedTrackEffects.includes(effect));
+                            console.log(removedEffects);
+                            // appliedEffects = removedEffects;
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('makeTempo', 'command', 'music', 'set tempo %n bpm', [120], function (tempo) {
@@ -807,12 +831,7 @@
                         console.log(availableKeySignatures[key]);
                     }),
                     new Extension.Block('appliedEffects', 'reporter', 'music', 'applied effects', [], function () {
-                        if (appliedEffects.length === 0) {
-                            return new List();
-                        }
-
-                        const trackName = this.id;
-                        return getEffectValues(trackName, appliedEffects);
+                        return getAppliedEffectsForTrack(this.id, appliedEffects);
                     }).for(SpriteMorph, StageMorph),
                     new Extension.Block('tempo', 'reporter', 'music', 'tempo', [], function () {
                         return getBPM();
