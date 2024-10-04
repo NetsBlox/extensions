@@ -13,15 +13,20 @@ export function copy_stateflow_code(): void;
 * @param {any} proc
 * @param {any} machine
 * @param {any} state
+* @returns {boolean}
 */
-export function transition(proc: any, machine: any, state: any): void;
+export function in_state(proc: any, machine: any, state: any): boolean;
 /**
 * @param {any} proc
 * @param {any} machine
 * @param {any} state
-* @returns {boolean}
 */
-export function check_state(proc: any, machine: any, state: any): boolean;
+export function transition(proc: any, machine: any, state: any): void;
+/**
+* @param {any} _var
+* @param {any} _type
+*/
+export function mark_var(_var: any, _type: any): void;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
@@ -30,8 +35,9 @@ export interface InitOutput {
   readonly setup: () => void;
   readonly visualize: () => void;
   readonly copy_stateflow_code: () => void;
+  readonly in_state: (a: number, b: number, c: number, d: number) => void;
   readonly transition: (a: number, b: number, c: number, d: number) => void;
-  readonly check_state: (a: number, b: number, c: number, d: number) => void;
+  readonly mark_var: (a: number, b: number) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;

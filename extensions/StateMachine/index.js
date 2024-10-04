@@ -38,16 +38,20 @@
 				new Extension.PaletteCategory(
 					'StateMachine',
 					[
-						new Extension.Palette.Block('smTransition'),
 						new Extension.Palette.Block('smInState'),
+						new Extension.Palette.Block('smTransition'),
+						'-',
+						new Extension.Palette.Block('smMarkVar'),
 					],
 					SpriteMorph
 				),
 				new Extension.PaletteCategory(
 					'StateMachine',
 					[
-						new Extension.Palette.Block('smTransition'),
 						new Extension.Palette.Block('smInState'),
+						new Extension.Palette.Block('smTransition'),
+						'-',
+						new Extension.Palette.Block('smMarkVar'),
 					],
 					StageMorph
 				),
@@ -58,6 +62,14 @@
         getBlocks() {
             return [
 				new Extension.Block(
+					'smInState',
+					'predicate',
+					'StateMachine',
+					'%var in state %s ?',
+					[],
+					function (v0, v1) { return window.StateMachine_fns.in_state(this, v0, v1); }
+				).for(SpriteMorph, StageMorph),
+				new Extension.Block(
 					'smTransition',
 					'command',
 					'StateMachine',
@@ -66,12 +78,12 @@
 					function (v0, v1) { return window.StateMachine_fns.transition(this, v0, v1); }
 				).terminal().for(SpriteMorph, StageMorph),
 				new Extension.Block(
-					'smInState',
-					'predicate',
+					'smMarkVar',
+					'command',
 					'StateMachine',
-					'%var in state %s ?',
-					[],
-					function (v0, v1) { return window.StateMachine_fns.check_state(this, v0, v1); }
+					'mark var %var as %smVarType',
+					[null, 'internal'],
+					function (v0, v1) { return window.StateMachine_fns.mark_var(v0, v1); }
 				).for(SpriteMorph, StageMorph),
 
             ];
@@ -79,6 +91,18 @@
 
         getLabelParts() {
             return [
+				new Extension.LabelPart(
+					'smVarType',
+					() => {
+						const part = new InputSlotMorph(
+							null, // text
+							false, // numeric
+							{"internal": "internal","input": "input","output": "output",}, // options
+							true // readonly
+						);
+						return part;
+					}
+				),
 
             ];
         }
@@ -90,14 +114,15 @@
     path = path.substring(0, path.lastIndexOf("/"));
     var s = document.createElement('script');
     s.type = "module";
-    s.innerHTML = `import init, {check_state, copy_stateflow_code, transition, visualize} from '${path}/pkg/netsblox_stateflow_ext.js';
+    s.innerHTML = `import init, {copy_stateflow_code, in_state, mark_var, transition, visualize} from '${path}/pkg/netsblox_stateflow_ext.js';
     
     
         await init();
 
         window.StateMachine_fns = {};
-		window.StateMachine_fns.check_state = check_state;
 		window.StateMachine_fns.copy_stateflow_code = copy_stateflow_code;
+		window.StateMachine_fns.in_state = in_state;
+		window.StateMachine_fns.mark_var = mark_var;
 		window.StateMachine_fns.transition = transition;
 		window.StateMachine_fns.visualize = visualize;
         `;

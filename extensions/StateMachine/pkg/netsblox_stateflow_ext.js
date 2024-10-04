@@ -202,6 +202,28 @@ export function copy_stateflow_code() {
 * @param {any} proc
 * @param {any} machine
 * @param {any} state
+* @returns {boolean}
+*/
+export function in_state(proc, machine, state) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.in_state(retptr, addHeapObject(proc), addHeapObject(machine), addHeapObject(state));
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+        if (r2) {
+            throw takeObject(r1);
+        }
+        return r0 !== 0;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
+* @param {any} proc
+* @param {any} machine
+* @param {any} state
 */
 export function transition(proc, machine, state) {
     try {
@@ -218,25 +240,11 @@ export function transition(proc, machine, state) {
 }
 
 /**
-* @param {any} proc
-* @param {any} machine
-* @param {any} state
-* @returns {boolean}
+* @param {any} _var
+* @param {any} _type
 */
-export function check_state(proc, machine, state) {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.check_state(retptr, addHeapObject(proc), addHeapObject(machine), addHeapObject(state));
-        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-        if (r2) {
-            throw takeObject(r1);
-        }
-        return r0 !== 0;
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-    }
+export function mark_var(_var, _type) {
+    wasm.mark_var(addHeapObject(_var), addHeapObject(_type));
 }
 
 function handleError(f, args) {
