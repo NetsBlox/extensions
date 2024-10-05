@@ -82,7 +82,7 @@
 					'command',
 					'StateMachine',
 					'mark var %var as %smVarType',
-					[null, 'internal'],
+					[null, 'local'],
 					function (v0, v1) { return window.StateMachine_fns.mark_var(v0, v1); }
 				).for(SpriteMorph, StageMorph),
 
@@ -97,7 +97,7 @@
 						const part = new InputSlotMorph(
 							null, // text
 							false, // numeric
-							{"internal": "internal","input": "input","output": "output",}, // options
+							{"local": "local","input": "input","output": "output",}, // options
 							true // readonly
 						);
 						return part;
