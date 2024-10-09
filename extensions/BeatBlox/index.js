@@ -593,19 +593,19 @@
                             await audioAPI.updateInstrument(trackName, instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playNote', 'command', 'music', 'play note(s) %s %noteDurations %noteDurationsSpecial ', ['C3', 'Quarter', ''], function (notes,duration, durationSpecial) {
+                    new Extension.Block('playNote', 'command', 'music', 'play note(s) %s %noteDurations', ['C3', 'Quarter'], function (notes, duration) {
                         if (notes instanceof List) {
-                            playNoteCommon.apply(this, [durationSpecial + duration, notes]);
+                            playNoteCommon.apply(this, [duration, notes]);
                         } else if(typeof notes === 'object') {
                             var noteName = notes.noteName;
                             var modifier = notes.modifier;
-                            playNoteCommon.apply(this, [durationSpecial + duration, noteName, audioAPI.getModification(modifier, 1)]);
+                            playNoteCommon.apply(this, [duration, noteName, audioAPI.getModification(modifier, 1)]);
                         } else {
-                            playNoteCommon.apply(this, [durationSpecial + duration, notes]);
+                            playNoteCommon.apply(this, [duration, notes]);
                         }
                     }),
-                    new Extension.Block('rest', 'command', 'music', 'rest %noteDurations %noteDurationsSpecial', ['Quarter',''], function (duration, durationSpecial) {
-                        playNoteCommon.apply(this, [durationSpecial + duration, 'Rest']);
+                    new Extension.Block('rest', 'command', 'music', 'rest %noteDurations', ['Quarter'], function (duration, durationSpecial) {
+                        playNoteCommon.apply(this, [duration, 'Rest']);
                     }),
                     new Extension.Block('playAudioClip', 'command', 'music', 'play clip %snd', [null], function (clip) {
                         setupProcess(this);
@@ -656,12 +656,9 @@
            
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play clip %snd for duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration, durationSpecial) {
+                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play clip %snd for duration %noteDurations', [null, 'Quarter'], function (clip, duration) {
                         setupProcess(this);
                         let playDuration = availableNoteDurations[duration];
-                        if (durationSpecial != '') {
-                            playDuration = availableNoteDurations[durationSpecial + duration];
-                        }
                         if (clip === '') throw Error(`sound cannot be empty`);
                         if (this.receiver.sounds.contents.length) {
                             for (let i = 0; i < this.receiver.sounds.contents.length; i++) {
@@ -1034,13 +1031,23 @@
                     new Extension.LabelPart('noteDurations', () => new InputSlotMorph(
                         null, //text
                         false, //numeric
-                        identityMap(['Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'ThirtySecond', 'SixtyFourth']),
-                        true, //readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('noteDurationsSpecial', () => new InputSlotMorph(
-                        null, //text
-                        false, //numeric
-                        identityMap(['Dotted', 'DottedDotted']),
+                        {
+                            'Whole': 'Whole',
+                            'Half': 'Half',
+                            'Quarter': 'Quarter',
+                            'Eighth': 'Eighth',
+                            'Sixteenth': 'Sixteenth',
+                            'ThirtySecond': 'ThirtySecond',
+                            'SixtyFourth': 'SixtyFourth',
+                            'Dotted': identityMap([
+                                'DottedWhole', 'DottedHalf', 'DottedQuarter', 'DottedEight',
+                                'DottedSixteenth', 'DottedThirtySecond', 'DottedSixtyFourth',
+                            ]),
+                            'DoubleDotted': identityMap([
+                                'DoubleDottedWhole', 'DoubleDottedHalf', 'DoubleDottedQuarter', 'DoubleDottedEight',
+                                'DoubleDottedSixteenth', 'DoubleDottedThirtySecond', 'DoubleDottedSixtyFourth',
+                            ]),
+                        },
                         true, //readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('chordTypes', () => new InputSlotMorph(
