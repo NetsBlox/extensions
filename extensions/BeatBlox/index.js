@@ -94,6 +94,17 @@
             'Minor': [0, 2, 3, 5, 7, 8, 10, 12],
         };
 
+        const NOTE_DURATION_LENGTHS = [
+            0.125, 0.1875, 0.21875, 0.25, 0.375, 0.4375, 0.5,
+            0.75, 0.875, 1, 1.5, 1.75, 2, 3, 3.5, 4, 6, 7
+        ];
+        const NOTE_DURATION_NAMES = [
+            'ThirtySecond', 'DottedThirtySecond', 'DoubleDottedThirtySecond', 'Sixteenth',
+            'DottedSixteenth', 'DoubleDottedSixteenth', 'Eighth', 'DottedEighth', 'DoubleDottedEighth',
+            'Quarter', 'DottedQuarter', 'DoubleDottedQuarter', 'Half', 'DottedHalf', 'DoubleDottedHalf',
+            'Whole', 'DottedWhole', 'DoubleDottedWhole'
+        ];
+
         /**
          * Connects a MIDI device to the WebAudioAPI
          * @param {String} trackName - Name of the Track 
@@ -513,6 +524,7 @@
                     new Extension.Palette.Block('noteNew'),
                     new Extension.Palette.Block('chords'),
                     new Extension.Palette.Block('scales'),
+                    new Extension.Palette.Block('duration'),
                 ];
                 return [
                     new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -895,6 +907,12 @@
                     new Extension.Block('audioAnalysis', 'reporter', 'music', 'get output %analysisType', ['TimeSeries'], function (ty) {
                         if (!availableAnalysisTypes[ty]) throw Error(`unknown audio analysis type: '${ty}'`);
                         return snapify(audioAPI.analyzeAudio(availableAnalysisTypes[ty]));
+                    }),
+                    new Extension.Block('duration', 'reporter', 'music', 'beat length %n', [], function (beatLength) {
+                        let i = 0;
+                        for (; beatLength > NOTE_DURATION_LENGTHS[i]; i++)
+                            if (i === NOTE_DURATION_LENGTHS.length) return NOTE_DURATION_NAMES[i - 1];
+                        return NOTE_DURATION_NAMES[i];
                     }),
                 ];
             }
