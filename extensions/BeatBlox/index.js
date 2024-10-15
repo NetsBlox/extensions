@@ -445,6 +445,27 @@
             await wait(t - audioAPI.getCurrentTime());
         }
 
+        function durationFromInt(beatLength) {
+            let i = 0;
+            for (; beatLength > NOTE_DURATION_LENGTHS[i]; i++)
+                if (i === NOTE_DURATION_LENGTHS.length) return NOTE_DURATION_NAMES[i - 1];
+            return NOTE_DURATION_NAMES[i];
+        }
+
+        function intFromDuration(duration) {
+            let i = NOTE_DURATION_NAMES.indexOf(duration);
+            if (i === -1) return 0;
+            return NOTE_DURATION_NAMES[i];
+        }
+
+        function calcTiedDuration(durations) {
+            durations.sort();
+            let temp = availableNoteDurations[durationFromInt(durations[i])];
+            for (let i = 1; i < durations.length; i++) {
+
+            }
+        }
+
         // ----------------------------------------------------------------------
         class MusicApp extends Extension {
             constructor(ide) {
@@ -537,25 +558,29 @@
                     setupProcess(this);
                     this.runAsyncFn(async () => {
                         if (duration === '') throw Error('Please select a valid note duration');
-                        duration = availableNoteDurations[duration];
-                        if (!duration) throw Error('unknown note duration');
+                        const durations = duration.split('+');
 
                         notes = parseNote(notes);
                         if (!Array.isArray(notes)) notes = [notes];
                         if (notes.length === 0) return;
 
-                        if (this.mods === undefined || this.mods.length == 0)
-                            mods = undefined;
+                        if (this.mods === undefined) mods = [];
                         else {
                             mods = [];
                             for (let i = 0; i < this.mods.length; i++) {
                                 mods.push(audioAPI.getModification(availableNoteModifiers[this.mods[i]]));
                             }
                         }
+
                         await instrumentPrefetch; // wait for all instruments to be loaded
                         const trackName = this.receiver.id;
-                        const t = await playChord(trackName, notes, this.musicInfo.t, duration, mods, isDrumNote);
-                        this.musicInfo.t += t;
+                        let sequence = [];
+                        for (let i = 0; i < durations.length - 1; i++) sequence.push([notes, availableNoteDurations[durations[i]], mods.concat(audioAPI.getModification(availableNoteModifiers["Tie"]))]);
+                        sequence.push([notes, availableNoteDurations[durations[durations.length - 1]], mods]);
+                        for (let i = 0; i < sequence.length; i++) {
+                            const t = await playChord(trackName, sequence[i][0], this.musicInfo.t, sequence[i][1], sequence[i][2], isDrumNote);
+                            this.musicInfo.t += t;
+                        }
                         await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                 }, { args: [], timeout: I32_MAX });
                 }
@@ -909,10 +934,7 @@
                         return snapify(audioAPI.analyzeAudio(availableAnalysisTypes[ty]));
                     }),
                     new Extension.Block('duration', 'reporter', 'music', 'beat length %n', [], function (beatLength) {
-                        let i = 0;
-                        for (; beatLength > NOTE_DURATION_LENGTHS[i]; i++)
-                            if (i === NOTE_DURATION_LENGTHS.length) return NOTE_DURATION_NAMES[i - 1];
-                        return NOTE_DURATION_NAMES[i];
+                        return durationFromInt(beatLength);
                     }),
                 ];
             }
