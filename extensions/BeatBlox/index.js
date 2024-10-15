@@ -705,7 +705,7 @@
                         }, { args: [], timeout: I32_MAX });
                         
                     }),
-                    new Extension.Block('soundMetaData', 'reporter', 'music', '%soundMetaData of sound %snd', ['duration', ''], function (option, sound) {
+                    new Extension.Block('soundMetaData', 'reporter', 'music', '%soundMetaData of clip %snd', ['duration', ''], function (option, sound) {
                         if (sound === '') throw Error(`sound cannot be empty`);
                         
                         for (const element of this.receiver.sounds.contents) {
