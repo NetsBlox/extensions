@@ -453,18 +453,14 @@
             while (beatLength >= NOTE_DURATION_LENGTHS[0]) {
                 let index;
                 for (let i = 0; i < NOTE_DURATION_LENGTHS.length; i++) {
-                    if (i === NOTE_DURATION_LENGTHS.length - 1 && beatLength >= NOTE_DURATION_LENGTHS[i]) {
-                        index = i;
-                        break;
-                    } else if (beatLength < NOTE_DURATION_LENGTHS[i]) {
+                    if (i === NOTE_DURATION_LENGTHS.length - 1 && beatLength >= NOTE_DURATION_LENGTHS[i]) index = i;
+                    else if (beatLength < NOTE_DURATION_LENGTHS[i]) {
                         index = i - 1;
                         break;
                     }
                 }
-                if (index !== undefined) {
-                    duration += duration === '' ? `${NOTE_DURATION_NAMES[index]}` : `+${NOTE_DURATION_NAMES[index]}`;
-                    beatLength -= NOTE_DURATION_LENGTHS[index];
-                }
+                duration += duration === '' ? `${NOTE_DURATION_NAMES[index]}` : `+${NOTE_DURATION_NAMES[index]}`;
+                beatLength -= NOTE_DURATION_LENGTHS[index];
             }
             return duration;
         }
