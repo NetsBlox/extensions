@@ -446,24 +446,27 @@
         }
 
         function durationFromInt(beatLength) {
-            let i = 0;
-            for (; beatLength > NOTE_DURATION_LENGTHS[i]; i++)
-                if (i === NOTE_DURATION_LENGTHS.length) return NOTE_DURATION_NAMES[i - 1];
-            return NOTE_DURATION_NAMES[i];
-        }
+            let index = NOTE_DURATION_LENGTHS.indexOf(beatLength);
+            if (index !== -1) return NOTE_DURATION_NAMES[index];
 
-        function intFromDuration(duration) {
-            let i = NOTE_DURATION_NAMES.indexOf(duration);
-            if (i === -1) return 0;
-            return NOTE_DURATION_NAMES[i];
-        }
-
-        function calcTiedDuration(durations) {
-            durations.sort();
-            let temp = availableNoteDurations[durationFromInt(durations[i])];
-            for (let i = 1; i < durations.length; i++) {
-
+            let duration = '';
+            while (beatLength >= NOTE_DURATION_LENGTHS[0]) {
+                let index;
+                for (let i = 0; i < NOTE_DURATION_LENGTHS.length; i++) {
+                    if (i === NOTE_DURATION_LENGTHS.length - 1 && beatLength >= NOTE_DURATION_LENGTHS[i]) {
+                        index = i;
+                        break;
+                    } else if (beatLength < NOTE_DURATION_LENGTHS[i]) {
+                        index = i - 1;
+                        break;
+                    }
+                }
+                if (index !== undefined) {
+                    duration += duration === '' ? `${NOTE_DURATION_NAMES[index]}` : `+${NOTE_DURATION_NAMES[index]}`;
+                    beatLength -= NOTE_DURATION_LENGTHS[index];
+                }
             }
+            return duration;
         }
 
         // ----------------------------------------------------------------------
