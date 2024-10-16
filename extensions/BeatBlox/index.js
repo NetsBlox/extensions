@@ -461,7 +461,7 @@
                 duration += duration === '' ? `${NOTE_DURATION_NAMES[index]}` : `+${NOTE_DURATION_NAMES[index]}`;
                 beatLength -= NOTE_DURATION_LENGTHS[index];
             }
-            return duration;
+            return duration === '' ? NOTE_DURATION_NAMES[0] : duration;
         }
 
         // ----------------------------------------------------------------------
