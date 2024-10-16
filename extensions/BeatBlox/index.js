@@ -451,7 +451,6 @@
 
             let duration = '';
             while (beatLength >= NOTE_DURATION_LENGTHS[0]) {
-                let index;
                 for (let i = 0; i < NOTE_DURATION_LENGTHS.length; i++) {
                     if (i === NOTE_DURATION_LENGTHS.length - 1 && beatLength >= NOTE_DURATION_LENGTHS[i]) index = i;
                     else if (beatLength < NOTE_DURATION_LENGTHS[i]) {
