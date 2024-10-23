@@ -94,6 +94,17 @@
             'Minor': [0, 2, 3, 5, 7, 8, 10, 12],
         };
 
+        const NOTE_DURATION_LENGTHS = [
+            0.125, 0.1875, 0.21875, 0.25, 0.375, 0.4375, 0.5,
+            0.75, 0.875, 1, 1.5, 1.75, 2, 3, 3.5, 4, 6, 7
+        ];
+        const NOTE_DURATION_NAMES = [
+            'ThirtySecond', 'DottedThirtySecond', 'DoubleDottedThirtySecond', 'Sixteenth',
+            'DottedSixteenth', 'DoubleDottedSixteenth', 'Eighth', 'DottedEighth', 'DoubleDottedEighth',
+            'Quarter', 'DottedQuarter', 'DoubleDottedQuarter', 'Half', 'DottedHalf', 'DoubleDottedHalf',
+            'Whole', 'DottedWhole', 'DoubleDottedWhole'
+        ];
+
         /**
          * Connects a MIDI device to the WebAudioAPI
          * @param {String} trackName - Name of the Track 
@@ -434,6 +445,25 @@
             await wait(t - audioAPI.getCurrentTime());
         }
 
+        function durationFromInt(beatLength) {
+            let index = NOTE_DURATION_LENGTHS.indexOf(beatLength);
+            if (index !== -1) return NOTE_DURATION_NAMES[index];
+
+            let duration = '';
+            while (beatLength >= NOTE_DURATION_LENGTHS[0]) {
+                for (let i = 0; i < NOTE_DURATION_LENGTHS.length; i++) {
+                    if (i === NOTE_DURATION_LENGTHS.length - 1 && beatLength >= NOTE_DURATION_LENGTHS[i]) index = i;
+                    else if (beatLength < NOTE_DURATION_LENGTHS[i]) {
+                        index = i - 1;
+                        break;
+                    }
+                }
+                duration += duration === '' ? `${NOTE_DURATION_NAMES[index]}` : `+${NOTE_DURATION_NAMES[index]}`;
+                beatLength -= NOTE_DURATION_LENGTHS[index];
+            }
+            return duration === '' ? NOTE_DURATION_NAMES[0] : duration;
+        }
+
         // ----------------------------------------------------------------------
         class MusicApp extends Extension {
             constructor(ide) {
@@ -513,6 +543,7 @@
                     new Extension.Palette.Block('noteNew'),
                     new Extension.Palette.Block('chords'),
                     new Extension.Palette.Block('scales'),
+                    new Extension.Palette.Block('duration'),
                 ];
                 return [
                     new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -525,25 +556,29 @@
                     setupProcess(this);
                     this.runAsyncFn(async () => {
                         if (duration === '') throw Error('Please select a valid note duration');
-                        duration = availableNoteDurations[duration];
-                        if (!duration) throw Error('unknown note duration');
+                        const durations = duration.split('+');
 
                         notes = parseNote(notes);
                         if (!Array.isArray(notes)) notes = [notes];
                         if (notes.length === 0) return;
 
-                        if (this.mods === undefined || this.mods.length == 0)
-                            mods = undefined;
+                        if (this.mods === undefined) mods = [];
                         else {
                             mods = [];
                             for (let i = 0; i < this.mods.length; i++) {
                                 mods.push(audioAPI.getModification(availableNoteModifiers[this.mods[i]]));
                             }
                         }
+
                         await instrumentPrefetch; // wait for all instruments to be loaded
                         const trackName = this.receiver.id;
-                        const t = await playChord(trackName, notes, this.musicInfo.t, duration, mods, isDrumNote);
-                        this.musicInfo.t += t;
+                        let sequence = [];
+                        for (let i = 0; i < durations.length - 1; i++) sequence.push([notes, availableNoteDurations[durations[i]], mods.concat(audioAPI.getModification(availableNoteModifiers["Tie"]))]);
+                        sequence.push([notes, availableNoteDurations[durations[durations.length - 1]], mods]);
+                        for (let i = 0; i < sequence.length; i++) {
+                            const t = await playChord(trackName, sequence[i][0], this.musicInfo.t, sequence[i][1], sequence[i][2], isDrumNote);
+                            this.musicInfo.t += t;
+                        }
                         await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                 }, { args: [], timeout: I32_MAX });
                 }
@@ -593,19 +628,19 @@
                             await audioAPI.updateInstrument(trackName, instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playNote', 'command', 'music', 'play note(s) %s %noteDurations %noteDurationsSpecial ', ['C3', 'Quarter', ''], function (notes,duration, durationSpecial) {
+                    new Extension.Block('playNote', 'command', 'music', 'play note(s) %s %noteDurations', ['C3', 'Quarter'], function (notes, duration) {
                         if (notes instanceof List) {
-                            playNoteCommon.apply(this, [durationSpecial + duration, notes]);
+                            playNoteCommon.apply(this, [duration, notes]);
                         } else if(typeof notes === 'object') {
                             var noteName = notes.noteName;
                             var modifier = notes.modifier;
-                            playNoteCommon.apply(this, [durationSpecial + duration, noteName, audioAPI.getModification(modifier, 1)]);
+                            playNoteCommon.apply(this, [duration, noteName, audioAPI.getModification(modifier, 1)]);
                         } else {
-                            playNoteCommon.apply(this, [durationSpecial + duration, notes]);
+                            playNoteCommon.apply(this, [duration, notes]);
                         }
                     }),
-                    new Extension.Block('rest', 'command', 'music', 'rest %noteDurations %noteDurationsSpecial', ['Quarter',''], function (duration, durationSpecial) {
-                        playNoteCommon.apply(this, [durationSpecial + duration, 'Rest']);
+                    new Extension.Block('rest', 'command', 'music', 'rest %noteDurations', ['Quarter'], function (duration, durationSpecial) {
+                        playNoteCommon.apply(this, [duration, 'Rest']);
                     }),
                     new Extension.Block('playAudioClip', 'command', 'music', 'play clip %snd', [null], function (clip) {
                         setupProcess(this);
@@ -656,12 +691,9 @@
            
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play clip %snd for duration %noteDurations %noteDurationsSpecial', [null, 'Quarter', ''], function (clip, duration, durationSpecial) {
+                    new Extension.Block('playSampleForDuration', 'command', 'music', 'play clip %snd for duration %noteDurations', [null, 'Quarter'], function (clip, duration) {
                         setupProcess(this);
                         let playDuration = availableNoteDurations[duration];
-                        if (durationSpecial != '') {
-                            playDuration = availableNoteDurations[durationSpecial + duration];
-                        }
                         if (clip === '') throw Error(`sound cannot be empty`);
                         if (this.receiver.sounds.contents.length) {
                             for (let i = 0; i < this.receiver.sounds.contents.length; i++) {
@@ -899,6 +931,9 @@
                         if (!availableAnalysisTypes[ty]) throw Error(`unknown audio analysis type: '${ty}'`);
                         return snapify(audioAPI.analyzeAudio(availableAnalysisTypes[ty]));
                     }),
+                    new Extension.Block('duration', 'reporter', 'music', 'beat length %n', [], function (beatLength) {
+                        return durationFromInt(beatLength);
+                    }),
                 ];
             }
 
@@ -1034,13 +1069,23 @@
                     new Extension.LabelPart('noteDurations', () => new InputSlotMorph(
                         null, //text
                         false, //numeric
-                        identityMap(['Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'ThirtySecond', 'SixtyFourth']),
-                        true, //readonly (no arbitrary text)
-                    )),
-                    new Extension.LabelPart('noteDurationsSpecial', () => new InputSlotMorph(
-                        null, //text
-                        false, //numeric
-                        identityMap(['Dotted', 'DottedDotted']),
+                        {
+                            'Whole': 'Whole',
+                            'Half': 'Half',
+                            'Quarter': 'Quarter',
+                            'Eighth': 'Eighth',
+                            'Sixteenth': 'Sixteenth',
+                            'ThirtySecond': 'ThirtySecond',
+                            'SixtyFourth': 'SixtyFourth',
+                            'Dotted': identityMap([
+                                'DottedWhole', 'DottedHalf', 'DottedQuarter', 'DottedEight',
+                                'DottedSixteenth', 'DottedThirtySecond', 'DottedSixtyFourth',
+                            ]),
+                            'DoubleDotted': identityMap([
+                                'DoubleDottedWhole', 'DoubleDottedHalf', 'DoubleDottedQuarter', 'DoubleDottedEight',
+                                'DoubleDottedSixteenth', 'DoubleDottedThirtySecond', 'DoubleDottedSixtyFourth',
+                            ]),
+                        },
                         true, //readonly (no arbitrary text)
                     )),
                     new Extension.LabelPart('chordTypes', () => new InputSlotMorph(
