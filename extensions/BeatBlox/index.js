@@ -242,6 +242,7 @@
                     new Extension.Palette.Block('playDrums'),
                     new Extension.Palette.Block('rest'),
                     new Extension.Palette.Block('noteMod'),
+                    new Extension.Palette.Block('tieDuration'),
                     new Extension.Palette.Block('noteNumber'),
                     '-',
                     new Extension.Palette.Block('playClip'),
@@ -299,14 +300,21 @@
 
                             if (duration.contents !== undefined) duration = duration.contents;
                             if (!Array.isArray(duration)) duration = notes.map(() => duration);
-                            if (duration.some(x => DURATIONS[x] === undefined)) throw Error('unknown note duration');
                             if (duration.length !== notes.length) throw Error('number of durations and notes must match');
+                            if (duration.some(x => typeof(x) !== 'string')) throw Error('unknown note duration');
+                            duration = duration.map(x => x.split('+').filter(y => y.length !== 0));
+                            if (duration.some(x => x.some(y => DURATIONS[y] === undefined))) throw Error('unknown note duration');
 
                             const mods = this.musicInfo.mods.map(x => audio.getModification(MODIFIERS[x]));
 
                             let t = Infinity;
                             for (let i = 0; i < notes.length; ++i) {
-                                t = Math.min(t, await audio.playNote(this.receiver.id, notes[i], this.musicInfo.t, DURATIONS[duration[i]], mods));
+                                let tt = 0;
+                                for (let j = 0; j < duration[i].length; ++j) {
+                                    const m = j === 0 ? mods : mods.concat([ audio.getModification(MODIFIERS['Tie']) ]);
+                                    tt += await audio.playNote(this.receiver.id, notes[i], this.musicInfo.t + tt, DURATIONS[duration[i][j]], m);
+                                }
+                                t = Math.min(t, tt);
                             }
                             this.musicInfo.t += t;
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
@@ -358,6 +366,7 @@
                             }
                         }
                     }),
+                    new Extension.Block('tieDuration', 'reporter', 'music', 'tie %mult%noteDuration', [['Quarter']], durations => durations.contents.map(x => x.toString()).filter(x => x.length !== 0).join('+')),
                     new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], parseNote),
                     new Extension.Block('playClip', 'command', 'music', 'play sound %snd', [], function (rawSound) {
                         return this.runAsyncFn(async () => {
