@@ -311,7 +311,7 @@
                             for (let i = 0; i < notes.length; ++i) {
                                 let tt = 0;
                                 for (let j = 0; j < duration[i].length; ++j) {
-                                    const m = j === 0 ? mods : mods.concat([ audio.getModification(MODIFIERS['Tie']) ]);
+                                    const m = j === duration[i].length - 1 ? mods : mods.concat([ audio.getModification(MODIFIERS['Tie']) ]);
                                     tt += await audio.playNote(this.receiver.id, notes[i], this.musicInfo.t + tt, DURATIONS[duration[i][j]], m);
                                 }
                                 t = Math.min(t, tt);
