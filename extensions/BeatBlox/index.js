@@ -121,6 +121,19 @@
             }
         })();
 
+        function flatten(arr) {
+            const res = [];
+            function f(v) {
+                if (Array.isArray(v)) {
+                    for (const u of v) f(u);
+                } else {
+                    res.push(v);
+                }
+            }
+            f(arr);
+            return res;
+        }
+
         function snapify(value) {
             if (typeof (value.map) === 'function') {
                 return new List((Array.isArray(value) ? value : Array.from(value)).map(x => snapify(x)));
@@ -351,6 +364,7 @@
                             notes = parseNote(notes);
                             if (!Array.isArray(notes)) notes = [notes];
                             if (notes.length === 0) notes = [parseNote('Rest')];
+                            notes = flatten(notes);
 
                             if (duration.contents !== undefined) duration = duration.contents;
                             if (!Array.isArray(duration)) duration = notes.map(() => duration);
@@ -382,6 +396,7 @@
                             notes = parseDrumNote(notes);
                             if (!Array.isArray(notes)) notes = [notes];
                             if (notes.length === 0) notes = [parseDrumNote('Rest')];
+                            notes = flatten(notes);
 
                             if (DURATIONS[duration] === undefined) throw Error(`unknown note duration: "${duration}"`);
 
