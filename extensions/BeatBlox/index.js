@@ -441,12 +441,12 @@
                     }),
                     new Extension.Block('tieDuration', 'reporter', 'music', 'tie %mult%noteDuration', [['Quarter']], durations => durations.contents.map(x => x.toString()).filter(x => x.length !== 0).join('+')),
                     new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], note => snapify(parseNote(note))),
-                    new Extension.Block('chordNotes', 'reporter', 'music', '%chordType %s chord', ['Major', 'C4'], function (type, note) {
+                    new Extension.Block('chordNotes', 'reporter', 'music', '%s %chordType chord', ['C4', 'Major'], function (note, type) {
                         if (CHORD_PATTERNS[type] === undefined) throw Error(`unknown chord type: '${type}'`);
                         function f(b) { return b.map ? b.map(f) : CHORD_PATTERNS[type].map(x => -(x + Math.abs(b))); }
                         return snapify(f(parseNote(note)));
                     }),
-                    new Extension.Block('scaleNotes', 'reporter', 'music', '%scaleType %s scale', ['Major', 'C4'], function (type, note) {
+                    new Extension.Block('scaleNotes', 'reporter', 'music', '%s %scaleType scale', ['C4', 'Major'], function (note, type) {
                         if (SCALE_PATTERNS[type] === undefined) throw Error(`unknown scale type: '${type}'`);
                         function f(b) { return b.map ? b.map(f) : SCALE_PATTERNS[type].map(x => -(x + Math.abs(b))); }
                         return snapify(f(parseNote(note)));
