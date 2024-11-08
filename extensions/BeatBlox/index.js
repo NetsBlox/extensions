@@ -46,6 +46,10 @@
 
     const MODIFIERS_ALIASES = {
         'Grace': 'GraceAppoggiatura',
+        'Tuplet 3:2': 'Triplet',
+        'Tuplet 5:4': 'Quintuplet',
+        'Tuplet 6:4': 'Quintuplet',
+        'Tuplet 7:4': 'Septuplet',
     };
 
     function absoluteUrl(relative) {
@@ -388,7 +392,7 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playDrums', 'command', 'music', 'hit %noteDuration note drums %mult%drum', ['Quarter', ['Kick']], function (duration, notes) {
+                    new Extension.Block('playDrums', 'command', 'music', 'hit %noteDuration note drums %mult%drum', ['Quarter', ['kick']], function (duration, notes) {
                         return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
@@ -689,8 +693,9 @@
                     basicEnum('noteModifier', unionMaps([
                         {
                             'Volume': identityMap(['Pianississimo', 'Pianissimo', 'Piano', 'MezzoPiano', 'MezzoForte', 'Forte', 'Fortissimo', 'Fortississimo']),
+                            'Tuplet': identityMap(['Tuplet 3:2', 'Tuplet 5:4', 'Tuplet 6:4', 'Tuplet 7:4']),
                         },
-                        identityMap(['Accent', 'Staccato', 'TurnUpper', 'TurnLower', 'Triplet']),
+                        identityMap(['Accent', 'Staccato', 'TurnUpper', 'TurnLower']),
                     ])),
                     basicEnum('audioQuery', identityMap(['name', 'duration', 'samples', 'sample rate'])),
                     basicEnum('audioEffect', identityMap(Object.keys(EFFECT_INFO))),
