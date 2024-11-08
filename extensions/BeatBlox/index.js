@@ -28,6 +28,22 @@
         'ride':       'Eb3', 'ride #2':       'F3',  'tamborine':  'F#3',
     };
 
+    const CHORD_PATTERNS = {
+        'Major': [0, 4, 7],
+        'Minor': [0, 3, 7],
+        'Diminished': [0, 3, 6],
+        'Augmented': [0, 4, 8],
+        'Major 7th': [0, 4, 7, 11],
+        'Dominant 7th': [0, 4, 7, 10],
+        'Minor 7th': [0, 3, 7, 10],
+        'Diminished 7th': [0, 3, 6, 9],
+    };
+
+    const SCALE_PATTERNS = {
+        'Major': [0, 2, 4, 5, 7, 9, 11, 12],
+        'Minor': [0, 2, 3, 5, 7, 8, 10, 12],
+    };
+
     const MODIFIERS_ALIASES = {
         'Grace': 'GraceAppoggiatura',
     };
@@ -278,7 +294,10 @@
                     new Extension.Palette.Block('rest'),
                     new Extension.Palette.Block('noteMod'),
                     new Extension.Palette.Block('tieDuration'),
+                    '-',
                     new Extension.Palette.Block('noteNumber'),
+                    new Extension.Palette.Block('chordNotes'),
+                    new Extension.Palette.Block('scaleNotes'),
                     '-',
                     new Extension.Palette.Block('playClip'),
                     new Extension.Palette.Block('queryClip'),
@@ -402,7 +421,17 @@
                         }
                     }),
                     new Extension.Block('tieDuration', 'reporter', 'music', 'tie %mult%noteDuration', [['Quarter']], durations => durations.contents.map(x => x.toString()).filter(x => x.length !== 0).join('+')),
-                    new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], parseNote),
+                    new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], note => snapify(parseNote(note))),
+                    new Extension.Block('chordNotes', 'reporter', 'music', '%chordType %s chord', ['Major', 'C4'], function (type, note) {
+                        if (CHORD_PATTERNS[type] === undefined) throw Error(`unknown chord type: '${type}'`);
+                        function f(b) { return b.map ? b.map(f) : CHORD_PATTERNS[type].map(x => -(x + Math.abs(b))); }
+                        return snapify(f(parseNote(note)));
+                    }),
+                    new Extension.Block('scaleNotes', 'reporter', 'music', '%scaleType %s scale', ['Major', 'C4'], function (type, note) {
+                        if (SCALE_PATTERNS[type] === undefined) throw Error(`unknown scale type: '${type}'`);
+                        function f(b) { return b.map ? b.map(f) : SCALE_PATTERNS[type].map(x => -(x + Math.abs(b))); }
+                        return snapify(f(parseNote(note)));
+                    }),
                     new Extension.Block('playClip', 'command', 'music', 'play sound %snd', [], function (rawSound) {
                         return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
@@ -654,6 +683,8 @@
                     basicEnum('audioInput', identityMap([...MIDI_DEVICES, ...INPUT_DEVICES])),
                     basicEnum('io', identityMap(['input', 'output'])),
                     basicEnum('audioAnalysis', identityMap(Object.keys(ANALYSIS_INFO))),
+                    basicEnum('chordType', identityMap(Object.keys(CHORD_PATTERNS))),
+                    basicEnum('scaleType', identityMap(Object.keys(SCALE_PATTERNS))),
                 ];
             }
         }
