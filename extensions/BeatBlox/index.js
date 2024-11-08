@@ -28,6 +28,10 @@
         'ride':       'Eb3', 'ride #2':       'F3',  'tamborine':  'F#3',
     };
 
+    const MODIFIERS_ALIASES = {
+        'Grace': 'GraceAppoggiatura',
+    };
+
     function absoluteUrl(relative) {
         const defaultSrc = 'https://extensions.netsblox.org/extensions/BeatBlox/webAudioAPI.js';
         const src = JSON.parse(new URLSearchParams(window.location.search).get('extensions') || '[]').find(x => x.includes('BeatBlox/index.js')) || defaultSrc;
@@ -44,7 +48,7 @@
         const audio = new window.WebAudioAPI();
 
         const DURATIONS = audio.getAvailableNoteDurations();
-        const MODIFIERS = audio.getAvailableNoteModifications()
+        const MODIFIERS = audio.getAvailableNoteModifications();
         const ANALYSES = audio.getAvailableAnalysisTypes();
         const ENCODERS = audio.getAvailableEncoders();
         const EFFECTS = audio.getAvailableEffects();
@@ -57,6 +61,17 @@
 
         let connectedDevice = null;
         let activeRecording = null;
+
+        function applyAliases(obj, aliases) {
+            for (const k in aliases) {
+                const v = aliases[k];
+                if (obj[k] === undefined && obj[v] !== undefined) {
+                    obj[k] = obj[v];
+                }
+            }
+        }
+
+        applyAliases(MODIFIERS, MODIFIERS_ALIASES);
 
         audio.start();
 
@@ -159,6 +174,7 @@
 
             return accidental ? -off : off;
         }
+
         function parseDrumNote(note) {
             if (Array.isArray(note)) return note.map(x => parseDrumNote(x));
             if (note.contents !== undefined) return note.contents.map(x => parseDrumNote(x));
@@ -187,6 +203,7 @@
                 await audio.updateInstrument(entity.id + 'Drum', 'Drum Kit');
             }
         }
+
         function setupProcess(proc) {
             if (!(proc instanceof Process)) throw Error('internal error');
 
@@ -201,6 +218,7 @@
         async function wait(duration) {
             return duration <= 0 ? undefined : new Promise(resolve => setTimeout(resolve, duration * 1000));
         }
+
         async function waitUntil(t) {
             await wait(t - audio.getCurrentTime());
         }
@@ -213,6 +231,23 @@
 
                 this.ide = ide;
                 ide.hideCategory('sound');
+
+                (async () => {
+                    while (true) {
+                        await wait(0.05);
+                        const a = SpriteMorph.prototype.categories.indexOf('sound');
+                        const b = SpriteMorph.prototype.categories.indexOf('music');
+                        if (a >= 0 && b >= 0) {
+                            const t = SpriteMorph.prototype.categories[a];
+                            SpriteMorph.prototype.categories[a] = SpriteMorph.prototype.categories[b];
+                            SpriteMorph.prototype.categories[b] = t;
+                            ide.createCategories();
+                            ide.createPaletteHandle();
+                            ide.fixLayout();
+                            break;
+                        }
+                    }
+                })();
 
                 const _runStopScripts = StageMorph.prototype.runStopScripts;
                 StageMorph.prototype.runStopScripts = function () {
@@ -607,7 +642,12 @@
                         },
                     ]))(['Whole', 'Half', 'Quarter', 'Eighth', 'Sixteenth', 'ThirtySecond', 'SixtyFourth'])),
                     basicEnum('drum', identityMap(Object.keys(DRUM_TO_NOTE))),
-                    basicEnum('noteModifier', identityMap(['Piano', 'Forte', 'Accent', 'Staccato', 'Triplet', 'TurnUpper', 'TurnLower'])),
+                    basicEnum('noteModifier', unionMaps([
+                        {
+                            'Volume': identityMap(['Pianississimo', 'Pianissimo', 'Piano', 'MezzoPiano', 'MezzoForte', 'Forte', 'Fortissimo', 'Fortississimo']),
+                        },
+                        identityMap(['Accent', 'Staccato', 'TurnUpper', 'TurnLower', 'Triplet']),
+                    ])),
                     basicEnum('audioQuery', identityMap(['name', 'duration', 'samples', 'sample rate'])),
                     basicEnum('audioEffect', identityMap(Object.keys(EFFECT_INFO))),
                     basicEnum('audioEffectAug', identityMap([...Object.keys(EFFECT_INFO), 'every', 'every active'])),
