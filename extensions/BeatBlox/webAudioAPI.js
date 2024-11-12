@@ -1769,7 +1769,9 @@ class Tuplet extends ModificationBase {
       return [new NoteDetails(
          this.unmodifiedDetails.note,
          this.unmodifiedDetails.velocity,
-         this.unmodifiedDetails.duration * (Number(details.numNotes) / Number(details.intoNumNotes))
+         this.unmodifiedDetails.duration * (Number(details.numNotes) / Number(details.intoNumNotes)),
+         undefined,
+         this.unmodifiedDetails.usedDuration * (Number(details.numNotes) / Number(details.intoNumNotes))
       )];
    }
 }
@@ -1835,7 +1837,9 @@ class TupletNote extends ModificationBase {
       return [new NoteDetails(
          this.unmodifiedDetails.note,
          this.unmodifiedDetails.velocity,
-         this.unmodifiedDetails.duration * (this.#degree / ((this.#degree == 3) ? 2 : 4))
+         this.unmodifiedDetails.duration * (this.#degree / ((this.#degree == 3) ? 2 : 4)),
+         undefined,
+         this.unmodifiedDetails.usedDuration * (this.#degree / ((this.#degree == 3) ? 2 : 4))
       )];
    }
 }
