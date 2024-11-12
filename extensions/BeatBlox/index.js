@@ -48,7 +48,7 @@
         'Grace': 'GraceAppoggiatura',
         'Tuplet 3:2': 'Triplet',
         'Tuplet 5:4': 'Quintuplet',
-        'Tuplet 6:4': 'Quintuplet',
+        'Tuplet 6:4': 'Sextuplet',
         'Tuplet 7:4': 'Septuplet',
     };
 
