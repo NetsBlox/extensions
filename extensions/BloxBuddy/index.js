@@ -22,12 +22,13 @@
     }
     document.head.appendChild(style);
 
+    var currentChat = ["You are a helpful assistant for students learning to code in NetsBlox, a block-based programming language based on Snap!, but with a focus on distributed computing."];
+
     class BloxBuddy extends Extension {
         constructor(ide) {
             super('BloxBuddy');
             this.ide = ide;
 
-            this.currentChat = [];
 
             // Create the BloxBuddy button
             var btn = document.createElement('button');
@@ -286,10 +287,15 @@
         } 
     }
 
-    // Function to create a new chat message from the user
-    function addChatMessage(text) {
+    // Function to create a new chat message
+    function addChatMessage(text, user = false ) {
         var message = document.createElement('div');
         message.classList.add('bloxbuddy-chat-message');
+
+        if(user){
+            message.classList.add('bloxbuddy-chat-message-user');
+        }
+
         message.textContent = text;
         document.querySelector('.bloxbuddy-chat-content').appendChild(message);
     }
@@ -300,13 +306,27 @@
         responseBtn.classList.add('bloxbuddy-response-btn');
         responseBtn.textContent = text;
         responseBtn.onclick = function() {
-            addChatMessage(text); // Add user message to chat when response is clicked
+            addChatMessage(text, true); // Add user message to chat when response is clicked
             // Remove response buttons
             var responseBtns = document.querySelectorAll('.bloxbuddy-response-btn');
             for(let i = 0; i < responseBtns.length; i++) {
                 responseBtns[i].remove();
             }
-            // TODO: Add response from AI
+
+            // Add spinner
+            var spinner = document.createElement('div');
+            spinner.classList.add('bloxbuddy-spinner');
+            var spinnerParent = document.createElement('div');
+            spinnerParent.classList.add('bloxbuddy-spinner-parent');
+            spinnerParent.appendChild(spinner);
+            document.querySelector('.bloxbuddy-chat-content').appendChild(spinnerParent);
+
+            // Add response from AI
+            let response = completion([...currentChat, text]).then(response => {
+                addChatMessage(response);
+                addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+                spinnerParent.remove();
+            });
         };
         document.querySelector('.bloxbuddy-chat-content').appendChild(responseBtn);
     }
@@ -386,6 +406,23 @@
         if (typeof(dialog) === 'string') {
             return [{ role: 'system', content: dialog }];
         }
+
+        if(Array.isArray(dialog)) { 
+            if(dialog.length === 0) {
+                throw Error('dialog should not be empty');
+            }
+            
+            if(typeof(dialog[0]) === 'string') {
+                // First message is system message, then alternating user and assistant
+                let parsed = [{ role: 'system', content: dialog[0] }];
+                for(let i = 1; i < dialog.length; i++) {
+                    parsed.push({ role: i % 2 === 0 ? 'user' : 'assistant', content: dialog[i] });
+                }
+                return parsed;
+            }
+        }
+
+
         if (!dialog || !Array.isArray(dialog.contents)) {
             throw Error('prompt should either be text or a list of dialog entries');
         }
@@ -423,7 +460,7 @@
 
     async function completion(dialog) {
         dialog = parseDialog(dialog);
-        const { apiKey, model } = getSettings();
+        const { apiKey, model, endpoint } = getSettings();
         try {
             const res = await fetch(`${endpoint}chat/completions`, {
                 method: 'POST',
