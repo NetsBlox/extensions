@@ -62,7 +62,7 @@ Some things to keep in mind:
  - Student code may contain bugs. Do not assume that the code is correct, and be prepared to help debug it.
     - Not only may the code contain bugs, but it may also be incomplete or have room for improvement.
  - While distributed computing is a key feature of NetsBlox, you do not need to focus on this aspect of the language. Most student projects will not involve distributed computing.
- 
+
 Your task is to help students with their projects, answer questions, and provide guidance on how to improve their code. You can also help debug code and suggest new features to add to their projects.
 
 Their current project is: 
@@ -266,7 +266,11 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
             message.classList.add('bloxbuddy-chat-message-user');
         }
 
-        message.textContent = text;
+        // Basic Markdown support
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+        message.innerHTML = text;
         document.querySelector('.bloxbuddy-chat-content').appendChild(message);
     }
 
@@ -292,11 +296,18 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
             document.querySelector('.bloxbuddy-chat-content').appendChild(spinnerParent);
 
             // Add response from AI
-            let response = completion([generateSystemMessage(), enhanceTask(text)]).then(response => {
-                addChatMessage(response);
+            try {
+                let response = completion([generateSystemMessage(), enhanceTask(text)]).then(response => {
+                    addChatMessage(response);
+                    addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+                    spinnerParent.remove();
+                });
+            } catch (e) {
+                console.error(e);
+                addChatMessage('Sorry, I was unable to generate a response. Please try again later.');
                 addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
                 spinnerParent.remove();
-            });
+            }
         };
         document.querySelector('.bloxbuddy-chat-content').appendChild(responseBtn);
     }
