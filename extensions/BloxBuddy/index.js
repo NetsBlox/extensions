@@ -62,6 +62,7 @@ Some things to keep in mind:
  - Student code may contain bugs. Do not assume that the code is correct, and be prepared to help debug it.
     - Not only may the code contain bugs, but it may also be incomplete or have room for improvement.
  - While distributed computing is a key feature of NetsBlox, you do not need to focus on this aspect of the language. Most student projects will not involve distributed computing.
+ - Variables, sprites, message types, and custom blocks are named by the user and may not have any specific meaning. You can refer to them by their type or purpose, but do not assume that the names are accurate or meaningful.
 
 Your task is to help students with their projects, answer questions, and provide guidance on how to improve their code. You can also help debug code and suggest new features to add to their projects.
 
@@ -465,8 +466,12 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
     function currentSpriteScriptsToCode(activeScripts) {
         let output = '';
         for (let i = 0; i < activeScripts.length; i++) {
+            if(activeScripts[i] instanceof CommentMorph) {
+                continue;
+            }
+            
             let tempProcess = new Process(activeScripts[i], null, null, null);
-
+            
             if (tempProcess.topBlock instanceof HatBlockMorph) {
                 let { hatBlockName, code } = processToCode(tempProcess);
                 output += hatBlockName + "\n";
@@ -535,6 +540,10 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
                 output += 'No scripts\n';
             } else {
                 for (let j = 0; j < scripts.length; j++) {
+                    if(scripts[j] instanceof CommentMorph) {
+                        continue;
+                    }
+
                     let tempProcess = new Process(scripts[j], null, null, null);
 
                     if (tempProcess.topBlock instanceof HatBlockMorph) {
