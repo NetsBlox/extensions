@@ -22,7 +22,56 @@
     }
     document.head.appendChild(style);
 
-    var currentChat = ["You are a helpful assistant for students learning to code in NetsBlox, a block-based programming language based on Snap!, but with a focus on distributed computing."];
+    var currentChat = [];
+
+    function enhanceTask(task) {
+        if (task === 'Explain my code') {
+            task = 
+`Explain the code of the project on a conceptual level. 
+Do not simply repeat the code back to the user, they want to understand the logic and purpose behind it. You do not need to tell them the names of the sprites or variables, but you should explain what the code is doing and why.
+Keep your response concise and easy to understand.`;
+        } else if (task === 'What should I do next?') {
+            task = 
+`Provide guidance on what the user should do next in their project.
+Assume that the project is likely incomplete or has significant room for improvement.
+This could be a suggestion for a new feature, a bug to fix, or a way to improve their code. 
+Be specific and provide clear instructions.`;
+        } else if (task === 'What else can I add to my project?') {
+            task = 
+`Suggest new features or improvements that the user can add to their project. 
+This could be a new sprite, a new behavior, or a new interaction. Be creative and think outside the box.
+It should be something that is achievable for a beginner and feasible within the constraints of NetsBlox.`;
+        } else if (task === 'Can you help me with this bug?') {
+            task = 
+`Help the user debug a specific issue in their code. 
+Do not regurgitate the code back to them, but instead identify the problem and suggest a solution.
+If there is an obvious logic error, feel free to point it out and suggest a fix.
+Ask for more information if needed, and provide a clear explanation of the problem and how to fix it.`;
+        }
+        return task;
+    }
+
+    function generateSystemMessage() {
+        return `
+You are a helpful programming assistant for students learning to code in NetsBlox, a block-based programming language based on Snap!, but with additional features for distributed computing tasks.
+
+Some things to keep in mind:
+ - The code given to you will be in a LISP-like syntax, with parentheses nested inside each other. The user created this code using blocks in NetsBlox, so assume syntax errors are not present in their code. Logic errors are more likely.
+ - Students are not aware of the LISP-like syntax, so you should explain the code in plain English when speaking to them directly.
+ - NetsBlox only runs in a web browser, so you can't run the code yourself. You can only read and analyze the code. 
+ - Student code may contain bugs. Do not assume that the code is correct, and be prepared to help debug it.
+
+Your task is to help students with their projects, answer questions, and provide guidance on how to improve their code. You can also help debug code and suggest new features to add to their projects.
+
+Their current project is: 
+${allScriptsToCode()}
+
+----
+
+Please provide helpful responses to the user based on the information provided above.
+Remember that the user is a beginner and may not understand complex programming concepts. 
+Keep your responses clear, concise, and easy to understand. Do not overwhelm the user with too much information at once.`;
+    }
 
     class BloxBuddy extends Extension {
         constructor(ide) {
@@ -70,93 +119,12 @@
                 'Print current sprite scripts': function () {
                     let activeScripts = NetsBloxExtensions.ide.getActiveScripts().children;
 
-                    for(let i = 0; i < activeScripts.length; i++) {
-                        let tempProcess = new Process(activeScripts[i], null, null, null);
-                        
-                        if(tempProcess.topBlock instanceof HatBlockMorph){
-                            let {hatBlockName, code} = processToCode(tempProcess);
+                    let output = currentSpriteScriptsToCode(activeScripts);
 
-                            console.log(hatBlockName, code);
-                        }
-                    }
+                    console.log(output);
                 },
                 'Print All Scripts': function () {
-                    let sprites = NetsBloxExtensions.ide.sprites.asArray();
-                    let output = '';
-
-                    const globalVars = Object.keys(NetsBloxExtensions.ide.stage.globalVariables().vars);
-                    if(globalVars.length > 0) {
-                        output += 'Global Variables: ' + globalVars.join(', ') + '\n';
-                    }
-                    
-                    const msgTypes = Object.keys(NetsBloxExtensions.ide.stage.messageTypes.msgTypes);
-                    if(msgTypes.length > 0) {
-                        let msgDescs = msgTypes.map(type => {
-                            let t = NetsBloxExtensions.ide.stage.messageTypes.msgTypes[type];
-
-                            return t.name + ' (' + t.fields.join(', ') + ')';
-                        });
-                        output += 'Message Types: ' + msgDescs.join(', ') + '\n';
-                    }
-
-
-                    const globalCustomBlocks = NetsBloxExtensions.ide.stage.globalBlocks;
-                    if(globalCustomBlocks.length > 0) {
-                        let tempProcess = new Process(null, null, null, null);
-                        for(let i = 0; i < globalCustomBlocks.length; i++) {
-                            output += '\nGlobal Custom Block: ' + globalCustomBlocks[i].spec + '\n';
-                            output += blocksToCode.call(tempProcess, globalCustomBlocks[i].body) + '\n';
-                        }
-                    }
-
-                    for(let i = 0; i < sprites.length; i++) {
-                        let scripts = sprites[i].scripts.children;
-                        sprites[i].edit();
-
-                        output += '\n\nSprite: ' + sprites[i].name + '\n';
-
-                        const vars = Object.keys(sprites[i].variables.vars);
-                        if(vars.length > 0) {
-                            output += 'Local Variables: ' + vars.join(', ') + '\n';
-                        }
-
-                        const customBlocks = sprites[i].customBlocks;
-                        if(customBlocks.length > 0) {
-                            let tempProcess = new Process(null, null, null, null);
-                            for(let i = 0; i < customBlocks.length; i++) {
-                                output += '\nLocal Custom Block: ' + customBlocks[i].spec + '\n';
-                                output += blocksToCode.call(tempProcess, customBlocks[i].body) + '\n';
-                            }
-                        }
-
-
-                        for(let j = 0; j < scripts.length; j++) {
-                            let tempProcess = new Process(scripts[j], null, null, null);
-                            
-                            if(tempProcess.topBlock instanceof HatBlockMorph){
-                                let {hatBlockName, code} = processToCode(tempProcess);
-
-                                output += hatBlockName + "\n";
-                                output += code + "\n";
-                            }
-                        }
-
-                    }
-
-                    output += '\n\nStage:\n';
-                    let stage = NetsBloxExtensions.ide.stage;
-                    stage.edit();
-                    for(let i = 0; i < stage.scripts.children.length; i++) {
-                        let tempProcess = new Process(stage.scripts.children[i], null, null, null);
-                        
-                        if(tempProcess.topBlock instanceof HatBlockMorph){
-                            let {hatBlockName, code} = processToCode(tempProcess);
-
-                            output += hatBlockName + "\n";
-                            output += code + "\n";
-                        }
-                    }
-
+                    let output = allScriptsToCode();
                     console.log(output);
                 },
                 'Set OpenAI API Key...': function () {
@@ -322,7 +290,7 @@
             document.querySelector('.bloxbuddy-chat-content').appendChild(spinnerParent);
 
             // Add response from AI
-            let response = completion([...currentChat, text]).then(response => {
+            let response = completion([generateSystemMessage(), enhanceTask(text)]).then(response => {
                 addChatMessage(response);
                 addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
                 spinnerParent.remove();
@@ -416,7 +384,7 @@
                 // First message is system message, then alternating user and assistant
                 let parsed = [{ role: 'system', content: dialog[0] }];
                 for(let i = 1; i < dialog.length; i++) {
-                    parsed.push({ role: i % 2 === 0 ? 'user' : 'assistant', content: dialog[i] });
+                    parsed.push({ role: i % 2 === 1 ? 'user' : 'assistant', content: dialog[i] });
                 }
                 return parsed;
             }
@@ -480,6 +448,106 @@
             throw Error('Error generating response');
         }
     }
+
+    function currentSpriteScriptsToCode(activeScripts) {
+        let output = '';
+        for (let i = 0; i < activeScripts.length; i++) {
+            let tempProcess = new Process(activeScripts[i], null, null, null);
+
+            if (tempProcess.topBlock instanceof HatBlockMorph) {
+                let { hatBlockName, code } = processToCode(tempProcess);
+                output += hatBlockName + "\n";
+                output += code + "\n";
+                output += "\n";
+            }
+        }
+        return output;
+    }
+
+    function allScriptsToCode() {
+        let sprites = NetsBloxExtensions.ide.sprites.asArray();
+        let output = '';
+
+        const globalVars = Object.keys(NetsBloxExtensions.ide.stage.globalVariables().vars);
+        if (globalVars.length > 0) {
+            output += 'Global Variables: ' + globalVars.join(', ') + '\n';
+        }
+
+        const msgTypes = Object.keys(NetsBloxExtensions.ide.stage.messageTypes.msgTypes);
+        if (msgTypes.length > 0) {
+            let msgDescs = msgTypes.map(type => {
+                let t = NetsBloxExtensions.ide.stage.messageTypes.msgTypes[type];
+
+                return t.name + ' (' + t.fields.join(', ') + ')';
+            });
+            output += 'Message Types: ' + msgDescs.join(', ') + '\n';
+        }
+
+
+        const globalCustomBlocks = NetsBloxExtensions.ide.stage.globalBlocks;
+        if (globalCustomBlocks.length > 0) {
+            let tempProcess = new Process(null, null, null, null);
+            for (let i = 0; i < globalCustomBlocks.length; i++) {
+                output += '\nGlobal Custom Block: ' + globalCustomBlocks[i].spec + '\n';
+                output += blocksToCode.call(tempProcess, globalCustomBlocks[i].body) + '\n';
+            }
+        }
+
+        const currentSprite = NetsBloxExtensions.ide.currentSprite;
+
+        for (let i = 0; i < sprites.length; i++) {
+            let scripts = sprites[i].scripts.children;
+            sprites[i].edit();
+
+            output += '\n\nSprite: ' + sprites[i].name + '\n';
+
+            const vars = Object.keys(sprites[i].variables.vars);
+            if (vars.length > 0) {
+                output += 'Local Variables: ' + vars.join(', ') + '\n';
+            }
+
+            const customBlocks = sprites[i].customBlocks;
+            if (customBlocks.length > 0) {
+                let tempProcess = new Process(null, null, null, null);
+                for (let i = 0; i < customBlocks.length; i++) {
+                    output += '\nLocal Custom Block: ' + customBlocks[i].spec + '\n';
+                    output += blocksToCode.call(tempProcess, customBlocks[i].body) + '\n';
+                }
+            }
+
+
+            for (let j = 0; j < scripts.length; j++) {
+                let tempProcess = new Process(scripts[j], null, null, null);
+
+                if (tempProcess.topBlock instanceof HatBlockMorph) {
+                    let { hatBlockName, code } = processToCode(tempProcess);
+
+                    output += hatBlockName + "\n";
+                    output += code + "\n";
+                }
+            }
+
+        }
+
+        output += '\n\nStage:\n';
+        let stage = NetsBloxExtensions.ide.stage;
+        stage.edit();
+        for (let i = 0; i < stage.scripts.children.length; i++) {
+            let tempProcess = new Process(stage.scripts.children[i], null, null, null);
+
+            if (tempProcess.topBlock instanceof HatBlockMorph) {
+                let { hatBlockName, code } = processToCode(tempProcess);
+
+                output += hatBlockName + "\n";
+                output += code + "\n";
+            }
+        }
+
+        currentSprite.edit();
+        
+        return output;
+    }
+
 
     NetsBloxExtensions.register(BloxBuddy);
 })();
