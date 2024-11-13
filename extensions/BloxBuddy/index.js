@@ -60,7 +60,9 @@ Some things to keep in mind:
  - Students are not aware of the LISP-like syntax, so you should explain the code in plain English when speaking to them directly.
  - NetsBlox only runs in a web browser, so you can't run the code yourself. You can only read and analyze the code. 
  - Student code may contain bugs. Do not assume that the code is correct, and be prepared to help debug it.
-
+    - Not only may the code contain bugs, but it may also be incomplete or have room for improvement.
+ - While distributed computing is a key feature of NetsBlox, you do not need to focus on this aspect of the language. Most student projects will not involve distributed computing.
+ 
 Your task is to help students with their projects, answer questions, and provide guidance on how to improve their code. You can also help debug code and suggest new features to add to their projects.
 
 Their current project is: 
@@ -478,6 +480,9 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
             let msgDescs = msgTypes.map(type => {
                 let t = NetsBloxExtensions.ide.stage.messageTypes.msgTypes[type];
 
+                if(t.name == 'message') {
+                    return t.name + ' (' + t.fields.join(', ') + ') (default, not added by user)';
+                }
                 return t.name + ' (' + t.fields.join(', ') + ')';
             });
             output += 'Message Types: ' + msgDescs.join(', ') + '\n';
@@ -515,9 +520,28 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
                 }
             }
 
+            if (scripts.length === 0) {
+                output += 'No scripts\n';
+            } else {
+                for (let j = 0; j < scripts.length; j++) {
+                    let tempProcess = new Process(scripts[j], null, null, null);
 
-            for (let j = 0; j < scripts.length; j++) {
-                let tempProcess = new Process(scripts[j], null, null, null);
+                    if (tempProcess.topBlock instanceof HatBlockMorph) {
+                        let { hatBlockName, code } = processToCode(tempProcess);
+
+                        output += hatBlockName + "\n";
+                        output += code + "\n";
+                    }
+                }
+            }
+        }
+
+        output += '\n\nStage:\n';
+        let stage = NetsBloxExtensions.ide.stage;
+        stage.edit();
+        if(stage.scripts.children.length > 0) {
+            for (let i = 0; i < stage.scripts.children.length; i++) {
+                let tempProcess = new Process(stage.scripts.children[i], null, null, null);
 
                 if (tempProcess.topBlock instanceof HatBlockMorph) {
                     let { hatBlockName, code } = processToCode(tempProcess);
@@ -526,25 +550,12 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
                     output += code + "\n";
                 }
             }
-
-        }
-
-        output += '\n\nStage:\n';
-        let stage = NetsBloxExtensions.ide.stage;
-        stage.edit();
-        for (let i = 0; i < stage.scripts.children.length; i++) {
-            let tempProcess = new Process(stage.scripts.children[i], null, null, null);
-
-            if (tempProcess.topBlock instanceof HatBlockMorph) {
-                let { hatBlockName, code } = processToCode(tempProcess);
-
-                output += hatBlockName + "\n";
-                output += code + "\n";
-            }
+        } else {
+            output += 'No scripts on stage\n';
         }
 
         currentSprite.edit();
-        
+
         return output;
     }
 
