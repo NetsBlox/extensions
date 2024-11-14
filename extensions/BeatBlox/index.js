@@ -692,7 +692,6 @@
                     basicEnum('drum', identityMap(Object.keys(DRUM_TO_NOTE))),
                     basicEnum('noteModifier', unionMaps([
                         {
-                            'Volume': identityMap(['Pianississimo', 'Pianissimo', 'Piano', 'MezzoPiano', 'MezzoForte', 'Forte', 'Fortissimo', 'Fortississimo']),
                             'Tuplet': identityMap(['Tuplet 3:2', 'Tuplet 5:4', 'Tuplet 6:4', 'Tuplet 7:4']),
                         },
                         identityMap(['Accent', 'Staccato', 'TurnUpper', 'TurnLower']),
