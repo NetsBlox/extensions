@@ -1,4 +1,20 @@
 (function () {    
+    /* Variable Plotter Extension 
+    Allows NetsBlox variables to be plotted in a chart
+    Features it should have:
+    - Plotter in a dialog
+    - Ability to add variables to the plotter
+    - Ability to remove variables from the plotter
+    - Ability to change the type of chart (bar, line, scatter, etc.)
+    - Should work with both time-series and non-time-series data
+    - Non-array variables should be plotted as a line chart over time?
+     - Could have options for how to plot non-array variables, e.g. as a line chart over time, as a bar chart with the most recent value, etc.
+    - Should be able to plot multiple variables on the same chart
+
+    Nice to have:
+    - Ability to save the chart as an image
+    - Ability to control styling of the chart (colors, fonts, etc.)
+    */
     var plotterDialog;
     var plotterInner;
     var chart;
@@ -22,6 +38,10 @@
             return {
                 'Show Plot...': () => {
                     showDialog(plotterDialog);
+                },
+                'Log variables': () => {
+                    console.log(getGlobalVariables());
+                    console.log(getSpriteVariables());
                 },
             };
         }
@@ -53,7 +73,19 @@
     }
 
     function getGlobalVariables() {
-        return document.world.children[0].stage.globalVariables();
+        return window.world.children[0].stage.globalVariables().vars;
+    }
+
+    function getSpriteVariables() {
+        let sprites = window.world.children[0].sprites.contents;
+
+        let output = {};
+
+        for (let sprite of sprites) {
+            output[sprite.name] = sprite.variables.vars;
+        }
+
+        return output;
     }
 
     // Add CSS
@@ -80,21 +112,35 @@
             Object.defineProperty(plotterInner, "height", c.height);
         }
 
-        plotterInner.style.width = '100%';
-        plotterInner.style.height = '100%';
+        plotterInner.style.flex = '1';
+        plotterInner.style.overflow = 'hidden';
         plotterInner.width = 400;
         plotterInner.height = 400;
         plotterInner.style.minWidth = '400px';
         plotterInner.style.minHeight = '400px';
+        plotterInner.style.maxHeight = '80%';
         
-        plotterDialog.querySelector('content').appendChild(plotterInner);
+        const contentElement = plotterDialog.querySelector('content');
+        contentElement.style.display = 'flex';
+        contentElement.style['flex-flow'] = 'column';
+        contentElement.style['justify-content'] = 'flex-end';
+        contentElement.style['flex-direction'] = 'column-reverse';
+        contentElement.style['justify-content'] = 'space-around';
+
+        contentElement.innerHTML += '<div><button>Reset</button></div>';
+        
+        contentElement.innerHTML += '<div><select id="plottervars"></select></div>';
+
+        contentElement.appendChild(plotterInner);
 
         plotterDialog.addEventListener('resize', function() {
-
-            plotterInner.width = plotterDialog.clientWidth;
-            plotterInner.height = plotterDialog.clientHeight;
+            plotterInner.width = chart.clientWidth;
+            plotterInner.height = chart.clientHeight;
             chart?.resize();
         });
+
+        document.addEventListener('variable-added', updatePlotterVars);
+        document.addEventListener('variable-removed', updatePlotterVars);
 
         setupDialog(plotterDialog);
 
@@ -147,7 +193,10 @@
                 maintainAspectRatio: false,
             }
         });
+
+        externalVariables['chart'] = chart;
     };
+
     document.head.appendChild(script);
 
     // Modify VariableFrame to add events when variables are added, removed, or changed
@@ -186,6 +235,33 @@
             document.dispatchEvent(event);
         }
     };
+
+    function updatePlotterVars() {
+        let plotterVars = document.getElementById('plottervars');
+        let selectedVars = Array.from(plotterVars.selectedOptions).map(option => option.value);
+        
+        plotterVars.innerHTML = '';
+
+        let globalVars = getGlobalVariables();
+        let spriteVars = getSpriteVariables();
+
+        for (let varName in globalVars) {
+            let option = document.createElement('option');
+            option.value = varName;
+            option.innerText = varName;
+            plotterVars.appendChild(option);
+        }
+
+        for (let spriteName in spriteVars) {
+            for (let varName in spriteVars[spriteName]) {
+                let option = document.createElement('option');
+                option.value = spriteName + '.' + varName;
+                option.innerText = spriteName + '.' + varName;
+                plotterVars.appendChild(option);
+            }
+        }
+
+    }
 
     
     NetsBloxExtensions.register(VariablePlotter);
