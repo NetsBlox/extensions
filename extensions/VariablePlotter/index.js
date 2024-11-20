@@ -131,6 +131,19 @@
         
         contentElement.innerHTML += '<div><select id="plottervars"></select></div>';
 
+        document.getElementById('plottervars').addEventListener('change', function() {
+            chart.data.datasets = [];
+            let selectedVars = Array.from(this.selectedOptions).map(option => option.value);
+            for (let varName of selectedVars) {
+                chart.data.datasets.push({
+                    label: varName,
+                    data: [],
+                    borderWidth: 1
+                });
+            }
+            chart.update();
+        });
+
         contentElement.appendChild(plotterInner);
 
         plotterDialog.addEventListener('resize', function() {
@@ -141,6 +154,24 @@
 
         document.addEventListener('variable-added', updatePlotterVars);
         document.addEventListener('variable-removed', updatePlotterVars);
+
+        // Add event listener for when variables are changed
+        document.addEventListener('variable-changed', function(event) {
+            let variable = event.detail.variable;
+            let value = event.detail.value;
+            let owner = event.detail.owner;
+
+            let selectedVars = Array.from(document.getElementById('plottervars').selectedOptions).map(option => option.value);
+
+            if (selectedVars.includes(variable)) {
+                let data = chart.data.datasets.find(dataset => dataset.label === variable);
+
+                if (data) {
+                    data.data.push(value);
+                    chart.update();
+                }
+            }
+        });
 
         setupDialog(plotterDialog);
 
