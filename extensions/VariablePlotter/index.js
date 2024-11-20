@@ -149,6 +149,44 @@
         });
     };
     document.head.appendChild(script);
+
+    // Modify VariableFrame to add events when variables are added, removed, or changed
+    VariableFrame.prototype.addVar = function(a, b) {
+        this.vars[a] = new Variable(0 === b ? 0 : !1 === b ? !1 : "" === b ? "" : b || 0)
+
+        // Add event
+        var event = new CustomEvent('variable-added', { detail: { variable: a } });
+        document.dispatchEvent(event);    
+    };
+
+    VariableFrame.prototype.deleteVar = function(a) {
+        var b = this.find(a);
+
+        if(b) {
+            delete b.vars[a];
+
+            // Add event
+            var event = new CustomEvent('variable-removed', { detail: { variable: a } });
+            document.dispatchEvent(event);
+        }
+    };
+
+    VariableFrame.prototype.setVar = function(a, b, c) {
+        var d = this.find(a);
+
+        if (d) {
+            if (c instanceof SpriteMorph && d.owner instanceof SpriteMorph && c !== d.owner) {
+                c.shadowVar(a, b);
+            } else {
+                d.vars[a].value = b;
+            }
+
+            // Add event
+            var event = new CustomEvent('variable-changed', { detail: { variable: a, value: b, owner: d.owner } });
+            document.dispatchEvent(event);
+        }
+    };
+
     
     NetsBloxExtensions.register(VariablePlotter);
 })();
