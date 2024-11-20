@@ -261,6 +261,13 @@
             }
         }
 
+        // Select the previously selected variables
+        for (let varName of selectedVars) {
+            let option = plotterVars.querySelector(`option[value="${varName}"]`);
+            if (option) {
+                option.selected = true;
+            }
+        }
     }
 
     
