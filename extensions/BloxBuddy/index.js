@@ -31,7 +31,7 @@
 Do not simply repeat the code back to the user, they want to understand the logic and purpose behind it. You do not need to tell them the names of the sprites or variables, but you should explain what the code is doing and why.
 Keep your response concise and easy to understand.
 
-The response in your JSON output should be a string that explains the code suscinctly in plain English.`;
+The response in your JSON output should be a string that explains the code succinctly in plain English.`;
         } else if (task === 'What should I do next?') {
             task = 
 `Provide guidance on what the user should do next in their project.
