@@ -176,73 +176,18 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
 
         getPalette() {
             return [
-                new Extension.PaletteCategory(
-                    'operators',
-                    [
-                        new Extension.Palette.Block('blocksToCode'),
-                        new Extension.Palette.Block('codeToBlocks'),
-                    ],
-                    SpriteMorph
-                ),
-                new Extension.PaletteCategory(
-                    'operators',
-                    [
-                        new Extension.Palette.Block('blocksToCode'),
-                        new Extension.Palette.Block('codeToBlocks'),
-                    ],
-                    StageMorph
-                )
             ];
         }
 
         getBlocks() {
             
             return [
-                new Extension.Block(
-                    'blocksToCode',
-                    'reporter',
-                    'operators',
-                    'blocks to code %blocks',
-                    [],
-                    blocksToCode
-                ).for(SpriteMorph, StageMorph),
-                new Extension.Block(
-                    'codeToBlocks',
-                    'reporter',
-                    'operators',
-                    'code to blocks %code',
-                    [],
-                    codeToBlocks
-                ).for(SpriteMorph, StageMorph),
+                
             ];
         }
 
         getLabelParts() {
             return [
-                new Extension.LabelPart(
-                    '%code',
-                    () => {
-                        const part = new InputSlotMorph(
-                            null, // text
-                            false, // non-numeric
-                            null,
-                            false
-                        );
-                        return part;
-                    }
-                ),
-                new Extension.LabelPart(
-                    '%blocks',
-                    () => {
-                        const part = new InputSlotMorph(
-                            null, // text
-                            false, // non-numeric
-                            null,
-                            false
-                        );
-                        return part;
-                    }
-                ),
             ];
         }
 
@@ -290,6 +235,7 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
 
         message.innerHTML = text;
         document.querySelector('.bloxbuddy-chat-content').appendChild(message);
+        currentChat.push({ role: user ? 'user' : 'assistant', content: text });
     }
 
     // Function to create a response button
@@ -316,8 +262,22 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
             // Add response from AI
             try {
                 let response = completion([generateSystemMessage(), enhanceTask(text)]).then(response => {
-                    addChatMessage(response);
-                    addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+                    console.log(response);
+                    let parsed = JSON.parse(response);
+                    console.log(parsed);
+                    addChatMessage(parsed.response);
+
+                    if(parsed.continuation) {
+                        if(typeof(parsed.continuation) === 'string') {
+                            addResponseButton([parsed.continuation]);
+                        } else if (Array.isArray(parsed.continuation)) {
+                            addResponseButtons(parsed.continuation);
+                        } else {
+                            addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+                        }
+                    } else {
+                        addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+                    }
                     spinnerParent.remove();
                 });
             } catch (e) {
@@ -334,72 +294,31 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
         for(let i = 0; i < responses.length; i++) {
             addResponseButton(responses[i]);
         }
-    }
 
-    function processToCode(tempProcess) {
-        let code = blocksToCode.call(tempProcess, tempProcess.topBlock.components());
+        // Add start over button
+        if(currentChat.length > 1) {
+            var startOverBtn = document.createElement('button');
+            startOverBtn.classList.add('bloxbuddy-response-btn');
+            startOverBtn.textContent = '↺ Start Over';
 
-        let hatBlockParts = tempProcess.topBlock.children.map(child => {
-            console.log(child);
-
-            if (child instanceof MessageOutputSlotMorph) {
-                return "socket message \"" + child.lastValue + "\"";
-            } else if (child instanceof InputSlotMorph) {
-                return child.contents().text;
-            } else if (child instanceof BlockSymbolMorph) {
-                return child.name;
-            } else if (child instanceof BooleanSlotMorph) {
-                return child.value;
-            } else if (child instanceof BlockMorph) {
-                if(child.selector == 'receiveSocketMessage'){
-                    return '';
-                } else {
-                    return blocksToCode.call(tempProcess, child.components());
+            startOverBtn.onclick = function() {
+                var messages = document.querySelectorAll('.bloxbuddy-chat-message');
+                for(let i = 0; i < messages.length; i++) {
+                    messages[i].remove();
                 }
-            } else if (child.text) {
-                return child.text;
-            } else {
-                return '';
+
+                var responseBtns = document.querySelectorAll('.bloxbuddy-response-btn');
+                for(let i = 0; i < responseBtns.length; i++) {
+                    responseBtns[i].remove();
+                }
+
+                addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+                currentChat = [];
             }
-        });
+        }
 
-        // Remove last part
-        hatBlockParts.pop();
-
-        let hatBlockName = hatBlockParts.join(' ');
-        return {hatBlockName, code};
+        document.querySelector('.bloxbuddy-chat-content').appendChild(startOverBtn);
     }
-
-    function blocksToCode(blocks) {
-        if (blocks instanceof Context) {
-            blocks = blocks.components();
-        }
-
-        if (this.isAST(blocks)) {
-            return this.toTextSyntax(blocks).encode();
-        }
-
-        return "()";
-    }
-
-    /// Must be run inside a Process
-    function codeToBlocks(code) {
-        if (typeof code === 'string') {
-            if (code.trim().startsWith('(')) {
-                code = this.parseCode(code);
-            }
-        } else {
-            this.assertType(string, ['command', 'reporter', 'predicate']);
-            code = code.components();
-        }
-
-        if (this.isAST(code)) {
-            return this.assemble(code);
-        }
-
-        throw Error("Invalid code");
-    }
-
 
     function parseDialog(dialog) {
         if (typeof(dialog) === 'string') {
@@ -479,123 +398,6 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
             throw Error('Error generating response');
         }
     }
-
-    function currentSpriteScriptsToCode(activeScripts) {
-        let output = '';
-        for (let i = 0; i < activeScripts.length; i++) {
-            if(activeScripts[i] instanceof CommentMorph) {
-                continue;
-            }
-            
-            let tempProcess = new Process(activeScripts[i], null, null, null);
-            
-            if (tempProcess.topBlock instanceof HatBlockMorph) {
-                let { hatBlockName, code } = processToCode(tempProcess);
-                output += hatBlockName + "\n";
-                output += code + "\n";
-                output += "\n";
-            }
-        }
-        return output;
-    }
-
-    function allScriptsToCode() {
-        let sprites = NetsBloxExtensions.ide.sprites.asArray();
-        let output = '';
-
-        const globalVars = Object.keys(NetsBloxExtensions.ide.stage.globalVariables().vars);
-        if (globalVars.length > 0) {
-            output += 'Global Variables: ' + globalVars.join(', ') + '\n';
-        }
-
-        const msgTypes = Object.keys(NetsBloxExtensions.ide.stage.messageTypes.msgTypes);
-        if (msgTypes.length > 0) {
-            let msgDescs = msgTypes.map(type => {
-                let t = NetsBloxExtensions.ide.stage.messageTypes.msgTypes[type];
-
-                if(t.name == 'message') {
-                    return t.name + ' (' + t.fields.join(', ') + ') (default, not added by user)';
-                }
-                return t.name + ' (' + t.fields.join(', ') + ')';
-            });
-            output += 'Message Types: ' + msgDescs.join(', ') + '\n';
-        }
-
-
-        const globalCustomBlocks = NetsBloxExtensions.ide.stage.globalBlocks;
-        if (globalCustomBlocks.length > 0) {
-            let tempProcess = new Process(null, null, null, null);
-            for (let i = 0; i < globalCustomBlocks.length; i++) {
-                output += '\nGlobal Custom Block: ' + globalCustomBlocks[i].spec + '\n';
-                output += blocksToCode.call(tempProcess, globalCustomBlocks[i].body) + '\n';
-            }
-        }
-
-        const currentSprite = NetsBloxExtensions.ide.currentSprite;
-
-        for (let i = 0; i < sprites.length; i++) {
-            let scripts = sprites[i].scripts.children;
-            sprites[i].edit();
-
-            output += '\n\nSprite: ' + sprites[i].name + '\n';
-
-            const vars = Object.keys(sprites[i].variables.vars);
-            if (vars.length > 0) {
-                output += 'Local Variables: ' + vars.join(', ') + '\n';
-            }
-
-            const customBlocks = sprites[i].customBlocks;
-            if (customBlocks.length > 0) {
-                let tempProcess = new Process(null, null, null, null);
-                for (let i = 0; i < customBlocks.length; i++) {
-                    output += '\nLocal Custom Block: ' + customBlocks[i].spec + '\n';
-                    output += blocksToCode.call(tempProcess, customBlocks[i].body) + '\n';
-                }
-            }
-
-            if (scripts.length === 0) {
-                output += 'No scripts\n';
-            } else {
-                for (let j = 0; j < scripts.length; j++) {
-                    if(scripts[j] instanceof CommentMorph) {
-                        continue;
-                    }
-
-                    let tempProcess = new Process(scripts[j], null, null, null);
-
-                    if (tempProcess.topBlock instanceof HatBlockMorph) {
-                        let { hatBlockName, code } = processToCode(tempProcess);
-
-                        output += hatBlockName + "\n";
-                        output += code + "\n";
-                    }
-                }
-            }
-        }
-
-        output += '\n\nStage:\n';
-        let stage = NetsBloxExtensions.ide.stage;
-        stage.edit();
-        if(stage.scripts.children.length > 0) {
-            for (let i = 0; i < stage.scripts.children.length; i++) {
-                let tempProcess = new Process(stage.scripts.children[i], null, null, null);
-
-                if (tempProcess.topBlock instanceof HatBlockMorph) {
-                    let { hatBlockName, code } = processToCode(tempProcess);
-
-                    output += hatBlockName + "\n";
-                    output += code + "\n";
-                }
-            }
-        } else {
-            output += 'No scripts on stage\n';
-        }
-
-        currentSprite.edit();
-
-        return output;
-    }
-
 
     NetsBloxExtensions.register(BloxBuddy);
 })();
