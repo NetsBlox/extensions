@@ -126,6 +126,10 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
             });
 
             addChatMessage('Hello! How can I help you today?');
+
+            // Add the system message and remove the first message
+            currentChat = [{ role: 'system', content: "" }];
+
             addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
 
         }
@@ -161,7 +165,7 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
                 },
                 'Set OpenAI API Endpoint...': function () {
                     const endpoint = prompt('Enter OpenAI API Endpoint');
-                    if (model) {
+                    if (endpoint) {
                         localStorage.setItem('openai-endpoint', endpoint);
                     }
                 },
@@ -235,7 +239,13 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
 
         message.innerHTML = text;
         document.querySelector('.bloxbuddy-chat-content').appendChild(message);
-        currentChat.push({ role: user ? 'user' : 'assistant', content: text });
+        if(user) {
+            currentChat.push({ role: 'user', content: enhanceTask(text) });
+        } else {
+            currentChat.push({ role: 'assistant', content: text });
+        }
+
+        console.log(currentChat);
     }
 
     // Function to create a response button
@@ -261,10 +271,15 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
 
             // Add response from AI
             try {
-                let response = completion([generateSystemMessage(), enhanceTask(text)]).then(response => {
+                currentChat[0].content = generateSystemMessage();
+                let response = completion(currentChat).then(response => {
+                    console.log(response);
+                    response = response.replace(/^```(json)?/, '').trim().replace(/```$/, '').trim();
                     console.log(response);
                     let parsed = JSON.parse(response);
+
                     console.log(parsed);
+
                     addChatMessage(parsed.response);
 
                     if(parsed.continuation) {
@@ -315,9 +330,10 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
                 addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
                 currentChat = [];
             }
+
+            document.querySelector('.bloxbuddy-chat-content').appendChild(startOverBtn);
         }
 
-        document.querySelector('.bloxbuddy-chat-content').appendChild(startOverBtn);
     }
 
     function parseDialog(dialog) {
@@ -325,7 +341,7 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
             return [{ role: 'system', content: dialog }];
         }
 
-        if(Array.isArray(dialog)) { 
+        if(Array.isArray(dialog)) {
             if(dialog.length === 0) {
                 throw Error('dialog should not be empty');
             }
@@ -337,6 +353,8 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
                     parsed.push({ role: i % 2 === 1 ? 'user' : 'assistant', content: dialog[i] });
                 }
                 return parsed;
+            } else {
+                return dialog;
             }
         }
 
@@ -389,6 +407,7 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
                 body: JSON.stringify({
                     model: model,
                     messages: dialog,
+                    response_format: { type: 'json_object' },
                 }),
             });
             const data = await res.json();
