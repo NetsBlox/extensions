@@ -141,6 +141,7 @@
                     borderWidth: 1
                 });
             }
+            
             chart.update();
         });
 
@@ -207,10 +208,10 @@
         chart = new Chart(plotterContext, {
             type: 'bar',
             data: {
-                labels: [1, 2, 3, 4, 5, 6],
+                labels: [],
                 datasets: [{
-                label: '# of Votes',
-                data: [12, 19, 3, 5, 2, 3],
+                label: '',
+                data: [],
                 borderWidth: 1
                 }]
             },
