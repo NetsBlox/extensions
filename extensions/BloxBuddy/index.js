@@ -112,7 +112,10 @@ Please provide helpful responses to the user based on the information provided a
 
 If there is not a clear next step or continuation, you should omit the "continuation" field. Do not ask for free-form text input from the user, as this is not supported. All interactions should be guided by the options you provide in the "continuation" field.
 Remember that the user is a beginner and may not understand complex programming concepts. 
-Keep your responses clear, concise, and easy to understand. Do not overwhelm the user with too much information at once.`;
+Keep your responses clear, concise, and easy to understand. Do not overwhelm the user with too much information at once.
+
+There are currently ${currentChat.length} messages in the chat history. Please aim to keep the conversation to 4-6 messages total, including the initial prompt. We want to keep the conversation focused and helpful for the user, so eventually end the conversation by simply providing no continuation options.
+`;
     }
 
     class BloxBuddy extends Extension {
@@ -334,18 +337,7 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
             startOverBtn.textContent = '↺ Start Over';
 
             startOverBtn.onclick = function() {
-                var messages = document.querySelectorAll('.bloxbuddy-chat-message');
-                for(let i = 0; i < messages.length; i++) {
-                    messages[i].remove();
-                }
-
-                var responseBtns = document.querySelectorAll('.bloxbuddy-response-btn');
-                for(let i = 0; i < responseBtns.length; i++) {
-                    responseBtns[i].remove();
-                }
-
-                addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
-                currentChat = [];
+                resetChat();
             }
 
             document.querySelector('.bloxbuddy-chat-content').appendChild(startOverBtn);
