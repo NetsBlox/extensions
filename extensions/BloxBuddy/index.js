@@ -24,6 +24,28 @@
 
     var currentChat = [];
 
+    function resetChat() {
+        currentChat = [];
+
+        // Remove all chat messages
+        var messages = document.querySelectorAll('.bloxbuddy-chat-message');
+        for(let i = 0; i < messages.length; i++) {
+            messages[i].remove();
+        }
+
+        var responseBtns = document.querySelectorAll('.bloxbuddy-response-btn');
+        for(let i = 0; i < responseBtns.length; i++) {
+            responseBtns[i].remove();
+        }
+
+        addChatMessage('Hello! How can I help you today?');
+
+        // Add the system message and remove the first message
+        currentChat = [{ role: 'system', content: "" }];
+
+        addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+    }
+
     function enhanceTask(task) {
         if (task === 'Explain my code') {
             task = 
@@ -125,17 +147,12 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
                 chatPopup.style.display = chatPopup.style.display === 'block' ? 'none' : 'block';
             });
 
-            addChatMessage('Hello! How can I help you today?');
-
-            // Add the system message and remove the first message
-            currentChat = [{ role: 'system', content: "" }];
-
-            addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
-
+            resetChat();
         }
 
         onOpenRole() {
             console.log('onOpenRole');
+            resetChat();
         }
 
         getMenu() {
