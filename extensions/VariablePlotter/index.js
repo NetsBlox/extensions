@@ -129,7 +129,7 @@
 
         contentElement.innerHTML += '<div><button>Reset</button></div>';
         
-        contentElement.innerHTML += '<div><select id="plottervars"></select></div>';
+        contentElement.innerHTML += '<div><select id="plottervars"><option></option></select></div>';
 
         document.getElementById('plottervars').addEventListener('change', function() {
             chart.data.datasets = [];
@@ -141,7 +141,6 @@
                     borderWidth: 1
                 });
             }
-            
             chart.update();
         });
 
@@ -168,7 +167,48 @@
                 let data = chart.data.datasets.find(dataset => dataset.label === variable);
 
                 if (data) {
-                    data.data.push(value);
+                    // Handle Snap lists
+                    if(value instanceof List) {
+                        value = value.contents;
+                    }
+
+                    if (Array.isArray(value)) {
+                        // if one-dimensional array or empty array
+                        if (value.length == 0 || !Array.isArray(value[0])) {
+                            data.data = value;
+                            
+                            let labels = [];
+
+                            for (let i = 0; i < value.length; i++) {
+                                labels.push(i);
+                            }
+
+                            chart.data.labels = labels;
+                        } else if (Array.isArray(value[0]) || value[0] instanceof List) {
+                            // if two-dimensional array use each element as a point
+                            let points = [];
+                            let labels = [];
+                            
+                            for (let i = 0; i < value.length; i++) {
+                                let point = value[i];
+
+                                if (point instanceof List) {
+                                    point = point.contents;
+                                }
+
+                                if (point.length == 2) {
+                                    points.push(point);
+                                    labels.push(i);
+                                } else if (point.length == 1) {
+                                    points.push([i, point[0]]);
+                                    labels.push(i);
+                                }
+                            }
+                        }
+                    } else {
+                        data.data.push(value);
+                        chart.data.labels.push(chart.data.labels.length);
+                    }
                     chart.update();
                 }
             }
@@ -206,7 +246,7 @@
         }
 
         chart = new Chart(plotterContext, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: [],
                 datasets: [{
@@ -217,12 +257,18 @@
             },
             options: {
                 scales: {
-                y: {
-                    beginAtZero: true
-                }
+                    y: {
+                        display: true
+                    },
+                    x: {
+                        display: true
+                    }
                 },
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: {
+                    duration: 0,
+                },
             }
         });
 
@@ -272,7 +318,7 @@
         let plotterVars = document.getElementById('plottervars');
         let selectedVars = Array.from(plotterVars.selectedOptions).map(option => option.value);
         
-        plotterVars.innerHTML = '';
+        plotterVars.innerHTML = '<option></option>';
 
         let globalVars = getGlobalVariables();
         let spriteVars = getSpriteVariables();
