@@ -25,7 +25,10 @@
         }
 
         onOpenRole() {
-
+            // Update the plotter dialog
+            setTimeout(() => {
+                updatePlotterVars();
+            }, 500);
         }
 
         getSettings() {
@@ -282,6 +285,7 @@
 
     function updatePlotterVars() {
         let plotterVars = document.getElementById('plottervars');
+
         let selectedVars = Array.from(plotterVars.selectedOptions).map(option => option.value);
         
         plotterVars.innerHTML = '<option></option>';
@@ -332,7 +336,6 @@
     }
 
     function updatePlotterVar(variable, value) {
-        console.log('Updating plotter var', variable, value);
         let selectedVars = Array.from(document.getElementById('plottervars').selectedOptions).map(option => option.value);
 
         if (selectedVars.includes(variable)) {
