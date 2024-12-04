@@ -140,7 +140,24 @@
                     data: [],
                     borderWidth: 1
                 });
+                
+                if(varName) {
+                    let variable = getGlobalVariables()[varName];
+
+                    if(!variable) {
+                        let spriteName = varName.split('.')[0];
+                        let varName = varName.split('.')[1];
+                        if (getSpriteVariables()[spriteName]) {
+                            variable = getSpriteVariables()[spriteName][varName];
+                        }
+                    }
+
+                    if (variable) {
+                        updatePlotterVar(varName, variable.value);
+                    }
+                }
             }
+
             chart.update();
         });
 
@@ -160,58 +177,7 @@
             let variable = event.detail.variable;
             let value = event.detail.value;
             let owner = event.detail.owner;
-
-            let selectedVars = Array.from(document.getElementById('plottervars').selectedOptions).map(option => option.value);
-
-            if (selectedVars.includes(variable)) {
-                let data = chart.data.datasets.find(dataset => dataset.label === variable);
-
-                if (data) {
-                    // Handle Snap lists
-                    if(value instanceof List) {
-                        value = value.contents;
-                    }
-
-                    if (Array.isArray(value)) {
-                        // if one-dimensional array or empty array
-                        if (value.length == 0 || !Array.isArray(value[0])) {
-                            data.data = value;
-                            
-                            let labels = [];
-
-                            for (let i = 0; i < value.length; i++) {
-                                labels.push(i);
-                            }
-
-                            chart.data.labels = labels;
-                        } else if (Array.isArray(value[0]) || value[0] instanceof List) {
-                            // if two-dimensional array use each element as a point
-                            let points = [];
-                            let labels = [];
-                            
-                            for (let i = 0; i < value.length; i++) {
-                                let point = value[i];
-
-                                if (point instanceof List) {
-                                    point = point.contents;
-                                }
-
-                                if (point.length == 2) {
-                                    points.push(point);
-                                    labels.push(i);
-                                } else if (point.length == 1) {
-                                    points.push([i, point[0]]);
-                                    labels.push(i);
-                                }
-                            }
-                        }
-                    } else {
-                        data.data.push(value);
-                        chart.data.labels.push(chart.data.labels.length);
-                    }
-                    chart.update();
-                }
-            }
+            updatePlotterVar(variable, value);
         });
 
         setupDialog(plotterDialog);
@@ -346,8 +312,82 @@
                 option.selected = true;
             }
         }
+
+        // Update the chart
+        let selectedVarNames = Array.from(plotterVars.selectedOptions).map(option => option.value);
+
+        for (let varName of selectedVarNames) {
+            if(varName) {
+                let variable = globalVars[varName];
+
+                if(!variable) {
+                    let spriteName = varName.split('.')[0];
+                    let varName = varName.split('.')[1];
+                    if (spriteVars[spriteName]) {
+                        variable = spriteVars[spriteName][varName];
+                    }
+                }
+
+                if (variable) {
+                    updatePlotterVar(varName, variable.value);
+                }
+            }
+        }
     }
 
+    function updatePlotterVar(variable, value) {
+        let selectedVars = Array.from(document.getElementById('plottervars').selectedOptions).map(option => option.value);
+
+        if (selectedVars.includes(variable)) {
+            let data = chart.data.datasets.find(dataset => dataset.label === variable);
+
+            if (data) {
+                // Handle Snap lists
+                if(value instanceof List) {
+                    value = value.contents;
+                }
+
+                if (Array.isArray(value)) {
+                    // if one-dimensional array or empty array
+                    if (value.length == 0 || !Array.isArray(value[0])) {
+                        data.data = value;
+                        
+                        let labels = [];
+
+                        for (let i = 0; i < value.length; i++) {
+                            labels.push(i);
+                        }
+
+                        chart.data.labels = labels;
+                    } else if (Array.isArray(value[0]) || value[0] instanceof List) {
+                        // if two-dimensional array use each element as a point
+                        let points = [];
+                        let labels = [];
+                        
+                        for (let i = 0; i < value.length; i++) {
+                            let point = value[i];
+
+                            if (point instanceof List) {
+                                point = point.contents;
+                            }
+
+                            if (point.length == 2) {
+                                points.push(point);
+                                labels.push(i);
+                            } else if (point.length == 1) {
+                                points.push([i, point[0]]);
+                                labels.push(i);
+                            }
+                        }
+                    }
+                } else {
+                    data.data.push(value);
+                    chart.data.labels.push(chart.data.labels.length);
+                }
+                chart.update();
+            }
+        }
+    }
     
     NetsBloxExtensions.register(VariablePlotter);
 })();
