@@ -173,7 +173,7 @@
         document.addEventListener('variable-removed', updatePlotterVars);
 
         // Add event listener for when variables are changed
-        document.addEventListener('variable-changed', function(event) {
+        document.addEventListener('variable-changed', function(event) { 
             let variable = event.detail.variable;
             let value = event.detail.value;
             let owner = event.detail.owner;
@@ -327,15 +327,12 @@
                         variable = spriteVars[spriteName][varName];
                     }
                 }
-
-                if (variable) {
-                    updatePlotterVar(varName, variable.value);
-                }
             }
         }
     }
 
     function updatePlotterVar(variable, value) {
+        console.log('Updating plotter var', variable, value);
         let selectedVars = Array.from(document.getElementById('plottervars').selectedOptions).map(option => option.value);
 
         if (selectedVars.includes(variable)) {
@@ -349,7 +346,7 @@
 
                 if (Array.isArray(value)) {
                     // if one-dimensional array or empty array
-                    if (value.length == 0 || !Array.isArray(value[0])) {
+                    if (value.length == 0 || (!Array.isArray(value[0]) && !(value[0] instanceof List))) {
                         data.data = value;
                         
                         let labels = [];
@@ -372,13 +369,15 @@
                             }
 
                             if (point.length == 2) {
-                                points.push(point);
-                                labels.push(i);
+                                points.push(point[1]);
+                                labels.push(point[0]);
                             } else if (point.length == 1) {
-                                points.push([i, point[0]]);
+                                points.push(point[0]);
                                 labels.push(i);
                             }
                         }
+                        data.data = points;
+                        chart.data.labels = labels;
                     }
                 } else {
                     data.data.push(value);
