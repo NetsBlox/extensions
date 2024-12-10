@@ -258,9 +258,9 @@
 
         // ----------------------------------------------------------------------
 
-        class MusicApp extends Extension {
+        class BeatBlox extends Extension {
             constructor(ide) {
-                super('MusicApp');
+                super('BeatBlox');
 
                 this.ide = ide;
                 ide.hideCategory('sound');
