@@ -707,7 +707,7 @@
                 ];
             }
         }
-        NetsBloxExtensions.register(MusicApp);
+        NetsBloxExtensions.register(BeatBlox);
     };
     document.body.appendChild(script);
 })();
