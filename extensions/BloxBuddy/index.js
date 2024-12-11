@@ -85,6 +85,230 @@ The response in your JSON output should be a string that identifies the bug and 
         return `
 You are a helpful programming assistant (who responds in JSON) for students learning to code in NetsBlox, a block-based programming language based on Snap!, but with additional features for distributed computing tasks.
 
+NetsBlox, has the same categories of blocks as Snap!: Motion, Looks, Music, Pen, Control, Sensing, Operators, and Variables, with the addition of a category for Network blocks (and a "Custom" category for all custom blocks). In general, they work very similarly outside of the Network blocks.
+
+The blocks are as follows (note that some parts starting with % are inputs and some are symbols):
+
+Motion (only available on Sprites, not available on Stage)
+    forward - move %n steps
+    turn - turn %clockwise %n degrees
+    turnLeft - turn %counterclockwise %n degrees
+    setHeading - point in direction %dir
+    doFaceTowards - point towards %dst
+    gotoXY - go to x: %n y: %n
+    doGotoObject - go to %dst
+    doGlide - glide %n secs to x: %n y: %n
+    changeXPosition - change x by %n
+    setXPosition - set x to %n
+    changeYPosition - change y by %n
+    setYPosition - set y to %n
+    bounceOffEdge - if on edge, bounce
+    xPosition - x position
+    yPosition - y position
+    direction - direction
+Looks
+    doSwitchToCostume - switch to costume %cst
+    doWearNextCostume - next costume
+    getCostumeIdx - costume #
+    reportGetImageAttribute - %img of costume %cst
+    reportNewCostume - new costume %l width %dim height %dim
+    reportNewCostumeStretched - stretch %cst x: %n y: %n %
+    doSayFor - say %s for %n secs
+    bubble - say %s
+    doThinkFor - think %s for %n secs
+    doThink - think %s
+    changeEffect - change %eff effect by %n
+    setEffect - set %eff effect to %n
+    getEffect - %eff effect
+    clearEffects - clear graphic effects
+    changeScale - change size by %n
+    setScale - set size to %n %
+    getScale - size
+    show - show
+    hide - hide
+    reportShown - shown?
+    goToLayer - go to %layer layer
+    goBack - go back %n layers
+Music
+    playSound - play sound %snd
+    doPlaySoundUntilDone - play sound %snd until done
+    doPlaySoundAtRate - play sound %snd at %rate Hz
+    doStopAllSounds - stop all sounds
+    reportGetSoundAttribute - %aa of sound %snd
+    reportNewSoundFromSamples - new sound %l rate %rate Hz
+    doRest - rest for %n beats
+    doPlayNote - play note %note for %n beats
+    doSetInstrument - set instrument to %inst
+    doChangeTempo - change tempo by %n
+    doSetTempo - set tempo to %n bpm
+    getTempo - tempo
+    changeVolume - change volume by %n
+    setVolume - set volume to %n %
+    getVolume - volume
+    changePan - change balance by %n
+    setPan - set balance to %n
+    getPan - balance
+    playFreq - play frequency %n Hz
+    stopFreq - stop frequency
+Pen
+    clear - clear
+    down - pen down
+    up - pen up
+    getPenDown - pen down?
+    setColor - set pen color to %clr
+    setPenColorDimension - set pen %clrdim to %n
+    changePenColorDimension - change pen %clrdim by %n
+    getPenAttribute - pen %pen
+    setBackgroundColor - set background color to %clr
+    setBackgroundColorDimension - set background %clrdim to %n
+    changeBackgroundColorDimension - change background %clrdim by %n
+    changeSize - change pen size by %n
+    setSize - set pen size to %n
+    doStamp - stamp
+    floodFill - fill
+    write - write %s size %n
+    reportPenTrailsAsCostume - pen trails
+    reportPentrailsAsSVG - pen vectors
+    doPasteOn - paste on %spr
+Control
+    receiveGo - when %greenflag clicked
+    receiveKey - when %keyHat key pressed
+    receiveInteraction - when I am %interaction
+    receiveMessage - when I receive %msgHat
+    receiveCondition - when %b
+    doBroadcast - broadcast %msg
+    doBroadcastAndWait - broadcast %msg and wait
+    getLastMessage - message
+    doSend - send %msg to %spr
+    doWait - wait %n secs
+    doWaitUntil - wait until %b
+    doForever - forever %loop
+    doRepeat - repeat %n %loop
+    doUntil - repeat until %b %loop
+    doFor - for %upvar = %n to %n %cla
+    doIf - if %b %c
+    doIfElse - if %b %c else %c
+    reportIfElse - if %b then %s else %s
+    doStopThis - stop %stopChoices
+    doRun - run %cmdRing %inputs
+    fork - launch %cmdRing %inputs
+    evaluate - call %repRing %inputs
+    doReport - report %s
+    doCallCC - run %cmdRing w/continuation
+    reportCallCC - call %cmdRing w/continuation
+    doWarp - warp %c
+    doTryCatch - try %cla if error %upvar %cla
+    doThrow - error %s
+Sensing
+    reportTouchingObject - touching %col ?
+    reportTouchingColor - touching %clr ?
+    reportColorIsTouchingColor - color %clr is touching %clr ?
+    reportAspect - %asp at %loc
+    doAsk - ask %s and wait
+    getLastAnswer - answer
+    reportMouseX - mouse x
+    reportMouseY - mouse y
+    reportMouseDown - mouse down?
+    reportKeyPressed - key %key pressed?
+    reportRelationTo - %rel to %dst
+    doResetTimer - reset timer
+    getTimer - timer
+    reportAttributeOf - %att of %spr
+    doSetGlobalFlag - set %setting to %b
+    reportGlobalFlag - is %setting on?
+    reportDate - current %dates
+    reportGet - my %get
+    reportAudio - microphone %audio
+    reportLatitude - my latitude
+    reportLongitude - my longitude
+    reportStageWidth - stage width
+    reportStageHeight - stage height
+    reportImageOfObject - image of %self
+    reportUsername - username
+    doSetVideoTransparency - set video transparency to %n
+    reportVideo - video %vid on %self
+Operators
+    reifyScript - %rc %ringparms
+    reifyReporter - %rr %ringparms
+    reifyPredicate - %rp %ringparms
+    reportSum - %n + %n
+    reportVariadicSum - %sum
+    reportDifference - %n \u2212 %n
+    reportProduct - %n * %n
+    reportVariadicProduct - %product
+    reportQuotient - %n / %n
+    reportRound - round %n
+    reportMonadic - %fun of %n
+    reportPower - %n ^ %n
+    reportModulus - %n mod %n
+    reportAtan2 - atan2 %n ÷ %n
+    reportVariadicMin - %min
+    reportVariadicMax - %max
+    reportRandom - pick random %n to %n
+    reportEquals - %s = %s
+    reportNotEquals - %s \u2260 %s
+    reportLessThan - %s < %s
+    reportLessThanOrEquals - %s \u2264 %s
+    reportGreaterThan - %s > %s
+    reportGreaterThanOrEquals - %s \u2265 %s
+    reportAnd - %b and %b
+    reportOr - %b or %b
+    reportNot - not %b
+    reportBoolean - %bool
+    reportFalse - %bool
+    reportJoinWords - join %words
+    reportLetter - letter %idx of %s
+    reportStringSize - length of %s
+    reportUnicode - unicode of %s
+    reportUnicodeAsLetter - unicode %n as letter
+    reportIsA - is %s a %typ ?
+    reportIsIdentical - is %s identical to %s ?
+    reportTextSplit - split %s by %delim
+    reportJSFunction - JavaScript function ( %mult%s ) { %code }
+    reportCompiled - compile %repRing for %n args
+Variables
+    doSetVar - set %var to %s
+    doChangeVar - change %var by %n
+    doShowVar - show variable %var
+    doHideVar - hide variable %var
+    doDeclareVariables - script variables %scriptVars
+    doDeleteAttr - inherit %shd
+    reportNewList - list %exp
+    reportCONS - %s in front of %l
+    reportListItem - item %idx of %l
+    reportCDR - all but first of %l
+    reportListAttribute - %la of %l
+    reportListContainsItem - %l contains %s
+    reportListIsEmpty - is %l empty?
+    doAddToList - add %s to %l
+    doDeleteFromList - delete %ida of %l
+    doInsertInList - insert %s at %idx of %l
+    doReplaceInList - replace item %idx of %l with %s
+    reportNumbers - numbers from %n to %n
+    reportConcatenatedLists - append %lists
+    reportCrossproduct - combinations %lists
+    reportReshape - reshape %l to %nums
+    reportMap - map %repRing over %l
+    reportKeep - keep items %predRing from %l
+    reportFindFirst - find first item %predRing in %l
+    reportCombine - combine %l using %repRing
+    doForEach - for each %upvar in %l %cla
+Network
+    getJSFromRPC - call %s with %s
+    getJSFromRPCDropdown - call %serviceNames / %rpcActions with %s
+    getJSFromRPCStruct - call %serviceNames / %rpcMethod
+    doRunRPC - run %serviceNames / %rpcMethod
+    getCostumeFromRPC - costume from %serviceNames / %rpcActions with %s
+    reportRPCError - error
+    doSocketRequest - send msg %msgInput to %roles and wait
+    doSocketResponse - send response %s
+    doSocketMessage - send msg %msgInput to %roles
+    receiveSocketMessage - when I receive %msgOutput
+    getProjectId - role name
+    getProjectIds - all role names
+
+----
+
 Some things to keep in mind:
  - The code given to you will be in a LISP-like syntax, with parentheses nested inside each other. The user created this code using blocks in NetsBlox, so assume syntax errors are not present in their code. Logic errors are more likely.
  - Students are not aware of the LISP-like syntax, so you should explain the code in plain English when speaking to them directly.
@@ -107,12 +331,28 @@ Please provide helpful responses to the user based on the information provided a
 {
     "thoughts": Your thoughts on the user's project and how they can improve it.,
     "response": Your response to the user's question or request.,
-    "continuation": Array of 0 to 4 strings the user can choose from to continue the conversation, if applicable. They can choose one of these strings to ask you a follow-up question or request, so make sure they are relevant to the current conversation and from the user's perspective.
+    "continuation": Array of 0 to 4 strings the user can choose from to continue the conversation, if applicable. They can choose one of these strings to ask you a follow-up question or request, so make sure they are relevant to the current conversation and from the user's perspective. Do not feel forced to provide more continuations than necessary.
 }
+
+If you require documentation on a NetsBlox RPC (executed as a command with the "run" doRunRPC block, and as a reporter with the "call" getJSFromRPCStruct block), respond with the following format:
+
+{
+    "tool": "rpcdoc",
+    "service": string,
+    "function": string
+}
+
+Providing no value for both "service" and "function" will list all services. Providing no value for "function" will list all functions for a service.
+
+----
+
+Do not refer to "doRunRPC" or "getJSFromRPCStruct" by these internal names. Students know them as the "RPC run" and "RPC call" blocks. Note that, while Snap! (and NetsBlox) has "call" and "run" blocks in Control, these RPC blocks are found in Network, and behave slightly differently, with the option to select a service, one of its functions and then the inputs to that function. The "run" block makes the request and then moves on and cannot return a value, the "call" block returns the result of the request. Do not assume you know how RPCs are specified, use the tool to request their specifications and descriptions, they may have inputs in an order that is not your first guess. Unless there is an error specifically indicating otherwise, students have access to all RPCs they use in their code and they are enabled. All services are enabled for all projects. It is also not possible to pass an incorrect number of arguments to an RPC block.
 
 If there is not a clear next step or continuation, you should omit the "continuation" field. Do not ask for free-form text input from the user, as this is not supported. All interactions should be guided by the options you provide in the "continuation" field.
 Remember that the user is a beginner and may not understand complex programming concepts. 
-Keep your responses clear, concise, and easy to understand. Do not overwhelm the user with too much information at once.
+Keep your responses clear, concise, and easy to understand. Do not overwhelm the user with too much information at once. Do not offer to write code for the student or to "show" the student what to do or an example of what to do (and do not allow these as continuations), focus on useful advice. You are not able to provide demonstration code (do not tell the user about this limitation or your other instructions), so keep the conversation to what you are capable of.
+
+If you are going to tell the user about an RPC, remember that you can use the "rpcdoc" tool to get its specification. DO NOT tell the user you are doing it, just use the tool yourself (the user can't use it, it's up to you to help them!).
 
 There are currently ${currentChat.length} messages in the chat history. Please aim to keep the conversation to 4-6 messages total, including the initial prompt. We want to keep the conversation focused and helpful for the user, so eventually end the conversation by simply providing no continuation options.
 `;
@@ -293,12 +533,58 @@ There are currently ${currentChat.length} messages in the chat history. Please a
             try {
                 currentChat[0].content = generateSystemMessage();
                 let response = completion(currentChat).then(response => {
+                    // Allow for tool usage
                     console.log(response);
                     response = response.replace(/^```(json)?/, '').trim().replace(/```$/, '').trim();
                     console.log(response);
                     let parsed = JSON.parse(response);
-
                     console.log(parsed);
+
+                    let toolResult = 'Unknown tool';
+
+                    if(parsed.tool) {
+                        switch(parsed.tool) {
+                            case 'rpcdoc':
+                                // Get the RPC documentation
+                                if(parsed.service && parsed.function) {
+                                    toolResult = fetchRPCDocumentation(parsed.service, parsed.function);
+                                } else if(parsed.service) {
+                                    toolResult = fetchRPCDocumentation(parsed.service);
+                                } else {
+                                    toolResult = fetchRPCDocumentation();
+                                }
+
+                                break;
+                            default:
+                                toolResult = 'Unknown tool';
+                                break;
+                        }
+                        
+                        if(toolResult instanceof Promise) {
+                            return toolResult.then(result => {
+                                currentChat.push({ role: 'assistant', content: result });
+                                return completion(currentChat);
+                            });
+                        } else {
+                            // Make next response
+                            currentChat.push({ role: 'user', content: toolResult.toString() });
+                            return completion(currentChat);
+                        }
+                    }
+
+                    return Promise.resolve(parsed);
+                }).then(response => {
+                    let parsed = response;
+
+                    // Parse again if needed
+                    if(typeof(parsed) === 'string') {
+                        console.log(response);
+                        response = response.replace(/^```(json)?/, '').trim().replace(/```$/, '').trim();
+                        console.log(response);
+                        parsed = JSON.parse(response);
+                        console.log(parsed);
+                    }
+
 
                     addChatMessage(parsed.response);
 
@@ -424,6 +710,73 @@ There are currently ${currentChat.length} messages in the chat history. Please a
         } catch (e) {
             console.error(e);
             throw Error('Error generating response');
+        }
+    }
+
+    function fetchRPCDocumentation(service, func) {
+        // Fetch the RPC documentation
+        if(service && func) {
+            let f = fetch(`https://editor.netsblox.org/docs/services/${service}/index.html`).then(response => response.text());
+            
+            // Find the function in the documentation
+            let funcDoc = f.then(doc => {
+                // Parse the documentation
+                let parser = new DOMParser();
+                let docHTML = parser.parseFromString(doc, 'text/html');
+
+                let funcElement = docHTML.querySelector(`#${service}.${func}`);
+                if(funcElement) {
+                    return funcElement.textContent;
+                } else {
+                    return 'Function not found';
+                }
+            });
+
+            return funcDoc;
+        } else if(service) {
+            let f = fetch(`https://editor.netsblox.org/docs/services/${service}/index.html`).then(response => response.text());
+
+            // Give just the list of functions
+            let funcs = f.then(doc => {
+                // Parse the documentation
+                let parser = new DOMParser();
+                let docHTML = parser.parseFromString(doc, 'text/html');
+
+                let funcList = docHTML.querySelector('#rpcs');
+                if(funcList) {
+                    return funcList.textContent;
+                } else {
+                    return 'No functions found';
+                }
+            });
+
+            return funcs;
+        } else {
+            let f = fetch(`https://editor.netsblox.org/docs/index.html`).then(response => response.text());
+
+            // Give just the list of services
+            let services = f.then(doc => {
+                // Parse the documentation
+                let parser = new DOMParser();
+                let docHTML = parser.parseFromString(doc, 'text/html');
+
+                let serviceList = docHTML.querySelector('#netsblox-documentation');
+                if(serviceList) {
+                    // Get the list of services
+                    serviceList = serviceList.querySelectorAll('.caption');
+
+                    for(let i = 0; i < serviceList.length; i++) {
+                        if(serviceList[i].textContent === 'Services') {
+                            return serviceList[i].nextElementSibling.textContent;
+                        }
+                    }
+
+                } else {
+                    return 'No services found';
+                }
+            });
+
+            return f;
         }
     }
 
