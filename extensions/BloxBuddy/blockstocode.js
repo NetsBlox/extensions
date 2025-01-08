@@ -25,13 +25,13 @@
                             );
                         } else if (deflt instanceof MultiArgMorph) {
                             console.log(def);
-                            deflt.setInfix(def.separatorOfInputIdx(inp));
+                            /*deflt.setInfix(def.separatorOfInputIdx(inp));
                             deflt.setCollapse(def.collapseOfInputIdx(inp));
                             deflt.setExpand(def.expandOfInputIdx(inp));
                             deflt.setDefaultValue(def.defaultValueOfInputIdx(inp));
                             deflt.setInitialSlots(def.initialSlotsOfInputIdx(inp));
                             deflt.setMinSlots(def.minSlotsOfInputIdx(inp));
-                            deflt.setMaxSlots(def.maxSlotsOfInputIdx(inp));
+                            deflt.setMaxSlots(def.maxSlotsOfInputIdx(inp));*/
                         }
                     }
                 }
@@ -552,6 +552,9 @@
     };
 
     Process.prototype.isAST = function (aList) {
+        if(!aList){
+            return false;
+        }
         var first = aList.at(1);
         if (first instanceof Context) {
             return true;

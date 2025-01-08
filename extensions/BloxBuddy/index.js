@@ -592,7 +592,8 @@ ${parsed.response}
 ---
 
 Be friendly but not overly poetic or too excited.
-Keep in mind that the student is a beginner and may not understand complex programming concepts, and that the response should be clear, concise, and easy to understand.
+Keep in mind that the student is may not understand complex programming concepts, and that the response should be clear, concise, and easy to understand.
+However, terms like "variable" or "function" are fine to use, along with NetsBlox-specific terms like "RPC" or "service".
 If the original text includes code, you should explain the code in plain English when speaking to the student directly and DO NOT include the code in your response.
 Do not try to use tools.`
                         },
