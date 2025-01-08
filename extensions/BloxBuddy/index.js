@@ -1,16 +1,4 @@
 (function () {
-
-    // Import blockstocode.js
-    var script = document.createElement('script');
-
-    // Check if we are running locally
-    if(document.currentScript.src.includes('localhost')) {
-        script.src = 'http://localhost:4000/blockstocode.js';
-    } else {
-        script.src = 'https://extensions.netsblox.org/extensions/BloxBuddy/blockstocode.js';
-    }
-    document.head.appendChild(script);
-
     // Add the BloxBuddy stylesheet
     var style = document.createElement('link');
     style.rel = 'stylesheet';
@@ -22,10 +10,16 @@
     }
     document.head.appendChild(style);
 
-    var currentChat = [];
+    // Import blockstocode.js
+    var script = document.createElement('script');
+
+script.onload = function () {
+    var currentChat = [{ role: 'system', content: "" }];
+
+    const chatRefinerModel = 'learnlm-1.5-pro-experimental';
 
     function resetChat() {
-        currentChat = [];
+        currentChat = [{ role: 'system', content: "" }];
 
         // Remove all chat messages
         var messages = document.querySelectorAll('.bloxbuddy-chat-message');
@@ -395,7 +389,9 @@ There are currently ${currentChat.length} messages in the chat history. Please a
 
         onOpenRole() {
             console.log('onOpenRole');
-            resetChat();
+            setTimeout(() => {
+                resetChat();
+            }, 1000);
         }
 
         getMenu() {
@@ -585,21 +581,40 @@ There are currently ${currentChat.length} messages in the chat history. Please a
                         console.log(parsed);
                     }
 
+                    // Refine response
+                    completion([
+                        { role: 'system', content: generateSystemMessage() },
+                        { role: 'user', content: `
+Rewrite the following text so that it would be easier to read for a student in middle school:
 
-                    addChatMessage(parsed.response);
+${parsed.response}
 
-                    if(parsed.continuation) {
-                        if(typeof(parsed.continuation) === 'string') {
-                            addResponseButton([parsed.continuation]);
-                        } else if (Array.isArray(parsed.continuation)) {
-                            addResponseButtons(parsed.continuation);
+---
+
+Be friendly but not overly poetic or too excited.
+Keep in mind that the student is a beginner and may not understand complex programming concepts, and that the response should be clear, concise, and easy to understand.
+If the original text includes code, you should explain the code in plain English when speaking to the student directly and DO NOT include the code in your response.
+Do not try to use tools.`
+                        },
+                    ], chatRefinerModel).then(refined => {
+                        console.log(refined);
+                        refined = refined.replace(/^```(json)?/, '').trim().replace(/```$/, '').trim();
+                        refined = JSON.parse(refined);
+                        parsed.response = refined.response;
+                        addChatMessage(parsed.response);
+                        if(parsed.continuation) {
+                            if(typeof(parsed.continuation) === 'string') {
+                                addResponseButton([parsed.continuation]);
+                            } else if (Array.isArray(parsed.continuation)) {
+                                addResponseButtons(parsed.continuation);
+                            } else {
+                                addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+                            }
                         } else {
                             addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
                         }
-                    } else {
-                        addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
-                    }
-                    spinnerParent.remove();
+                        spinnerParent.remove();
+                    });
                 });
             } catch (e) {
                 console.error(e);
@@ -689,7 +704,7 @@ There are currently ${currentChat.length} messages in the chat history. Please a
         return { apiKey, model, endpoint };
     }
 
-    async function completion(dialog) {
+    async function completion(dialog, modelOverride = null) {
         dialog = parseDialog(dialog);
         const { apiKey, model, endpoint } = getSettings();
         try {
@@ -700,7 +715,7 @@ There are currently ${currentChat.length} messages in the chat history. Please a
                     'Authorization': `Bearer ${apiKey}`,
                 },
                 body: JSON.stringify({
-                    model: model,
+                    model: modelOverride ?? model,
                     messages: dialog,
                     response_format: { type: 'json_object' },
                 }),
@@ -781,4 +796,14 @@ There are currently ${currentChat.length} messages in the chat history. Please a
     }
 
     NetsBloxExtensions.register(BloxBuddy);
+}
+
+    // Check if we are running locally
+    if(document.currentScript.src.includes('localhost')) {
+        script.src = 'http://localhost:4000/blockstocode.js';
+    } else {
+        script.src = 'https://extensions.netsblox.org/extensions/BloxBuddy/blockstocode.js';
+    }
+    
+    document.head.appendChild(script);
 })();

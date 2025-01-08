@@ -24,6 +24,7 @@
                                 def.inputOptionsOfIdx(inp)
                             );
                         } else if (deflt instanceof MultiArgMorph) {
+                            console.log(def);
                             deflt.setInfix(def.separatorOfInputIdx(inp));
                             deflt.setCollapse(def.collapseOfInputIdx(inp));
                             deflt.setExpand(def.expandOfInputIdx(inp));
