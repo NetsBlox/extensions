@@ -15,6 +15,18 @@
     - Ability to save the chart as an image
     - Ability to control styling of the chart (colors, fonts, etc.)
     */
+
+    // Import CSS
+    var element = document.createElement('link');
+    element.setAttribute('rel', 'stylesheet');
+    element.setAttribute('type', 'text/css');
+    if(document.currentScript.src.includes('localhost')) {
+        element.setAttribute('href', 'http://localhost:4000/VariablePlotter.css');
+    } else {
+        element.setAttribute('href', 'https://extensions.netsblox.org/extensions/VariablePlotter/VariablePlotter.css');
+    }
+    document.head.appendChild(element);
+    
     var plotterDialog;
     var plotterInner;
     var chart;
@@ -127,13 +139,11 @@
         contentElement.style.display = 'flex';
         contentElement.style['flex-flow'] = 'column';
         contentElement.style['justify-content'] = 'flex-end';
-        contentElement.style['flex-direction'] = 'column-reverse';
+        contentElement.style['flex-direction'] = 'row-reverse';
         contentElement.style['justify-content'] = 'space-around';
 
-        contentElement.innerHTML += '<div><button>Reset</button></div>';
+        contentElement.innerHTML += '<div><div><div class="variableplotter-header">Variables to Plot:</div><select id="plottervars"><option></option></select></div> <br /> <button>Reset</button></div>';
         
-        contentElement.innerHTML += '<div><select id="plottervars"><option></option></select></div>';
-
         document.getElementById('plottervars').addEventListener('change', function() {
             chart.data.datasets = [];
             let selectedVars = Array.from(this.selectedOptions).map(option => option.value);
