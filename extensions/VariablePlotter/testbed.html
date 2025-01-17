@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Variable Plotter Testbed</title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="index.js" defer></script> <!-- Your extension -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            width: 80%;
+            height: 500px;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Variable Plotter Testbed</h1>
+    <div class="controls">
+        <label for="variable-name">Variable Name:</label>
+        <input type="text" id="variable-name" placeholder="Enter variable name">
+        <label for="variable-value">Value:</label>
+        <input type="text" id="variable-value" placeholder="Enter value">
+        <button id="add-variable">Add Variable</button>
+        <button id="update-variable">Update Variable</button>
+        <button id="remove-variable">Remove Variable</button>
+    </div>
+
+    <script>
+        // Class for extensions to extend
+        class Extension {
+            constructor(ide) {
+                this.ide = ide;
+            }
+        }
+
+        // Mock SpriteMorph class
+        class SpriteMorph {
+            constructor(name) {
+                this.name = name;
+                this.variables = new VariableFrame();
+            }
+        }
+
+        // Mock the externalVariables object
+        window.externalVariables = {};
+
+        // Mock VariableFrame
+        class VariableFrame {
+            constructor() {
+                this.vars = {};
+            }
+
+            addVar(name, value) {
+                this.vars[name] = { value };
+                document.dispatchEvent(new CustomEvent('variable-added', { detail: { variable: name } }));
+            }
+
+            deleteVar(name) {
+                delete this.vars[name];
+                document.dispatchEvent(new CustomEvent('variable-removed', { detail: { variable: name } }));
+            }
+
+            setVar(name, value) {
+                this.vars[name] = { value };
+                document.dispatchEvent(new CustomEvent('variable-changed', { detail: { variable: name, value } }));
+            }
+
+            find(name) {
+                return this;
+            }
+        }
+
+        // Mock Variable
+        class Variable {
+            constructor(value, isTransient) {
+                this.value = value;
+                this.isTransient = isTransient;
+            }
+        }
+        
+        // Mock the NetsBlox List object
+        class List {
+            constructor() {
+                this.contents = [];
+            }
+
+            add(item) {
+                this.contents.push(item);
+            }
+
+            remove(item) {
+                const index = this.contents.indexOf(item);
+                if (index !== -1) {
+                    this.contents.splice(index, 1);
+                }
+            }
+        }
+
+        // Mock the NetsBlox environment
+        const mockNetsBloxEnvironment = () => {
+            // Mock global variables and sprites
+            const mockGlobalVariables = new VariableFrame();
+            const mockSprites = [];
+
+            // Mock the global world object
+            window.world = {
+                children: [{
+                    stage: {
+                        globalVariables() {
+                            return mockGlobalVariables;
+                        },
+                    },
+                    sprites: {
+                        contents: mockSprites,
+                    },
+                }],
+            };
+
+            // Add sprites
+            const mockSprite1 = { name: 'Sprite1', variables: new VariableFrame() };
+            const mockSprite2 = { name: 'Sprite2', variables: new VariableFrame() };
+            mockSprites.push(mockSprite1, mockSprite2);
+
+            return { mockGlobalVariables, mockSprites };
+        };
+
+        // Mock the NetsBloxExtensions system
+        window.NetsBloxExtensions = {
+            register(extensionClass) {
+                // Initialize the extension
+                const ide = {}; // Mock IDE instance (if needed)
+                const extensionInstance = new extensionClass(ide);
+
+                // Trigger onOpenRole (mocking role loading)
+                if (extensionInstance.onOpenRole) {
+                    extensionInstance.onOpenRole();
+                }
+
+                // Register the extension globally
+                const extensionName = extensionClass.name;
+                NetsBloxExtensions[extensionName] = extensionInstance;
+
+                console.log(`Extension "${extensionName}" registered successfully.`);
+            },
+        };
+
+        window.isRetinaEnabled = () => false; // Mock isRetinaEnabled function
+
+        // Initialize the testbed
+        const initializeTestbed = () => {
+            // Mock environment
+            const { mockGlobalVariables, mockSprites } = mockNetsBloxEnvironment();
+
+            // Wait for the extension to load
+            setTimeout(() => {
+                const variablePlotter = NetsBloxExtensions.VariablePlotter;
+                const plotterInner = externalVariables['plotterInner'];
+
+                // Add controls for manipulating variables
+                const globalVariableFrame = world.children[0].stage.globalVariables();
+                const addButton = document.getElementById('add-variable');
+                const updateButton = document.getElementById('update-variable');
+                const removeButton = document.getElementById('remove-variable');
+                const variableNameInput = document.getElementById('variable-name');
+                const variableValueInput = document.getElementById('variable-value');
+
+                addButton.addEventListener('click', () => {
+                    const varName = variableNameInput.value;
+                    if (varName) {
+                        globalVariableFrame.addVar(varName, 0);
+                    }
+                });
+
+                updateButton.addEventListener('click', () => {
+                    const varName = variableNameInput.value;
+                    const value = parseFloat(variableValueInput.value) || variableValueInput.value;
+                    if (varName) {
+                        globalVariableFrame.setVar(varName, value);
+                    }
+                });
+
+                removeButton.addEventListener('click', () => {
+                    const varName = variableNameInput.value;
+                    if (varName) {
+                        globalVariableFrame.deleteVar(varName);
+                    }
+                });
+
+                // Show the variable plotter
+                showDialog(externalVariables['plotterDialog']);
+            }, 500); // Delay to ensure the extension has loaded
+        };
+
+        // Initialize the testbed on page load
+        window.onload = initializeTestbed;
+    </script>
+</body>
+</html>
