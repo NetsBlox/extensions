@@ -175,14 +175,32 @@
 
                 addButton.addEventListener('click', () => {
                     const varName = variableNameInput.value;
+                    let value = variableValueInput.value;
+
+                    // Attempt to parse the value as a list
+                    if (value.indexOf(',') !== -1) {
+                        value = value.split(',').map(val => parseFloat(val) || val);
+                    } else {
+                        value = parseFloat(value) || value;
+                    }
+                    
                     if (varName) {
-                        globalVariableFrame.addVar(varName, 0);
+                        globalVariableFrame.addVar(varName, value);
                     }
                 });
 
                 updateButton.addEventListener('click', () => {
                     const varName = variableNameInput.value;
-                    const value = parseFloat(variableValueInput.value) || variableValueInput.value;
+
+                    let value = variableValueInput.value;
+
+                    // Attempt to parse the value as a list
+                    if (value.indexOf(',') !== -1) {
+                        value = value.split(',').map(val => parseFloat(val) || val);
+                    } else {
+                        value = parseFloat(value) || value;
+                    }
+
                     if (varName) {
                         globalVariableFrame.setVar(varName, value);
                     }

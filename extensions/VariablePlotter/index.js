@@ -393,8 +393,11 @@
                         chart.data.labels = labels;
                     }
                 } else {
-                    data.data.push(value);
-                    chart.data.labels.push(chart.data.labels.length);
+                    // Check if data is numeric or not, if not don't add it
+                    if (!isNaN(value)) {
+                        data.data.push(value);
+                        chart.data.labels.push(chart.data.labels.length);
+                    }
                 }
                 chart.update();
             }
