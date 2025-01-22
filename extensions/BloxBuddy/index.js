@@ -16,6 +16,7 @@
 script.onload = function () {
     var currentChat = [{ role: 'system', content: "" }];
 
+    const mainModel = 'gemini-2.0-flash-exp';
     const chatRefinerModel = 'learnlm-1.5-pro-experimental';
 
     function resetChat() {
@@ -325,9 +326,10 @@ Please provide helpful responses to the user based on the information provided a
 {
     "thoughts": Your thoughts on the user's project and how they can improve it.,
     "response": Your response to the user's question or request.,
-    "continuation": Array of 0 to 4 strings the user can choose from to continue the conversation, if applicable. They can choose one of these strings to ask you a follow-up question or request, so make sure they are relevant to the current conversation and from the user's perspective. Do not feel forced to provide more continuations than necessary.
+    "continuation": Array of 0 to 4 strings the user can choose from to continue the conversation, if applicable. They can choose one of these strings to ask you a follow-up question or request, so make sure they are relevant to the current conversation and from the user's perspective. Do not feel forced to provide more continuations than necessary. Even one or two is fine in most cases if the conversation must continue.
 }
 
+When you discuss RPCs or services, you should use the "rpcdoc" tool. It is very important to not mislead students about the available RPCs, services, or their capabilities. 
 If you require documentation on a NetsBlox RPC (executed as a command with the "run" doRunRPC block, and as a reporter with the "call" getJSFromRPCStruct block), respond with the following format:
 
 {
@@ -340,7 +342,10 @@ Providing no value for both "service" and "function" will list all services. Pro
 
 ----
 
-Do not refer to "doRunRPC" or "getJSFromRPCStruct" by these internal names. Students know them as the "RPC run" and "RPC call" blocks. Note that, while Snap! (and NetsBlox) has "call" and "run" blocks in Control, these RPC blocks are found in Network, and behave slightly differently, with the option to select a service, one of its functions and then the inputs to that function. The "run" block makes the request and then moves on and cannot return a value, the "call" block returns the result of the request. Do not assume you know how RPCs are specified, use the tool to request their specifications and descriptions, they may have inputs in an order that is not your first guess. Unless there is an error specifically indicating otherwise, students have access to all RPCs they use in their code and they are enabled. All services are enabled for all projects. It is also not possible to pass an incorrect number of arguments to an RPC block.
+Do not refer to "doRunRPC" or "getJSFromRPCStruct" by these internal names. Students know them as the "RPC run" and "RPC call" blocks. However, they only say "run" or "call" on the blocks themselves.
+Note that, while Snap! (and NetsBlox) has "call" and "run" blocks in Control, these RPC blocks are found in Network, and behave slightly differently, with the option to select a service, one of its functions and then the inputs to that function. The "run" block makes the request and then moves on and cannot return a value, the "call" block returns the result of the request. 
+DO NOT assume you know how RPCs are specified, use the tool to request their specifications and descriptions, they may have inputs in an order that is not your first guess. Unless there is an error specifically indicating otherwise, students have access to all RPCs they use in their code and they are enabled. All services are enabled for all projects. It is also not possible to pass an incorrect number of arguments to an RPC block.
+If you want to discuss specific RPCs, you MUST use the "rpcdoc" tool to get their specifications. Do not assume you know the available services, RPCs, or the inputs or outputs of an RPC, as they may not be what you expect.
 
 If there is not a clear next step or continuation, you should omit the "continuation" field. Do not ask for free-form text input from the user, as this is not supported. All interactions should be guided by the options you provide in the "continuation" field.
 Remember that the user is a beginner and may not understand complex programming concepts. 
@@ -349,6 +354,8 @@ Keep your responses clear, concise, and easy to understand. Do not overwhelm the
 If you are going to tell the user about an RPC, remember that you can use the "rpcdoc" tool to get its specification. DO NOT tell the user you are doing it, just use the tool yourself (the user can't use it, it's up to you to help them!).
 
 There are currently ${currentChat.length} messages in the chat history. Please aim to keep the conversation to 4-6 messages total, including the initial prompt. We want to keep the conversation focused and helpful for the user, so eventually end the conversation by simply providing no continuation options.
+
+Remember to use the "rpcdoc" tool when discussing RPCs or services. Do not mislead the user about the available RPCs, services, or their capabilities!
 `;
     }
 
@@ -407,20 +414,20 @@ There are currently ${currentChat.length} messages in the chat history. Please a
                     let output = allScriptsToCode();
                     console.log(output);
                 },
-                'Set OpenAI API Key...': function () {
-                    const key = prompt('Enter OpenAI API Key');
+                'Set API Key...': function () {
+                    const key = prompt('Enter API Key');
                     if (key) {
                         localStorage.setItem('openai-api-key', key);
                     }
                 },
-                'Set OpenAI Text Model...': function () {
-                    const model = prompt('Enter OpenAI Model');
-                    if (model) {
-                        localStorage.setItem('openai-model', model);
-                    }
-                },
-                'Set OpenAI API Endpoint...': function () {
-                    const endpoint = prompt('Enter OpenAI API Endpoint');
+                // 'Set OpenAI Text Model...': function () {
+                //     const model = prompt('Enter OpenAI Model');
+                //     if (model) {
+                //         localStorage.setItem('openai-model', model);
+                //     }
+                // },
+                'Set API Endpoint...': function () {
+                    const endpoint = prompt('Enter OpenAI compatible API Endpoint');
                     if (endpoint) {
                         localStorage.setItem('openai-endpoint', endpoint);
                     }
@@ -490,6 +497,7 @@ There are currently ${currentChat.length} messages in the chat history. Please a
         }
 
         // Basic Markdown support
+        text = text.replace(/\\n/g, '<br>');
         text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
@@ -528,7 +536,7 @@ There are currently ${currentChat.length} messages in the chat history. Please a
             // Add response from AI
             try {
                 currentChat[0].content = generateSystemMessage();
-                let response = completion(currentChat).then(response => {
+                let response = completion(currentChat, mainModel).then(response => {
                     // Allow for tool usage
                     console.log(response);
                     response = response.replace(/^```(json)?/, '').trim().replace(/```$/, '').trim();
@@ -591,18 +599,28 @@ ${parsed.response}
 
 ---
 
-Be friendly but not overly poetic or too excited.
+Note that the student will not see the original text, only the rewritten version. The goal is to make the text more accessible and easier to understand for a beginner. Be friendly but not overly poetic or too excited.
 Keep in mind that the student is may not understand complex programming concepts, and that the response should be clear, concise, and easy to understand.
 However, terms like "variable" or "function" are fine to use, along with NetsBlox-specific terms like "RPC" or "service".
 If the original text includes code, you should explain the code in plain English when speaking to the student directly and DO NOT include the code in your response.
-Do not try to use tools.`
+Do not try to use tools. Tools are not available to you in this response. Assume the original text is correct regarding RPCs and services.
+
+Also include the posible continuations in the response, if any. Please limit them when possible, so that the conversation remains focused and short. The student will know how to explore on their own without you offering to do it for them.
+The user will have the option to start a new conversation if they need more help, so it does not need to drag on forever. No need to let the user go off on tangents.
+Remember to keep our guidelines for them in mind.
+`
                         },
                     ], chatRefinerModel).then(refined => {
                         console.log(refined);
                         refined = refined.replace(/^```(json)?/, '').trim().replace(/```$/, '').trim();
                         refined = JSON.parse(refined);
+                        
+                        // Use the refined response
                         parsed.response = refined.response;
+                        parsed.continuation = refined.continuation;
+
                         addChatMessage(parsed.response);
+                        
                         if(parsed.continuation) {
                             if(typeof(parsed.continuation) === 'string') {
                                 addResponseButton([parsed.continuation]);
@@ -614,7 +632,22 @@ Do not try to use tools.`
                         } else {
                             addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
                         }
+                        
                         spinnerParent.remove();
+                    }).catch(e => {
+                        // Error refining response, use original response instead
+                        console.error(e);
+                        addChatMessage(parsed.response);
+
+                        if(parsed.continuation) {
+                            if(typeof(parsed.continuation) === 'string') {
+                                addResponseButton([parsed.continuation]);
+                            } else if (Array.isArray(parsed.continuation)) {
+                                addResponseButtons(parsed.continuation);
+                            } else {
+                                addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+                            }
+                        }
                     });
                 });
             } catch (e) {
