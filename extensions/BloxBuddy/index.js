@@ -615,7 +615,7 @@ Also include the posible continuations in the response, if any. Please limit the
 The user will have the option to start a new conversation if they need more help, so it does not need to drag on forever. No need to let the user go off on tangents.
 Remember to keep our guidelines for them in mind.
 
-Please keep responses short. Convey necessary information in a concise manner.
+Please keep responses short. Convey necessary information in a concise manner. Don't be overly verbose or wordy or the student may lose interest.
 `
                         },
                     ], chatRefinerModel).then(refined => {
