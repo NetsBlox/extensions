@@ -416,6 +416,8 @@
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
+                            if (isOneDimensional(notes) && notes.contents.length !== 1)
+                                notes = notes.map(x => [x]);
                             notes = flattenMatrix(notes)
                             const mods = this.musicInfo
                                              .mods
@@ -471,32 +473,15 @@
                         }
                     }),
                     new Extension.Block('tieDuration', 'reporter', 'music', 'tie %mult%noteDuration', [['Quarter']], durations => durations.contents.map(x => x.toString()).filter(x => x.length !== 0).join('+')),
-                    new Extension.Block('customBeat', 'command', 'music', 'custom beat %drumGridOption', ['edit'], function (option) { 
-                        if (option === 'edit') {
+                    new Extension.Block('customBeat', 'reporter', 'music', 'custom beat %drumGridOption', [''], function (option) { 
+                        if (option === '') return;
+                        if (option === 'new...') {
+                            window.BeatGrid.setBlock(this.topBlock.children[3]);
                             showDialog(beatGrid);
                             return;
                         }
-                        const track = window.BeatGrid.getGridInfo();
-                        const duration = window.BeatGrid.getBeatDivision();
-                        return this.runAsyncFn(async () => {
-                            await setupEntity(this.receiver);
-                            setupProcess(this);
-
-                            const mods = this.musicInfo.mods.map(x => audio.getModification(MODIFIERS[x]));
-
-                            const t = await audio.playNote(this.receiver.id + 'Drum', parseDrumNote('Rest'), this.musicInfo.t, DURATIONS[duration], mods, true);
-                            for (let i = 0; i < track.length; ++i) {
-                                let notes = parseDrumNote(track[i]);
-                                if (!Array.isArray(notes)) notes = [notes];
-                                if (notes.length === 0) notes = [parseDrumNote('Rest')];
-
-                                let chord = notes.map(n => [n, DURATIONS[duration], []]);
-                                console.log(chord);
-                                await audio.playChord(this.receiver.id + 'Drum', chord, this.musicInfo.t + t * i, mods, true);
-                            }
-                            this.musicInfo.t += (t * track.length);
-                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
-                        }, { args: [], timeout: I32_MAX });
+                        if (window.BeatGrid.customBeats[option] !== undefined) 
+                            return window.BeatGrid.customBeats[option];
                     }),
                     new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], note => snapify(parseNote(note))),
                     new Extension.Block('chordNotes', 'reporter', 'music', '%s %chordType chord', ['C4', 'Major'], function (note, type) {
@@ -762,7 +747,7 @@
                     basicEnum('audioAnalysis', identityMap(Object.keys(ANALYSIS_INFO))),
                     basicEnum('chordType', identityMap(Object.keys(CHORD_PATTERNS))),
                     basicEnum('scaleType', identityMap(Object.keys(SCALE_PATTERNS))),
-                    basicEnum('drumGridOption', identityMap(['edit', 'play'])),
+                    basicEnum('drumGridOption', identityMap(['new...'])),
                 ];
             }
         }

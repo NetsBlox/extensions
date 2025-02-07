@@ -18,13 +18,10 @@ const STARTER_HTML = `
         <td><input type="number" name="bars" value="8" id="bars"/><td>
         </tr>
         <tr>
-            <td><label for="divs">Division</label></td>
-            <td><select id="divs" name="divs">
-                <option value="Quarter">Quarter</option>
-                <option value="Eighth" selected="selected">Eighth</option>
-                <option value="Sixteenth">Sixteenth</option>
-            </select></td>
+            <td><label for="name">name</label></td>
+            <td><input type="text" id="name" name="name" placeholder="name..."/></td>
         </tr>
+        <tr><button id="save">save</button></tr>
     </table>
 `;
 
@@ -58,7 +55,10 @@ function creatRow(id, beatDivision) {
 }
 
 class BeatGrid {
+
     static #instance = null;
+    static #block = null;
+    static customBeats = {};
 
     constructor(contentElement) {
         if (BeatGrid.#instance) 
@@ -66,15 +66,22 @@ class BeatGrid {
         BeatGrid.#instance = this;
 
         contentElement.innerHTML = STARTER_HTML;
+        
         document.getElementById('bars').addEventListener('change', () => {
-            BeatGrid.#clear();
-            BeatGrid.#loadGrid(document.getElementById('bars').value);
+            this.#clear();
+            this.#loadGrid(document.getElementById('bars').value);
+        });
+
+        document.getElementById('save').addEventListener('click', () => {
+            const name = document.getElementById('name').value;
+            BeatGrid.customBeats[name] = this.getGridInfo();
+            if (BeatGrid.#block !== null) BeatGrid.#block.choices[name] = name;
         });
         
-        BeatGrid.#loadGrid(8);
+        this.#loadGrid(8);
     }
 
-    static getGridInfo() {
+    getGridInfo() {
         if (BeatGrid.#instance) {
             const rawGrid = document.getElementById('beat-grid');
             const drums = Array.from(rawGrid.children);
@@ -92,18 +99,16 @@ class BeatGrid {
         return undefined;
     }
 
-    static getBeatDivision() {
-        if (BeatGrid.#instance)
-            return document.getElementById('divs').value;
-        return undefined;
+    static setBlock(block) {
+        BeatGrid.#block = block;
     }
 
-    static #clear() {
+    #clear() {
         let gridTable = document.getElementById('beat-grid');
         while (gridTable.firstChild) gridTable.removeChild(gridTable.firstChild);
     }
 
-    static #loadGrid(beatDivision) {
+    #loadGrid(beatDivision) {
         let beatGrid = document.getElementById('beat-grid');
         beatGrid.appendChild(creatRow('crash', beatDivision));
         beatGrid.appendChild(creatRow('closed hi-hat', beatDivision));
