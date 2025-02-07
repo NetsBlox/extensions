@@ -57,8 +57,8 @@ function creatRow(id, beatDivision) {
 class BeatGrid {
 
     static #instance = null;
-    static #block = null;
-    static customBeats = {};
+
+    #block;
 
     constructor(contentElement) {
         if (BeatGrid.#instance) 
@@ -66,6 +66,8 @@ class BeatGrid {
         BeatGrid.#instance = this;
 
         contentElement.innerHTML = STARTER_HTML;
+        this.customBeats = {}
+        this.#block = null;
         
         document.getElementById('bars').addEventListener('change', () => {
             this.#clear();
@@ -74,8 +76,8 @@ class BeatGrid {
 
         document.getElementById('save').addEventListener('click', () => {
             const name = document.getElementById('name').value;
-            BeatGrid.customBeats[name] = this.getGridInfo();
-            if (BeatGrid.#block !== null) BeatGrid.#block.choices[name] = name;
+            this.customBeats[name] = this.getGridInfo();
+            if (this.#block !== null) this.#block.choices[name] = name;
         });
         
         this.#loadGrid(8);
@@ -99,8 +101,8 @@ class BeatGrid {
         return undefined;
     }
 
-    static setBlock(block) {
-        BeatGrid.#block = block;
+    setBlock(block) {
+        this.#block = block;
     }
 
     #clear() {

@@ -476,12 +476,12 @@
                     new Extension.Block('customBeat', 'reporter', 'music', 'custom beat %drumGridOption', [''], function (option) { 
                         if (option === '') return;
                         if (option === 'new...') {
-                            window.BeatGrid.setBlock(this.topBlock.children[3]);
+                            window.beatGridObj.setBlock(this.topBlock.children[3]);
                             showDialog(beatGrid);
                             return;
                         }
-                        if (window.BeatGrid.customBeats[option] !== undefined) 
-                            return window.BeatGrid.customBeats[option];
+                        if (window.beatGridObj.customBeats[option] !== undefined) 
+                            return window.beatGridObj.customBeats[option];
                     }),
                     new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], note => snapify(parseNote(note))),
                     new Extension.Block('chordNotes', 'reporter', 'music', '%s %chordType chord', ['C4', 'Major'], function (note, type) {
@@ -775,7 +775,7 @@
         const contentElement = beatGrid.querySelector('content');
         contentElement.style.display = 'flex';
         contentElement.style['flex-flow'] = 'column';
-        new window.BeatGrid(contentElement);
+        window.beatGridObj = new window.BeatGrid(contentElement);
         setupDialog(beatGrid);
     };
     document.head.appendChild(beatGridScript);
