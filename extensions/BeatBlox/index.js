@@ -329,7 +329,6 @@
                     new Extension.Palette.Block('rest'),
                     new Extension.Palette.Block('noteMod'),
                     new Extension.Palette.Block('tieDuration'),
-                    new Extension.Palette.Block('customBeat'),
                     '-',
                     new Extension.Palette.Block('noteNumber'),
                     new Extension.Palette.Block('chordNotes'),
@@ -473,16 +472,6 @@
                         }
                     }),
                     new Extension.Block('tieDuration', 'reporter', 'music', 'tie %mult%noteDuration', [['Quarter']], durations => durations.contents.map(x => x.toString()).filter(x => x.length !== 0).join('+')),
-                    new Extension.Block('customBeat', 'reporter', 'music', 'custom beat %drumGridOption', [''], function (option) { 
-                        if (option === '') return;
-                        if (option === 'new...') {
-                            window.beatGridObj.setBlock(this.topBlock.children[3]);
-                            showDialog(beatGrid);
-                            return;
-                        }
-                        if (window.beatGridObj.customBeats[option] !== undefined) 
-                            return window.beatGridObj.customBeats[option];
-                    }),
                     new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], note => snapify(parseNote(note))),
                     new Extension.Block('chordNotes', 'reporter', 'music', '%s %chordType chord', ['C4', 'Major'], function (note, type) {
                         if (CHORD_PATTERNS[type] === undefined) throw Error(`unknown chord type: '${type}'`);
@@ -747,36 +736,11 @@
                     basicEnum('audioAnalysis', identityMap(Object.keys(ANALYSIS_INFO))),
                     basicEnum('chordType', identityMap(Object.keys(CHORD_PATTERNS))),
                     basicEnum('scaleType', identityMap(Object.keys(SCALE_PATTERNS))),
-                    basicEnum('drumGridOption', identityMap(['new...'])),
+                    basicEnum('drumGridOption', identityMap(['new...', 'edit...'])),
                 ];
             }
         }
         NetsBloxExtensions.register(BeatBlox);
     };
     document.body.appendChild(script);
-
-    var element = document.createElement('link');
-    element.setAttribute('rel', 'stylesheet');
-    element.setAttribute('type', 'text/css');
-    element.setAttribute('href', 'https://pseudomorphic.netsblox.org/style.css');
-    document.head.appendChild(element);
-
-    var element = document.createElement('script');
-    element.setAttribute('type', 'text/javascript');
-    element.setAttribute('src', absoluteUrl('customBeats.js'));
-    document.head.appendChild(element);
-
-    var beatGridScript = document.createElement('script');
-    beatGridScript.type = 'text/javascript';
-    beatGridScript.async = false;
-    beatGridScript.setAttribute('src', 'https://pseudomorphic.netsblox.org/script.js');
-    beatGridScript.onload = function() {
-        beatGrid = createDialog('Custom Beat');
-        const contentElement = beatGrid.querySelector('content');
-        contentElement.style.display = 'flex';
-        contentElement.style['flex-flow'] = 'column';
-        window.beatGridObj = new window.BeatGrid(contentElement);
-        setupDialog(beatGrid);
-    };
-    document.head.appendChild(beatGridScript);
 })();
