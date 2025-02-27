@@ -19,6 +19,8 @@ script.onload = function () {
     const mainModel = 'gemini-2.0-flash-exp';
     const chatRefinerModel = 'learnlm-1.5-pro-experimental';
 
+    const defaultQuestions = ['📖 Explain my code', '💡 What should I do next?', '➕ What else can I add to my project?', '🐞 Can you help me with this bug?'];
+
     function resetChat() {
         currentChat = [{ role: 'system', content: "" }];
 
@@ -38,18 +40,18 @@ script.onload = function () {
         // Add the system message and remove the first message
         currentChat = [{ role: 'system', content: "" }];
 
-        addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+        addResponseButtons(defaultQuestions);
     }
 
     function enhanceTask(task) {
-        if (task === 'Explain my code') {
+        if (task.includes('Explain my code')) {
             task = 
 `Explain the code of the project on a conceptual level. 
 Do not simply repeat the code back to the user, they want to understand the logic and purpose behind it. You do not need to tell them the names of the sprites or variables, but you should explain what the code is doing and why.
 Keep your response concise and easy to understand.
 
 The response in your JSON output should be a string that explains the code succinctly in plain English.`;
-        } else if (task === 'What should I do next?') {
+        } else if (task.includes('What should I do next?')) {
             task = 
 `Provide guidance on what the user should do next in their project.
 Assume that the project is likely incomplete or has significant room for improvement.
@@ -57,14 +59,14 @@ This could be a suggestion for a new feature, a bug to fix, or a way to improve 
 Be specific and provide clear instructions.
 
 The response in your JSON output should be a string that suggests a specific next step for the user to take.`;
-        } else if (task === 'What else can I add to my project?') {
+        } else if (task.includes('What else can I add to my project?')) {
             task = 
 `Suggest new features or improvements that the user can add to their project. 
 This could be a new sprite, a new behavior, or a new interaction. Be creative and think outside the box.
 It should be something that is achievable for a beginner and feasible within the constraints of NetsBlox.
 
 The response in your JSON output should be a list of 3-4 strings that suggests new features or improvements for the user to add to their project.`;
-        } else if (task === 'Can you help me with this bug?') {
+        } else if (task.includes('Can you help me with this bug?')) {
             task = 
 `Help the user debug a specific issue in their code. 
 Do not regurgitate the code back to them, but instead identify the problem and suggest a solution.
@@ -635,10 +637,10 @@ Please keep responses short. Convey necessary information in a concise manner. D
                             } else if (Array.isArray(parsed.continuation)) {
                                 addResponseButtons(parsed.continuation);
                             } else {
-                                addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+                                addResponseButtons(defaultQuestions);
                             }
                         } else {
-                            addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+                            addResponseButtons(defaultQuestions);
                         }
                         
                         spinnerParent.remove();
@@ -653,7 +655,7 @@ Please keep responses short. Convey necessary information in a concise manner. D
                             } else if (Array.isArray(parsed.continuation)) {
                                 addResponseButtons(parsed.continuation);
                             } else {
-                                addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+                                addResponseButtons(defaultQuestions);
                             }
                         }
                     });
@@ -661,7 +663,7 @@ Please keep responses short. Convey necessary information in a concise manner. D
             } catch (e) {
                 console.error(e);
                 addChatMessage('Sorry, I was unable to generate a response. Please try again later.');
-                addResponseButtons(['Explain my code', 'What should I do next?', 'What else can I add to my project?', 'Can you help me with this bug?']);
+                addResponseButtons(defaultQuestions);
                 spinnerParent.remove();
             }
         };
