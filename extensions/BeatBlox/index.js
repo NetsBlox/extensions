@@ -138,6 +138,24 @@
             return res;
         }
 
+        function isOneDimensional(arr) {
+            for (let i = 0; i < arr.length; ++i)
+                if (Array.isArray(arr[i]) || arr[i] instanceof List) return false;
+            return true;
+        }
+
+        function flattenMatrix(arr) {
+            const res = [];
+            function inner(arr) {
+                arr = arr instanceof List ? arr.contents : arr;
+                if (!Array.isArray(arr)) res.push([arr]);
+                else if (isOneDimensional(arr)) res.push(arr);
+                else for (let i = 0; i < arr.length; ++i) inner(arr[i]);
+            }
+            inner(arr);
+            return res;
+        }
+
         function snapify(value) {
             if (typeof (value.map) === 'function') {
                 return new List((Array.isArray(value) ? value : Array.from(value)).map(x => snapify(x)));
@@ -392,26 +410,40 @@
                             await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('playDrums', 'command', 'music', 'hit %noteDuration note drums %mult%drum', ['Quarter', ['kick']], function (duration, notes) {
+                    new Extension.Block('playDrums', 'command', 'music', 'hit %noteDuration note drums %mult%drum', ['Quarter', ['Rest']], function (duration, notes) {
                         return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
-                            notes = parseDrumNote(notes);
-                            if (!Array.isArray(notes)) notes = [notes];
-                            if (notes.length === 0) notes = [parseDrumNote('Rest')];
-                            notes = flatten(notes);
+                            if (isOneDimensional(notes) && notes.contents.length !== 1)
+                                notes = notes.map(x => [x]);
+                            notes = flattenMatrix(notes)
+                            const mods = this.musicInfo
+                                             .mods
+                                             .map(x => audio.getModification(MODIFIERS[x]));
+                            const t = await audio.playNote(
+                                this.receiver.id + 'Drum', 
+                                parseDrumNote('Rest'), 
+                                this.musicInfo.t, 
+                                DURATIONS[duration],
+                                mods, 
+                                true
+                            );
 
-                            if (DURATIONS[duration] === undefined) throw Error(`unknown note duration: "${duration}"`);
-
-                            const mods = this.musicInfo.mods.map(x => audio.getModification(MODIFIERS[x]));
-
-                            const t = await audio.playNote(this.receiver.id + 'Drum', parseDrumNote('Rest'), this.musicInfo.t, DURATIONS[duration], mods);
                             for (let i = 0; i < notes.length; ++i) {
-                                await audio.playNote(this.receiver.id + 'Drum', notes[i], this.musicInfo.t + t * (i / notes.length), DURATIONS[duration], mods, true);
+                                let n = parseDrumNote(notes[i]);
+                                let chord = n.map(_n => [_n, DURATIONS[duration], []]);
+                                await audio.playChord(
+                                    this.receiver.id + 'Drum', 
+                                    chord, 
+                                    this.musicInfo.t + t * i, 
+                                    mods, 
+                                    true
+                                );
                             }
-                            this.musicInfo.t += t;
-                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
+
+                            this.musicInfo.t += (t * notes.length);
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);  
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('rest', 'command', 'music', 'rest %noteDuration', ['Quarter'], function (duration) {
@@ -704,6 +736,7 @@
                     basicEnum('audioAnalysis', identityMap(Object.keys(ANALYSIS_INFO))),
                     basicEnum('chordType', identityMap(Object.keys(CHORD_PATTERNS))),
                     basicEnum('scaleType', identityMap(Object.keys(SCALE_PATTERNS))),
+                    basicEnum('drumGridOption', identityMap(['new...', 'edit...'])),
                 ];
             }
         }
