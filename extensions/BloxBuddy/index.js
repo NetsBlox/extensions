@@ -16,7 +16,7 @@
 script.onload = function () {
     var currentChat = [{ role: 'system', content: "" }];
 
-    const mainModel = 'gemini-2.0-flash-exp';
+    const mainModel = 'gemini-2.0-pro-exp-02-05';
     const chatRefinerModel = 'learnlm-1.5-pro-experimental';
 
     const defaultQuestions = ['📖 Explain my code', '💡 What should I do next?', '➕ What else can I add to my project?', '🐞 Can you help me with this bug?'];
@@ -72,6 +72,10 @@ The response in your JSON output should be a list of 3-4 strings that suggests n
 Do not regurgitate the code back to them, but instead identify the problem and suggest a solution.
 If there is an obvious logic error, feel free to point it out and suggest a fix.
 Ask for more information if needed, and provide a clear explanation of the problem and how to fix it.
+The error may be anywhere in the code, so be sure to check all of it thoroughly.
+Redundant code is typically NOT considered to be a bug, but it may be worth mentioning if there is a better way to do something and no other issues are found.
+It may be helpful to ask the user what they did before the bug occurred (such as clicking on a sprite or hitting a button).
+Keep in mind that the user can only respond with the continuation options you provide, so be sure to ask for any information you need in a way that can be answered with one of those options.
 
 The response in your JSON output should be a string that identifies the bug and suggests a solution if possible.`;
         }
@@ -640,7 +644,9 @@ However, terms like "variable" or "function" are fine to use, along with NetsBlo
 If the original text includes code, you should explain the code in plain English when speaking to the student directly and DO NOT include the code in your response.
 Do not try to use tools. Tools are not available to you in this response. Assume the original text is correct regarding RPCs and services.
 
-Also include posible continuations in the response, if any. Write them so that the student will understand what they mean, but they must remain short. Please limit the number of them when possible, so that the conversation remains focused and short. The student will know how to explore on their own without you offering to do it for them.
+Also include posible continuations in the response, if any. Write the continuations so that the student will understand what they mean, but they must remain short. Please limit the number of them when possible, so that the conversation remains focused and short. The student will know how to explore on their own without you offering to do it for them.
+However, aim to keep the same ideas as the original continuations, but make them more concise and easier to understand.
+DO NOT turn continuations into questions if they are not questions in the original text.
 The user will have the option to start a new conversation if they need more help, so it does not need to drag on forever. No need to let the user go off on tangents. Do not ask for free-form text input from the user, as this is not supported. All interactions should be guided by the options you provide in the "continuation" field. Make sure to only provide continuations that you are confident the user will understand and you be able to respond accurately to.
 
 Remember to keep our guidelines for them in mind.
