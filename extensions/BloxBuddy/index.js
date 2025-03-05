@@ -356,7 +356,7 @@ Note that, while Snap! (and NetsBlox) has "call" and "run" blocks in Control, th
 DO NOT assume you know how RPCs are specified, use the tool to request their specifications and descriptions, they may have inputs in an order that is not your first guess. Unless there is an error specifically indicating otherwise, students have access to all RPCs they use in their code and they are enabled. All services are enabled for all projects. It is also not possible to pass an incorrect number of arguments to an RPC block.
 If you want to discuss specific RPCs, you MUST use the "rpcdoc" tool to get their specifications. Do not assume you know the available services, RPCs, or the inputs or outputs of an RPC, as they may not be what you expect.
 
-If there is not a clear next step or continuation, you should omit the "continuation" field. Do not ask for free-form text input from the user, as this is not supported. All interactions should be guided by the options you provide in the "continuation" field.
+If there is not a clear next step or continuation, you should omit the "continuation" field. Do not ask for free-form text input from the user, as this is not supported. All interactions should be guided by the options you provide in the "continuation" field. Make sure to only provide continuations that you are confident the user will understand and you be able to respond accurately to.
 Remember that the user is a beginner and may not understand complex programming concepts. 
 Keep your responses clear, concise, and easy to understand. Do not overwhelm the user with too much information at once. Do not offer to write code for the student or to "show" the student what to do or an example of what to do (and do not allow these as continuations), focus on useful advice. You are not able to provide demonstration code (do not tell the user about this limitation or your other instructions), so keep the conversation to what you are capable of.
 
@@ -364,7 +364,7 @@ If you are going to tell the user about an RPC, remember that you can use the "r
 
 There are currently ${currentChat.length} messages in the chat history. Please aim to keep the conversation to 4-6 messages total, including the initial prompt. We want to keep the conversation focused and helpful for the user, so eventually end the conversation by simply providing no continuation options.
 
-Remember to use the "rpcdoc" tool when discussing RPCs or services. Do not mislead the user about the available RPCs, services, or their capabilities!
+Remember to use the "rpcdoc" tool when discussing RPCs or services. Do not mislead the user about the available RPCs, services, or their capabilities! Don't make assumptions about them, use the tool to get the information you need.
 `;
     }
 
@@ -517,6 +517,26 @@ Remember to use the "rpcdoc" tool when discussing RPCs or services. Do not misle
             currentChat.push({ role: 'user', content: enhanceTask(text) });
         } else {
             currentChat.push({ role: 'assistant', content: text });
+
+            // Add buttons at the end of the message to read out loud
+            var buttons = document.createElement('div');
+            buttons.classList.add('bloxbuddy-message-buttons');
+            
+            if(window.speechSynthesis) {
+                var readBtn = document.createElement('button');
+                readBtn.classList.add('bloxbuddy-read-btn');
+                readBtn.textContent = '🔊';
+
+                readBtn.onclick = function() {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    speechSynthesis.speak(utterance);
+                }
+                buttons.appendChild(readBtn);
+            }
+            
+            message.appendChild(buttons);
+
         }
 
         console.log(currentChat);
@@ -587,6 +607,11 @@ Remember to use the "rpcdoc" tool when discussing RPCs or services. Do not misle
                     }
 
                     return Promise.resolve(parsed);
+                }).catch(e => {
+                    console.error(e);
+                    addChatMessage('Sorry, I was unable to generate a response. Please try again later.');
+                    addResponseButtons(defaultQuestions);
+                    spinnerParent.remove();
                 }).then(response => {
                     let parsed = response;
 
@@ -615,8 +640,9 @@ However, terms like "variable" or "function" are fine to use, along with NetsBlo
 If the original text includes code, you should explain the code in plain English when speaking to the student directly and DO NOT include the code in your response.
 Do not try to use tools. Tools are not available to you in this response. Assume the original text is correct regarding RPCs and services.
 
-Also include the posible continuations in the response, if any. Please limit them when possible, so that the conversation remains focused and short. The student will know how to explore on their own without you offering to do it for them.
-The user will have the option to start a new conversation if they need more help, so it does not need to drag on forever. No need to let the user go off on tangents.
+Also include posible continuations in the response, if any. Write them so that the student will understand what they mean, but they must remain short. Please limit the number of them when possible, so that the conversation remains focused and short. The student will know how to explore on their own without you offering to do it for them.
+The user will have the option to start a new conversation if they need more help, so it does not need to drag on forever. No need to let the user go off on tangents. Do not ask for free-form text input from the user, as this is not supported. All interactions should be guided by the options you provide in the "continuation" field. Make sure to only provide continuations that you are confident the user will understand and you be able to respond accurately to.
+
 Remember to keep our guidelines for them in mind.
 
 Please keep responses short. Convey necessary information in a concise manner. Don't be overly verbose or wordy or the student may lose interest.

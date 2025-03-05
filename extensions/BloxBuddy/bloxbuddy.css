@@ -76,6 +76,18 @@
     background-color: #e0e0e0;
 }
 
+.bloxbuddy-message-buttons {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: flex-end;
+}
+
+.bloxbuddy-message-buttons > button {
+    margin-left: 5px;
+    border: none;
+    cursor: pointer;
+}
+
 /* Response button styling */
 .bloxbuddy-response-btn {
     background-color: mediumseagreen;
