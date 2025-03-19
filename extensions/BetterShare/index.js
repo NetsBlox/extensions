@@ -68,7 +68,11 @@
 
         getMenu() {
             return {
-                'Share Project': () => {
+                'Share Project': async () => {
+                    const projectId = this.ide?.cloud?.projectId;
+                    const res = await this.ide.cloud.publishProject(projectId);
+                    console.log('res', res);
+
                     const urlParams = new URLSearchParams(window.location.search);
 
                     const username = urlParams.get('Username') || this.ide?.cloud?.username;
@@ -78,8 +82,6 @@
                     if (username && projName && roleName) {
                         const shareLink = `${location.origin}/?action=present&editMode&noRun&Username=${encodeURIComponent(username)}&ProjectName=${encodeURIComponent(projName)}&Role=${encodeURIComponent(roleName)}`;
                         new ShareMorph(shareLink).popUp(world);
-                    } else {
-                        alert('Failed to get shared project info');
                     }
                 }
             };
