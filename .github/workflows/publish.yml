@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 18
       - run: npm i && node build.js
-      - uses: actions/upload-pages-artifact@v1
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: "."
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
