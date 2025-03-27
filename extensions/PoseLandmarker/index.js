@@ -10,6 +10,10 @@
     VISIONMODULELOADERURL: root + "utils/visionModuleLoader.js",
   };
 
+  function inRange(x, min, max) {
+    return min <= x && x <= max;
+  }
+
   class PoseHandler {
     constructor() {
       this.poseLandmarker = null;
@@ -99,7 +103,16 @@
       }
       return false;
     }
+
+  async resetHandleOptions() {
+    await this.poseLandmarker.setOptions({
+      numPoses: PoseHandler.config.options.numPoses,
+      minPoseDetectionConfidence: PoseHandler.config.options.minPoseDetConf,
+      minPosePresenceConfidence: PoseHandler.config.options.minPosePresConf,
+      minTrackingConfidence: PoseHandler.config.options.minTracConf,
+    });
   }
+}
 
   const POSE_HANDLES = [];
   function getPoseHandler() {
@@ -134,6 +147,50 @@
     return image;
   }
 
+  function updateConfig(option, newValue) {
+    switch (option) {
+      case "Min Detect Confidence":
+        PoseHandler.config.options.minPoseDetConf = newValue;
+        break;
+      case "Min Presence Confidence":
+        PoseHandler.config.options.minPosePresConf = newValue;
+        break;
+      case "Min Track Confidence":
+        PoseHandler.config.options.minTracConf = newValue;
+        break;
+      case "Max People":
+        PoseHandler.config.options.numPoses = newValue;
+        break;
+      default:
+        throw Error("Option invalid");
+    }
+  }
+
+  async function updateAllHandleOptions(option, newValue) {
+    let min, max;
+    switch (option) {
+      case "Max People":
+        min = 1;
+        max = 20;
+        break;
+      default:
+        min = 0;
+        max = 1;
+        break;
+    }
+  
+    if (!inRange(newValue, min, max)) {
+      throw new Error("Invalid Options Value");
+    }
+  
+    updateConfig(option, newValue);
+    for (const handle of POSE_HANDLES) {
+      handle.resetHandleOptions();
+      console.log(handle)
+    }
+  }
+
+
   function snapify(value) {
     if (Array.isArray(value)) {
       const res = [];
@@ -166,6 +223,7 @@
       const blocks = [
         new Extension.Palette.Block("poseLandmarksFindPose"),
         new Extension.Palette.Block("poseLandmarksRender"),
+        new Extension.Palette.Block("poseLandmarksSetOptions"),
       ];
       return [
         new Extension.PaletteCategory("sensing", blocks, SpriteMorph),
@@ -217,6 +275,22 @@
             }, { args: [], timeout: 10000 });
           },
         ),
+        block(
+          "poseLandmarksSetOptions",
+          "command",
+          "sensing",
+          "set %poseLandmarkOptions to %n",
+          ["Max People", 2],
+          function (option, newValue) {
+            return this.runAsyncFn(
+              async () => {
+                await updateAllHandleOptions(option, newValue);
+                return snapify(newValue);
+              },
+              { args: [], timeout: 10000 },
+            );
+          },
+        ),
       ];
     }
 
@@ -226,7 +300,23 @@
         for (const x of s) res[x] = x;
         return res;
       }
-      return [];
+      return [
+        new Extension.LabelPart(
+          "poseLandmarkOptions",
+          () =>
+            new InputSlotMorph(
+              null, // text
+              false, // numeric
+              identityMap([
+                "Min Detect Confidence",
+                "Min Presence Confidence",
+                "Min Track Confidence",
+                "Max People",
+              ]),
+              true, // readonly (no arbitrary text)
+            ),
+        ),
+      ];    
     }
   }
 
