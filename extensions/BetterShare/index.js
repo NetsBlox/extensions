@@ -68,7 +68,16 @@
 
         getMenu() {
             return {
-                'Share Project': () => {
+                'Share Project': async () => {
+                    const projectId = this.ide?.cloud?.projectId;
+                    const res = await this.ide.cloud.publishProject(projectId);
+
+                    // TODO: this feels wrong in terms of the cloud response - if ever fixed in cloud, update here
+                    if (res === 'Public') {
+                        this.ide.showMessage('Project must first be saved to the cloud!');
+                        return;
+                    }
+
                     const urlParams = new URLSearchParams(window.location.search);
 
                     const username = urlParams.get('Username') || this.ide?.cloud?.username;
@@ -79,7 +88,7 @@
                         const shareLink = `${location.origin}/?action=present&editMode&noRun&Username=${encodeURIComponent(username)}&ProjectName=${encodeURIComponent(projName)}&Role=${encodeURIComponent(roleName)}`;
                         new ShareMorph(shareLink).popUp(world);
                     } else {
-                        alert('Failed to get shared project info');
+                        this.ide.showMessage('Failed to get shared project info');
                     }
                 }
             };
