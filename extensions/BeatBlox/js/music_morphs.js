@@ -574,6 +574,52 @@ DrumCountToggleMorph.prototype.fixLayout = function () {
 }
 
 window.BeatGrid = {};
-window.BeatGrid.BeatDialogMorph = BeatDialogMorph;
-window.BeatGrid.isBeat = isBeat;
-window.BeatGrid.createState = createState;
+window.BeatGrid.makeBeat = parent => {
+    const myself = parent.ide;
+    const sprite = myself.currentSprite;
+    const action = beatData => {
+        if (beatData.name !== '') {
+            if (sprite.isVariableNameInUse(beatData.name, true))
+                myself.inform('that name is already in use');
+            else {
+                sprite.addVariable(beatData.name, true);
+                sprite.globalVariables().vars[beatData.name].value = beatData.state;
+            }
+        }
+        else myself.inform('you must enter a name');
+    }
+    const dlg = new BeatDialogMorph(null, action, myself);
+    dlg.prompt('Make a Beat', null, myself.world());
+};
+
+window.BeatGrid.editBeat = parent => {
+    const vars = {};
+    const beats = [];
+    const myself = parent.ide;
+    const sprite = myself.currentSprite;
+
+    Object.keys(sprite.globalVariables().vars).forEach(key => {
+        vars[key] = sprite.globalVariables().vars[key];
+    });
+    Object.keys(sprite.variables.vars).forEach(key => vars[key] = sprite.variables.vars[key]);
+    Object.keys(vars).forEach(name => { if (isBeat(vars[name])) beats.push(name); });
+
+    const menu = new MenuMorph(myself);
+    if (beats.length === 0) menu.addItem('no beats available', null);
+    else {
+        beats.forEach(name => {
+            const menuCallback = () => {
+                const state = createState(vars[name].value);
+                const action = beatData => {
+                    vars[name].value = beatData.state
+                    if (name !== beatData.name)
+                        myself.inform('name cannot be changed - variable has been updated');
+                }
+                const dlg = new BeatDialogMorph(null, action, myself, 'edit', name, state);
+                dlg.prompt('Edit a Beat', null, myself.world());
+            }
+            menu.addItem(name, menuCallback);
+        });
+    }
+    menu.popUpAtHand(myself.world());
+}
