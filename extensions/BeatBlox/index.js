@@ -53,7 +53,7 @@
     };
 
     function absoluteUrl(relative) {
-        const defaultSrc = 'https://extensions.netsblox.org/extensions/BeatBlox/webAudioAPI.js';
+        const defaultSrc = 'https://extensions.netsblox.org/extensions/BeatBlox/index.js';
         const src = JSON.parse(new URLSearchParams(window.location.search).get('extensions') || '[]').find(x => x.includes('BeatBlox/index.js')) || defaultSrc;
         const res = `${src.substring(0, src.lastIndexOf('/'))}/${relative}`;
         console.log(`resolved '${relative}' to ${res}`);
