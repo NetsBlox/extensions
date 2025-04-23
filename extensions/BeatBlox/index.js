@@ -59,6 +59,11 @@
         console.log(`resolved '${relative}' to ${res}`);
         return res;
     }
+    const musicMorphic = document.createElement('script');
+    musicMorphic.type = 'module';
+    musicMorphic.async = false;
+    musicMorphic.src = absoluteUrl('js/music_morphs.js');
+    document.body.appendChild(musicMorphic);
 
     const script = document.createElement('script');
     script.type = 'module';
@@ -347,6 +352,9 @@
                     new Extension.Palette.Block('startRecording'),
                     new Extension.Palette.Block('finishRecording'),
                     new Extension.Palette.Block('isRecording'),
+                    '-',
+                    new Extension.Palette.Button('Make a beat', () => window.BeatGrid.makeBeat(this)),
+                    new Extension.Palette.Button('Edit a beat', () => window.BeatGrid.editBeat(this)),
                 ];
                 return [
                     new Extension.PaletteCategory('music', blocks, SpriteMorph),
