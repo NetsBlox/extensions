@@ -16,8 +16,8 @@
 script.onload = function () {
     var currentChat = [{ role: 'system', content: "" }];
 
-    const mainModel = 'gemini-2.0-pro-exp-02-05';
-    const chatRefinerModel = 'learnlm-1.5-pro-experimental';
+    const mainModel = 'gemini-2.5-flash-preview-04-17';
+    const chatRefinerModel = 'learnlm-2.0-flash-experimental';
 
     const defaultQuestions = ['📖 Explain my code', '💡 What should I do next?', '➕ What else can I add to my project?', '🐞 Can you help me with this bug?'];
 
