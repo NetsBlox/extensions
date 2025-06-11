@@ -66,7 +66,7 @@
 					'network',
 					'robots in room',
 					[],
-					function () { return RoboScapeOnline_fns.robots_in_room(); }
+					function () { return window.RoboScapeOnline_fns.robots_in_room(); }
 				).for(SpriteMorph, StageMorph),
 				new Extension.Block(
 					'roomID',
@@ -74,7 +74,7 @@
 					'network',
 					'RoboScape room id',
 					[],
-					function () { return RoboScapeOnline_fns.room_id(); }
+					function () { return window.RoboScapeOnline_fns.room_id(); }
 				).for(SpriteMorph, StageMorph),
 
             ];
