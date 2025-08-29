@@ -1,5 +1,4 @@
 (function () {
-    // UI module for BloxBuddy - uses globals from index.js (currentChat, completion, generateSystemMessage, ...)
     const UI = {};
 
     function promptAPIKey() {
@@ -76,9 +75,9 @@
         message.innerHTML = text;
         document.querySelector('.bloxbuddy-chat-content').appendChild(message);
         if(user) {
-            try { currentChat.push({ role: 'user', content: enhanceTask(text) }); } catch(e) { console.error(e); }
+            try { window.BloxBuddyCurrentChat.push({ role: 'user', content: window.BloxBuddyPrompts.enhanceTask(text) }); } catch(e) { console.error(e); }
         } else {
-            try { currentChat.push({ role: 'assistant', content: text }); } catch(e) { console.error(e); }
+            try { window.BloxBuddyCurrentChat.push({ role: 'assistant', content: text }); } catch(e) { console.error(e); }
 
             var buttons = document.createElement('div');
             buttons.classList.add('bloxbuddy-message-buttons');
@@ -99,7 +98,7 @@
             message.appendChild(buttons);
         }
 
-        console.log(currentChat);
+        console.log(window.BloxBuddyCurrentChat);
     }
 
     function addResponseButton(text) {
@@ -125,12 +124,9 @@
             spinnerParent.appendChild(spinner);
             document.querySelector('.bloxbuddy-chat-content').appendChild(spinnerParent);
 
-            // The remaining heavy flow (completion, parsing, tools, refinement) exists in index.js and relies on
-            // globals like completion(), generateSystemMessage(), mainModel, chatRefinerModel, defaultQuestions, fetchRPCDocumentation()
-            // Keep the same behavior by calling into those globals from here.
             try {
-                currentChat[0].content = generateSystemMessage();
-                let response = completion(currentChat, mainModel).then(response => {
+                window.BloxBuddyCurrentChat[0].content = window.BloxBuddyPrompts.generateSystemMessage();
+                let response = window.BloxBuddyCompletion(window.BloxBuddyCurrentChat, window.BloxBuddyMainModel).then(response => {
                     // Allow for tool usage
                     console.log(response);
                     response = response.replace(/^```(json)?/, '').trim().replace(/```$/, '').trim();
@@ -158,12 +154,12 @@
                         
                         if(toolResult instanceof Promise) {
                             return toolResult.then(result => {
-                                currentChat.push({ role: 'assistant', content: result });
-                                return completion(currentChat);
+                                window.BloxBuddyCurrentChat.push({ role: 'assistant', content: result });
+                                return window.BloxBuddyCompletion(window.BloxBuddyCurrentChat);
                             });
                         } else {
-                            currentChat.push({ role: 'user', content: toolResult.toString() });
-                            return completion(currentChat);
+                            window.BloxBuddyCurrentChat.push({ role: 'user', content: toolResult.toString() });
+                            return window.BloxBuddyCompletion(window.BloxBuddyCurrentChat);
                         }
                     }
 
@@ -171,7 +167,7 @@
                 }).catch(e => {
                     console.error(e);
                     window.BloxBuddyUI.addChatMessage('Sorry, I was unable to generate a response. Please try again later.');
-                    window.BloxBuddyUI.addResponseButtons(defaultQuestions);
+                    window.BloxBuddyUI.addResponseButtons(window.BloxBuddyPrompts.defaultQuestions);
                     spinnerParent.remove();
                 }).then(response => {
                     let parsed = response;
@@ -184,8 +180,8 @@
                         console.log(parsed);
                     }
 
-                    completion([
-                        { role: 'system', content: generateSystemMessage() },
+                    window.BloxBuddyCompletion([
+                        { role: 'system', content: window.BloxBuddyPrompts.generateSystemMessage() },
                         { role: 'user', content: `
 Rewrite the following text so that it would be easier to read for a student in middle school:
 
@@ -209,7 +205,7 @@ Remember to keep our guidelines for them in mind.
 Please keep responses short. Convey necessary information in a concise manner. Don't be overly verbose or wordy or the student may lose interest.
 `
                         },
-                    ], chatRefinerModel).then(refined => {
+                    ], window.BloxBuddyChatRefinerModel).then(refined => {
                         console.log(refined);
                         refined = refined.replace(/^```(json)?/, '').trim().replace(/```$/, '').trim();
                         refined = JSON.parse(refined);
@@ -225,10 +221,10 @@ Please keep responses short. Convey necessary information in a concise manner. D
                             } else if (Array.isArray(parsed.continuation)) {
                                 window.BloxBuddyUI.addResponseButtons(parsed.continuation);
                             } else {
-                                window.BloxBuddyUI.addResponseButtons(defaultQuestions);
+                                window.BloxBuddyUI.addResponseButtons(window.BloxBuddyPrompts.defaultQuestions);
                             }
                         } else {
-                            window.BloxBuddyUI.addResponseButtons(defaultQuestions);
+                            window.BloxBuddyUI.addResponseButtons(window.BloxBuddyPrompts.defaultQuestions);
                         }
                         
                         spinnerParent.remove();
@@ -242,7 +238,7 @@ Please keep responses short. Convey necessary information in a concise manner. D
                             } else if (Array.isArray(parsed.continuation)) {
                                 window.BloxBuddyUI.addResponseButtons(parsed.continuation);
                             } else {
-                                window.BloxBuddyUI.addResponseButtons(defaultQuestions);
+                                window.BloxBuddyUI.addResponseButtons(window.BloxBuddyPrompts.defaultQuestions);
                             }
                         }
                     });
@@ -250,7 +246,7 @@ Please keep responses short. Convey necessary information in a concise manner. D
             } catch (e) {
                 console.error(e);
                 window.BloxBuddyUI.addChatMessage('Sorry, I was unable to generate a response. Please try again later.');
-                window.BloxBuddyUI.addResponseButtons(defaultQuestions);
+                window.BloxBuddyUI.addResponseButtons(window.BloxBuddyPrompts.defaultQuestions);
                 try { spinnerParent.remove(); } catch(e) {}
             }
         };
@@ -264,13 +260,13 @@ Please keep responses short. Convey necessary information in a concise manner. D
 
         // Add start over button
         try {
-            if(currentChat.length > 1) {
+            if(window.BloxBuddyCurrentChat.length > 1) {
                 var startOverBtn = document.createElement('button');
                 startOverBtn.classList.add('bloxbuddy-response-btn');
                 startOverBtn.textContent = '↺ Start Over';
 
                 startOverBtn.onclick = function() {
-                    if (window.resetChat) window.resetChat();
+                    if (window.BloxBuddyResetChat) window.BloxBuddyResetChat();
                 }
 
                 document.querySelector('.bloxbuddy-chat-content').appendChild(startOverBtn);
