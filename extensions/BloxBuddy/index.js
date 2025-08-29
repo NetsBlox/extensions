@@ -10,6 +10,13 @@
     }
     document.head.appendChild(style);
 
+    function promptAPIKey() {
+        const key = prompt('Enter API Key');
+        if (key) {
+            localStorage.setItem('openai-api-key', key);
+        }
+    }
+
     // Import blockstocode.js
     var script = document.createElement('script');
 
@@ -377,6 +384,11 @@ Remember to use the "rpcdoc" tool when discussing RPCs or services. Do not misle
             super('BloxBuddy');
             this.ide = ide;
 
+            // Require an API key
+            let apiKey = localStorage.getItem('openai-api-key');
+            if (!apiKey) {
+                promptAPIKey();
+            }
 
             // Create the BloxBuddy button
             var btn = document.createElement('button');
@@ -428,10 +440,7 @@ Remember to use the "rpcdoc" tool when discussing RPCs or services. Do not misle
                     console.log(output);
                 },
                 'Set API Key...': function () {
-                    const key = prompt('Enter API Key');
-                    if (key) {
-                        localStorage.setItem('openai-api-key', key);
-                    }
+                    promptAPIKey();
                 },
                 // 'Set OpenAI Text Model...': function () {
                 //     const model = prompt('Enter OpenAI Model');
