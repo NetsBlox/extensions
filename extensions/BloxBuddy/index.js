@@ -17,13 +17,24 @@
         }
     }
 
-    // Import blockstocode.js
+    // Import blockstocode.js and ui.js
     var script = document.createElement('script');
+    var uiScript = document.createElement('script');
 
-script.onload = function () {
+    uiScript.onload = function() {
+        console.log('BloxBuddy ui.js loaded');
+    };
+    if(document.currentScript.src.includes('localhost')) {
+        uiScript.src = 'http://localhost:4000/ui.js';
+    } else {
+        uiScript.src = 'https://extensions.netsblox.org/extensions/BloxBuddy/ui.js';
+    }
+    document.head.appendChild(uiScript);
+
+    script.onload = function () {
     var currentChat = [{ role: 'system', content: "" }];
 
-    const mainModel = 'gemini-2.5-flash-preview-04-17';
+    const mainModel = 'gemini-2.5-flash';
     const chatRefinerModel = 'learnlm-2.0-flash-experimental';
 
     const defaultQuestions = ['📖 Explain my code', '💡 What should I do next?', '➕ What else can I add to my project?', '🐞 Can you help me with this bug?'];
@@ -390,32 +401,14 @@ Remember to use the "rpcdoc" tool when discussing RPCs or services. Do not misle
                 promptAPIKey();
             }
 
-            // Create the BloxBuddy button
-            var btn = document.createElement('button');
-            btn.classList.add('bloxbuddy-btn');
-            document.body.appendChild(btn);
+            // Initialize UI (ui.js exposes window.BloxBuddyUI)
+            try {
+                if (window.BloxBuddyUI) {
+                    window.BloxBuddyUI.initUI();
+                }
+            } catch (e) { console.error(e); }
 
-            // Create the sparkle icon inside the button
-            var sparkles = document.createElement('div');
-            sparkles.classList.add('bloxbuddy-sparkles');
-            sparkles.innerHTML = '✨';
-            btn.appendChild(sparkles);
-
-            // Create the chat popup interface
-            var chatPopup = document.createElement('div');
-            chatPopup.classList.add('bloxbuddy-chat-popup');
-            document.body.appendChild(chatPopup);
-
-            // Inner chat popup content
-            var chatContent = document.createElement('div');
-            chatContent.classList.add('bloxbuddy-chat-content');
-            chatPopup.appendChild(chatContent);
-
-            // Optionally, toggle the chat popup display on button click
-            btn.addEventListener('click', function() {
-                chatPopup.style.display = chatPopup.style.display === 'block' ? 'none' : 'block';
-            });
-
+            // Start chat state
             resetChat();
         }
 
