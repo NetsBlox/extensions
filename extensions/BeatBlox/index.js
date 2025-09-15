@@ -353,6 +353,8 @@
                     new Extension.Palette.Block('finishRecording'),
                     new Extension.Palette.Block('isRecording'),
                     '-',
+                    new Extension.Palette.Block('oscillator'),
+                    '-',
                     new Extension.Palette.Button('Make a beat', () => window.BeatGrid.makeBeat(this)),
                     new Extension.Palette.Button('Edit a beat', () => window.BeatGrid.editBeat(this)),
                 ];
@@ -691,6 +693,9 @@
                     new Extension.Block('isRecording', 'predicate', 'music', 'recording?', [], function () {
                         return !!activeRecording;
                     }),
+                    new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions', ['sine'], function () {
+                        return new Instrument('test');
+                    }),
                 ];
             }
 
@@ -745,6 +750,7 @@
                     basicEnum('chordType', identityMap(Object.keys(CHORD_PATTERNS))),
                     basicEnum('scaleType', identityMap(Object.keys(SCALE_PATTERNS))),
                     basicEnum('drumGridOption', identityMap(['new...', 'edit...'])),
+                    basicEnum('oscillatorOptions', identityMap(['sine', 'triangle', 'sawtooth', 'square']))
                 ];
             }
         }
