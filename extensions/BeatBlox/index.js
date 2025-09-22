@@ -68,7 +68,7 @@
     const script = document.createElement('script');
     script.type = 'module';
     script.async = false;
-    script.src = absoluteUrl('webAudioAPI.js');
+    script.src = 'https://hedgecrw.github.io/WebAudioAPI/lib/webAudioAPI.js';
     script.onload = () => {
         const audio = new window.WebAudioAPI();
 
