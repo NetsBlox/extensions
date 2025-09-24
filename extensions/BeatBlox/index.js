@@ -79,7 +79,8 @@
     const script = document.createElement('script');
     script.type = 'module';
     script.async = false;
-    script.src = 'https://hedgecrw.github.io/WebAudioAPI/lib/webAudioAPI.js';
+    //script.src = 'https://hedgecrw.github.io/WebAudioAPI/lib/webAudioAPI.js';
+    script.src = absoluteUrl('webAudioAPI.js')
     script.onload = () => {
         const audio = new window.WebAudioAPI();
 
@@ -378,13 +379,21 @@
             getBlocks() {
                 return [
                     new Extension.Block('setInstrument', 'command', 'music', 'set instrument %instrument', ['Grand Piano'], function (instrument) {
+                        if (instrument instanceof String) {
+                            return this.runAsyncFn(async () => {
+                                await setupEntity(this.receiver);
+                                setupProcess(this);
+
+                                if (INSTRUMENTS.indexOf(instrument) < 0) throw Error(`unknown instrument: "${instrument}"`);
+
+                                await audio.updateInstrument(this.receiver.id, instrument);
+                            }, { args: [], timeout: I32_MAX });
+                        }
                         return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
-                            if (INSTRUMENTS.indexOf(instrument) < 0) throw Error(`unknown instrument: "${instrument}"`);
-
-                            await audio.updateInstrument(this.receiver.id, instrument);
+                            await audio.updateInstrument(this.receiver.id, instrument.name, instrument.src);
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('setKey', 'command', 'music', 'set key %keySig', ['CMajor'], function (key) {
@@ -708,7 +717,6 @@
                         let oscillator_data = window.BeatBloxAudioTools.create_beatblox_oscillator(osc);
                         let instrument_data = oscillator_data.map(oscillator => oscillator.get_data());
                         let instrument = new Instrument(osc, instrument_data);
-                        console.log(instrument);
                         return instrument;
                     }),
                 ];
