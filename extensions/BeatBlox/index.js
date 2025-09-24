@@ -59,6 +59,17 @@
         console.log(`resolved '${relative}' to ${res}`);
         return res;
     }
+
+    const wasmPath = absoluteUrl('wasm/beatblox_audio_tools.js')
+    const wasmLoader = document.createElement('script');
+        wasmLoader.type = "module";
+        wasmLoader.innerHTML = `import init, {create_beatblox_oscillator} from '${wasmPath}';
+            await init();
+            window.BeatBloxAudioTools = {};
+            window.BeatBloxAudioTools.create_beatblox_oscillator = create_beatblox_oscillator;
+        `;
+    document.body.appendChild(wasmLoader);
+
     const musicMorphic = document.createElement('script');
     musicMorphic.type = 'module';
     musicMorphic.async = false;
@@ -693,8 +704,12 @@
                     new Extension.Block('isRecording', 'predicate', 'music', 'recording?', [], function () {
                         return !!activeRecording;
                     }),
-                    new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions', ['sine'], function () {
-                        return new Instrument('test');
+                    new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions', ['sine'], function (osc) {
+                        let oscillator_data = window.BeatBloxAudioTools.create_beatblox_oscillator(osc);
+                        let instrument_data = oscillator_data.map(oscillator => oscillator.get_data());
+                        let instrument = new Instrument(osc, instrument_data);
+                        console.log(instrument);
+                        return instrument;
                     }),
                 ];
             }
