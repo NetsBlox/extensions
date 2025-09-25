@@ -379,7 +379,7 @@
             getBlocks() {
                 return [
                     new Extension.Block('setInstrument', 'command', 'music', 'set instrument %instrument', ['Grand Piano'], function (instrument) {
-                        if (instrument instanceof String) {
+                        if (typeof instrument === "string") {
                             return this.runAsyncFn(async () => {
                                 await setupEntity(this.receiver);
                                 setupProcess(this);
@@ -715,8 +715,7 @@
                     }),
                     new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions', ['sine'], function (osc) {
                         let oscillator_data = window.BeatBloxAudioTools.create_beatblox_oscillator(osc);
-                        let instrument_data = oscillator_data.map(oscillator => oscillator.get_data());
-                        let instrument = new Instrument(osc, instrument_data);
+                        let instrument = new Instrument(osc, oscillator_data);
                         return instrument;
                     }),
                 ];
