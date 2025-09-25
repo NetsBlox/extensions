@@ -6279,6 +6279,17 @@ async function loadInstrument(audioContext, name, url_or_data) {
       return [noteData, metadata];
    }
 
+   async function buildCustomInstrument(data) {
+      const noteData = [];
+      for (let i = 0; i < data.length; ++i) {
+         const asFloat = new Float32Array(data[i].buffer, data[i].byteOffset, data[i].byteLength / Float32Array.BYTES_PER_ELEMENT);
+         const audioBuffer = audioContext.createBuffer(1, asFloat.length, 44100);
+         audioBuffer.copyToChannel(asFloat, 0);
+         noteData[i] = audioBuffer;
+      }
+      return noteData;
+   }
+
    // Create an instance of the Instrument object
    const instrumentInstance = {
       /**
@@ -6325,15 +6336,17 @@ async function loadInstrument(audioContext, name, url_or_data) {
       };
    }
    else if (url_or_data instanceof Array) {
+      const noteData = await buildCustomInstrument(url_or_data);
+      console.log(noteData)
       instrumentInstance.getNote = function (note) {
          if (note < 0 || note >= url_or_data.length)
             throw new WebAudioInstrumentError(`The specified note (${note}) is not defined`);
-         return new AudioBufferSourceNode(audioContext, { buffer: url_or_data[note] });
+         return new AudioBufferSourceNode(audioContext, { buffer: noteData[note] });
       };
       instrumentInstance.getNoteOffline = function (offlineContext, note) {
          if (note < 0 || note >= url_or_data.length)
             throw new WebAudioInstrumentError(`The specified note (${note}) is not defined`);
-         return new AudioBufferSourceNode(offlineContext, { buffer: url_or_data[note] });
+         return new AudioBufferSourceNode(offlineContext, { buffer: noteData[note] });
       };
    }
    else {
