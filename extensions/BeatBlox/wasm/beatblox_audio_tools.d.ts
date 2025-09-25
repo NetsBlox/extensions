@@ -4,7 +4,9 @@ export function create_beatblox_oscillator(oscillator_type: string): AudioBuffer
 export class AudioBuffer {
   private constructor();
   free(): void;
-  get_data(): Uint8Array;
+  get_data(): Float32Array;
+  sample_rate: number;
+  size: number;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
@@ -12,6 +14,10 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_audiobuffer_free: (a: number, b: number) => void;
+  readonly __wbg_get_audiobuffer_sample_rate: (a: number) => number;
+  readonly __wbg_set_audiobuffer_sample_rate: (a: number, b: number) => void;
+  readonly __wbg_get_audiobuffer_size: (a: number) => number;
+  readonly __wbg_set_audiobuffer_size: (a: number, b: number) => void;
   readonly audiobuffer_get_data: (a: number) => [number, number];
   readonly create_beatblox_oscillator: (a: number, b: number) => [number, number];
   readonly __wbindgen_export_0: WebAssembly.Table;

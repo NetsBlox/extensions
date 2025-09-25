@@ -30,9 +30,18 @@ function getStringFromWasm0(ptr, len) {
     return decodeText(ptr, len);
 }
 
-function getArrayU8FromWasm0(ptr, len) {
+let cachedFloat32ArrayMemory0 = null;
+
+function getFloat32ArrayMemory0() {
+    if (cachedFloat32ArrayMemory0 === null || cachedFloat32ArrayMemory0.byteLength === 0) {
+        cachedFloat32ArrayMemory0 = new Float32Array(wasm.memory.buffer);
+    }
+    return cachedFloat32ArrayMemory0;
+}
+
+function getArrayF32FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
-    return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
+    return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
 }
 
 let WASM_VECTOR_LEN = 0;
@@ -149,13 +158,39 @@ export class AudioBuffer {
         wasm.__wbg_audiobuffer_free(ptr, 0);
     }
     /**
-     * @returns {Uint8Array}
+     * @returns {number}
+     */
+    get sample_rate() {
+        const ret = wasm.__wbg_get_audiobuffer_sample_rate(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set sample_rate(arg0) {
+        wasm.__wbg_set_audiobuffer_sample_rate(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get size() {
+        const ret = wasm.__wbg_get_audiobuffer_size(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set size(arg0) {
+        wasm.__wbg_set_audiobuffer_size(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {Float32Array}
      */
     get_data() {
         const ptr = this.__destroy_into_raw();
         const ret = wasm.audiobuffer_get_data(ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        var v1 = getArrayF32FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
         return v1;
     }
 }
@@ -227,6 +262,7 @@ function __wbg_finalize_init(instance, module) {
     wasm = instance.exports;
     __wbg_init.__wbindgen_wasm_module = module;
     cachedDataViewMemory0 = null;
+    cachedFloat32ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
 
 
