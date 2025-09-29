@@ -337,6 +337,9 @@
             getPalette() {
                 const blocks = [
                     new Extension.Palette.Block('setInstrument'),
+                    new Extension.Palette.Block('createInstrument'),
+                    new Extension.Palette.Block('oscillator'),
+                    '-',
                     new Extension.Palette.Block('setKey'),
                     new Extension.Palette.Block('setBPM'),
                     new Extension.Palette.Block('getBPM'),
@@ -364,8 +367,6 @@
                     new Extension.Palette.Block('startRecording'),
                     new Extension.Palette.Block('finishRecording'),
                     new Extension.Palette.Block('isRecording'),
-                    '-',
-                    new Extension.Palette.Block('oscillator'),
                     '-',
                     new Extension.Palette.Button('Make a beat', () => window.BeatGrid.makeBeat(this)),
                     new Extension.Palette.Button('Edit a beat', () => window.BeatGrid.editBeat(this)),
@@ -395,6 +396,16 @@
 
                             await audio.updateInstrument(this.receiver.id, instrument.name, instrument.src);
                         }, { args: [], timeout: I32_MAX });
+                    }),
+                    new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %instrument', [], function (src) {
+                        let instrument = new Instrument();
+                        return instrument;
+                    }),
+                    new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions', ['sine'], function (osc) {
+                        // let oscillator_data = window.BeatBloxAudioTools.create_beatblox_oscillator(osc);
+                        // let instrument = new Instrument(osc, oscillator_data);
+                        // return instrument;
+                        return new Oscillator()
                     }),
                     new Extension.Block('setKey', 'command', 'music', 'set key %keySig', ['CMajor'], function (key) {
                         if (KEYS[key] === undefined) throw Error(`unknown key: '${key}'`);
@@ -712,11 +723,6 @@
                     }),
                     new Extension.Block('isRecording', 'predicate', 'music', 'recording?', [], function () {
                         return !!activeRecording;
-                    }),
-                    new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions', ['sine'], function (osc) {
-                        let oscillator_data = window.BeatBloxAudioTools.create_beatblox_oscillator(osc);
-                        let instrument = new Instrument(osc, oscillator_data);
-                        return instrument;
                     }),
                 ];
             }
