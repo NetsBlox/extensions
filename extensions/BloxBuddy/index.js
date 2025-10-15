@@ -39,7 +39,7 @@
 
     window.BloxBuddyMainModel = 'gemini-flash-latest';
     //window.BloxBuddyChatRefinerModel = 'learnlm-2.0-flash-experimental';
-    window.BloxBuddyChatRefinerModel = 'gemini-flash-lite-latest';
+    window.BloxBuddyChatRefinerModel = 'gemini-flash-latest';
 
     window.BloxBuddyResetChat = function() {
         window.BloxBuddyCurrentChat = [{ role: 'system', content: "" }];
