@@ -140,11 +140,11 @@
                         switch(parsed.tool) {
                             case 'rpcdoc':
                                 if(parsed.service && parsed.function) {
-                                    toolResult = fetchRPCDocumentation(parsed.service, parsed.function);
+                                    toolResult = window.BloxBuddyUtils.fetchRPCDocumentation(parsed.service, parsed.function);
                                 } else if(parsed.service) {
-                                    toolResult = fetchRPCDocumentation(parsed.service);
+                                    toolResult = window.BloxBuddyUtils.fetchRPCDocumentation(parsed.service);
                                 } else {
-                                    toolResult = fetchRPCDocumentation();
+                                    toolResult = window.BloxBuddyUtils.fetchRPCDocumentation();
                                 }
                                 break;
                             default:
