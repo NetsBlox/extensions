@@ -37,8 +37,9 @@
     script.onload = async function () {
     window.BloxBuddyCurrentChat = [{ role: 'system', content: "" }];
 
-    window.BloxBuddyMainModel = 'gemini-2.5-flash';
-    window.BloxBuddyChatRefinerModel = 'learnlm-2.0-flash-experimental';
+    window.BloxBuddyMainModel = 'gemini-flash-latest';
+    //window.BloxBuddyChatRefinerModel = 'learnlm-2.0-flash-experimental';
+    window.BloxBuddyChatRefinerModel = 'gemini-flash-lite-latest';
 
     window.BloxBuddyResetChat = function() {
         window.BloxBuddyCurrentChat = [{ role: 'system', content: "" }];
