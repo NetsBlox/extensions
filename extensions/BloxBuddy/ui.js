@@ -141,22 +141,34 @@
 
             try {
                 window.BloxBuddyCurrentChat[0].content = window.BloxBuddyPrompts.generateSystemMessage();
-                let response = window.BloxBuddyCompletion(window.BloxBuddyCurrentChat, window.BloxBuddyMainModel).then(response => {
-                    // Allow for tool usage
+                let response = window.BloxBuddyCompletion(window.BloxBuddyCurrentChat, window.BloxBuddyMainModel).then(async response => {
                     console.log(response);
-                    response = response.replace(/^```(json)?/, '').trim().replace(/```$/, '').trim();
-                    console.log(response);
-                    let parsed = JSON.parse(response);
-                    console.log(parsed);
 
-                    let toolResult = 'Unknown tool';
+                    async function cleanAndParse(resp) {
+                        if (typeof resp !== 'string') return resp;
+                        let s = resp.replace(/^```(json)?/, '').trim().replace(/```$/, '').trim();
+                        console.log(s);
+                        return JSON.parse(s);
+                    }
 
-                    if(parsed.tool) {
-                        switch(parsed.tool) {
+                    let parsed;
+                    try {
+                        parsed = await cleanAndParse(response);
+                        console.log(parsed);
+                    } catch (e) {
+                        console.error('Failed to parse initial response', e);
+                        throw e;
+                    }
+
+                    // Process tool chain until there's no tool requested
+                    while (parsed && parsed.tool) {
+                        let toolResult = 'Unknown tool';
+
+                        switch (parsed.tool) {
                             case 'rpcdoc':
-                                if(parsed.service && parsed.function) {
+                                if (parsed.service && parsed.function) {
                                     toolResult = window.BloxBuddyUtils.fetchRPCDocumentation(parsed.service, parsed.function);
-                                } else if(parsed.service) {
+                                } else if (parsed.service) {
                                     toolResult = window.BloxBuddyUtils.fetchRPCDocumentation(parsed.service);
                                 } else {
                                     toolResult = window.BloxBuddyUtils.fetchRPCDocumentation();
@@ -166,19 +178,40 @@
                                 toolResult = 'Unknown tool';
                                 break;
                         }
-                        
-                        if(toolResult instanceof Promise) {
-                            return toolResult.then(result => {
-                                window.BloxBuddyCurrentChat.push({ role: 'assistant', content: result });
-                                return window.BloxBuddyCompletion(window.BloxBuddyCurrentChat);
-                            });
-                        } else {
-                            window.BloxBuddyCurrentChat.push({ role: 'user', content: toolResult.toString() });
-                            return window.BloxBuddyCompletion(window.BloxBuddyCurrentChat);
+
+                        try {
+                            if (toolResult instanceof Promise) {
+                                toolResult = await toolResult;
+                            }
+                        } catch (e) {
+                            console.error('Tool execution failed', e);
+                            toolResult = `Tool error: ${e.message || e}`;
+                        }
+
+                        // Normalize tool result to string for chat and push it so the model can consume it
+                        const toolContent = (typeof toolResult === 'string') ? toolResult : JSON.stringify(toolResult, null, 2);
+                        console.log('Tool result:', toolContent);
+                        window.BloxBuddyCurrentChat.push({ role: 'user', content: toolContent });
+
+                        // Ask the model to continue from updated chat
+                        try {
+                            response = await window.BloxBuddyCompletion(window.BloxBuddyCurrentChat);
+                        } catch (e) {
+                            console.error('Model call after tool failed', e);
+                            throw e;
+                        }
+
+                        try {
+                            parsed = await cleanAndParse(response);
+                            console.log(parsed);
+                        } catch (e) {
+                            console.error('Failed to parse response after tool', e);
+                            throw e;
                         }
                     }
 
-                    return Promise.resolve(parsed);
+                    // No tool requested — return the final parsed object
+                    return parsed;
                 }).catch(e => {
                     console.error(e);
                     window.BloxBuddyUI.addChatMessage('Sorry, I was unable to generate a response. Please try again later.');
@@ -221,7 +254,7 @@ The user should start a new conversation if they need more help. No need to let 
 
 Remember to keep our guidelines for them in mind.
 
-Please keep responses short. Convey necessary information in a concise manner. Don't be overly verbose or wordy or the student may lose interest.
+Please keep responses short. Convey necessary information in a concise manner. Don't be overly verbose or wordy or the student may lose interest, but do not change details or meaning of the original text.
 `
                         },
                     ], window.BloxBuddyChatRefinerModel).then(refined => {

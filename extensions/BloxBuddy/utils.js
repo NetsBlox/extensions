@@ -68,7 +68,13 @@
                 let parser = new DOMParser();
                 let docHTML = parser.parseFromString(doc, 'text/html');
 
-                let funcElement = docHTML.querySelector(`#${service}.${func}`);
+                let funcElements = docHTML.querySelectorAll('.function');
+                let funcElement = null;
+                funcElements.forEach(el => {
+                    if(el.querySelector('.descname').textContent === func) {
+                        funcElement = el;
+                    }
+                });
                 if(funcElement) {
                     return funcElement.textContent;
                 } else {
