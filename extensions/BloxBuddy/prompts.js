@@ -50,10 +50,14 @@ NetsBlox, has the same categories of blocks as Snap!: Motion, Looks, Music, Pen,
 
 The blocks are as follows (note that some parts starting with % are inputs and some are symbols):
 
+The format is:
+Category (color)
+    block - block text with % for inputs or symbols
+
 Motion (only available on Sprites, not available on Stage) (dark blue)
     forward - move %n steps
-    turn - turn %clockwise %n degrees
-    turnLeft - turn %counterclockwise %n degrees
+    right - turn %clockwise %n degrees
+    left - turn %counterclockwise %n degrees
     setHeading - point in direction %dir
     doFaceTowards - point towards %dst
     gotoXY - go to x: %n y: %n
