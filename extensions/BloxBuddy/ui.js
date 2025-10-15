@@ -66,11 +66,23 @@
             message.classList.add('bloxbuddy-chat-message-user');
         }
 
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        text = escapeHtml(text);
+        
         // Basic Markdown support
         text = text.replace(/\n/g, '<br>');
         text = text.replace(/\\n/g, '<br>');
-        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        text = text.replace(/\*\*(\S.*?)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/\*(\S.*?)\*/g, '<em>$1</em>');
+        text = text.replace(/\n\*\s+/g, '<br> &bull; ');
 
         message.innerHTML = text;
         document.querySelector('.bloxbuddy-chat-content').appendChild(message);
