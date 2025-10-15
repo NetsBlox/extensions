@@ -11,9 +11,9 @@
     document.head.appendChild(style);
 
     function promptAPIKey() {
-        const key = prompt('Enter API Key');
+        const key = prompt('Enter Google Gemini API Key');
         if (key) {
-            localStorage.setItem('openai-api-key', key);
+            localStorage.setItem('gemini-api-key', key);
         }
     }
 
@@ -71,7 +71,7 @@
             this.ide = ide;
 
             // Require an API key
-            let apiKey = localStorage.getItem('openai-api-key');
+            let apiKey = localStorage.getItem('gemini-api-key');
             if (!apiKey) {
                 promptAPIKey();
             }
@@ -109,6 +109,7 @@
                 },
                 'Set API Key...': function () {
                     promptAPIKey();
+                    apiKey = localStorage.getItem('gemini-api-key');
                 },
                 // 'Set OpenAI Text Model...': function () {
                 //     const model = prompt('Enter OpenAI Model');
@@ -116,12 +117,12 @@
                 //         localStorage.setItem('openai-model', model);
                 //     }
                 // },
-                'Set API Endpoint...': function () {
-                    const endpoint = prompt('Enter OpenAI compatible API Endpoint');
-                    if (endpoint) {
-                        localStorage.setItem('openai-endpoint', endpoint);
-                    }
-                },
+                // 'Set API Endpoint...': function () {
+                //     const endpoint = prompt('Enter OpenAI compatible API Endpoint');
+                //     if (endpoint) {
+                //         localStorage.setItem('openai-endpoint', endpoint);
+                //     }
+                // },
             };
 
             return options;

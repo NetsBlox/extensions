@@ -2,9 +2,11 @@
     const UI = {};
 
     function promptAPIKey() {
-        const key = prompt('Enter API Key');
+        const key = prompt('Enter Google Gemini API Key');
         if (key) {
-            localStorage.setItem('openai-api-key', key);
+            localStorage.setItem('gemini-api-key', key);
+        } else {
+            alert('API Key is required to use BloxBuddy');
         }
     }
 
@@ -45,9 +47,10 @@
             chatPopup.style.display = chatPopup.style.display === 'block' ? 'none' : 'block';
         });
 
-        let apiKey = localStorage.getItem('openai-api-key');
+        let apiKey = localStorage.getItem('gemini-api-key');
         if (!apiKey) {
             promptAPIKey();
+            apiKey = localStorage.getItem('gemini-api-key');
         }
 
         UI.button = btn;
@@ -199,6 +202,9 @@ Rewrite the following text so that it would be easier to read for a student in m
 
 ${parsed.response}
 
+Continuations (if any):
+${parsed.continuation ? (Array.isArray(parsed.continuation) ? parsed.continuation.map(c => '- ' + c).join('\n') : '- ' + parsed.continuation) : 'None'}
+
 ---
 
 Note that the student will not see the original text, only the rewritten version. The goal is to make the text more accessible and easier to understand for a beginner. Be friendly but not overly poetic or too excited.
@@ -206,11 +212,12 @@ Keep in mind that the student is may not understand complex programming concepts
 However, terms like "variable" or "function" are fine to use, along with NetsBlox-specific terms like "RPC" or "service".
 If the original text includes code, you should explain the code in plain English when speaking to the student directly and DO NOT include the code in your response.
 Do not try to use tools. Tools are not available to you in this response. Assume the original text is correct regarding RPCs and services.
+Do not start your response with "Sure!" or "Here is a simplified version of the text you provided" or similar phrases. Just provide the rewritten text.
 
-Also include posible continuations in the response, if any. Write the continuations so that the student will understand what they mean, but they must remain short. Please limit the number of them when possible, so that the conversation remains focused and short. The student will know how to explore on their own without you offering to do it for them.
-However, aim to keep the same ideas as the original continuations, but make them more concise and easier to understand.
+Also include possible continuations in the response, if relevant. It is acceptable to not include any continuations if none are relevant to end the conversation.
+Write the continuations so that the student will understand what they mean, but they must remain short. Please limit the number of them when possible, so that the conversation remains focused and short. The student will know how to explore on their own without you offering to do it for them.
 DO NOT turn continuations into questions if they are not questions in the original text.
-The user will have the option to start a new conversation if they need more help, so it does not need to drag on forever. No need to let the user go off on tangents. Do not ask for free-form text input from the user, as this is not supported. All interactions should be guided by the options you provide in the "continuation" field. Make sure to only provide continuations that you are confident the user will understand and you be able to respond accurately to.
+The user should start a new conversation if they need more help. No need to let the user go off on tangents. Do not ask for free-form text input from the user, as this is not supported. All interactions should be guided by the options you provide in the "continuation" field. Make sure to only provide continuations that you are confident the user will understand and you be able to respond accurately to.
 
 Remember to keep our guidelines for them in mind.
 

@@ -46,12 +46,12 @@
     }
 
     function getSettings() {
-        const apiKey = localStorage.getItem('openai-api-key');
-        const model = localStorage.getItem('openai-model') || 'gpt-3.5-turbo';
-        const endpoint = localStorage.getItem('openai-endpoint') || 'https://api.openai.com/v1/';
+        const apiKey = localStorage.getItem('gemini-api-key');
+        const model = 'gemini-flash-latest';
+        const endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/';
 
         if (!apiKey) {
-            throw Error('OpenAI API Key not set - see extension menu');
+            throw Error('API Key not set - see extension menu');
         }
 
         return { apiKey, model, endpoint };
@@ -120,7 +120,7 @@
                 }
             });
 
-            return f;
+            return services;
         }
     }
 
