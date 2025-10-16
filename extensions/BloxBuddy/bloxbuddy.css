@@ -1,0 +1,180 @@
+/* CSS for the BloxBuddy icon button */
+.bloxbuddy-btn {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: mediumseagreen;
+    filter: drop-shadow(0 0 3px #279a6aa1);
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.bloxbuddy-btn:hover {
+    background-color: #3aa96e;
+    transform: scale(1.05);
+}
+
+.bloxbuddy-btn:active {
+    transform: scale(0.95);
+}
+
+/* CSS for the sparkle icon inside the button */
+.bloxbuddy-sparkles {
+    border-radius: 50%;
+    background-color: white;
+    font-size: 30px;
+    text-align: center;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    left: -3px;
+}
+
+/* CSS for the chat popup interface */
+.bloxbuddy-chat-popup {
+    position: fixed;
+    bottom: 70px;
+    right: 10px;
+    width: 400px;
+    height: 400px;
+    background-color: white;
+    border: 1px solid mediumseagreen;
+    border-radius: 10px;
+    display: none; /* initially hidden */
+    box-shadow: 0 0 3px 0px #279a6aa1;
+}
+
+.bloxbuddy-chat-content {
+    height: 100%;
+    overflow-y: scroll;
+}
+
+/* Message styling */
+.bloxbuddy-chat-message {
+    color: #333;
+    padding: 10px;
+    margin: 10px;
+    border-radius: 10px;
+    text-align: left;
+    align-self: flex-end;
+}
+
+.bloxbuddy-chat-message-user {
+    margin-left: 40px;
+    text-align: right;
+    background-color: #f0f0f0;
+}
+
+.bloxbuddy-chat-message:not(.bloxbuddy-chat-message-user) {
+    margin-right: 40px;
+    background-color: #e0e0e0;
+}
+
+.bloxbuddy-message-buttons {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: flex-end;
+}
+
+.bloxbuddy-message-buttons > button {
+    margin-left: 5px;
+    border: none;
+    cursor: pointer;
+}
+
+/* Response button styling */
+.bloxbuddy-response-btn {
+    background-color: mediumseagreen;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 15px;
+    margin: 5px;
+    cursor: pointer;
+    text-align: center;
+    width: calc(100% - 10px);
+    align-self: flex-start;
+    font-size: 14px;
+    display: inline-block;
+    border: #19753c 1px dashed;
+}
+
+.bloxbuddy-response-btn:hover {
+    background-color: #3aa96e;
+}
+
+
+/* CSS for the loading spinner */
+.bloxbuddy-spinner {
+    color: #3aa96e;
+    font-size: 10px;
+    width: 1em;
+    height: 1em;
+    border-radius: 50%;
+    position: relative;
+    text-indent: -9999em;
+    animation: mulShdSpin 1.3s infinite linear;
+    transform: translateZ(0);
+}
+  
+@keyframes mulShdSpin {
+    0%,
+    100% {
+        box-shadow: 0 -3em 0 0.2em, 
+        2em -2em 0 0em, 3em 0 0 -1em, 
+        2em 2em 0 -1em, 0 3em 0 -1em, 
+        -2em 2em 0 -1em, -3em 0 0 -1em, 
+        -2em -2em 0 0;
+    }
+    12.5% {
+        box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 
+        3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, 
+        -2em 2em 0 -1em, -3em 0 0 -1em, 
+        -2em -2em 0 -1em;
+    }
+    25% {
+        box-shadow: 0 -3em 0 -0.5em, 
+        2em -2em 0 0, 3em 0 0 0.2em, 
+        2em 2em 0 0, 0 3em 0 -1em, 
+        -2em 2em 0 -1em, -3em 0 0 -1em, 
+        -2em -2em 0 -1em;
+    }
+    37.5% {
+        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em,
+        3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, 
+        -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
+    }
+    50% {
+        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em,
+        3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, 
+        -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
+    }
+    62.5% {
+        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em,
+        3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, 
+        -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
+    }
+    75% {
+        box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 
+        3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, 
+        -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
+    }
+    87.5% {
+        box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 
+        3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, 
+        -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
+    }
+}
+    
+.bloxbuddy-spinner-parent {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+}
