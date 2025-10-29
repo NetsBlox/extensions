@@ -1,30 +1,39 @@
 /* tslint:disable */
 /* eslint-disable */
-export function create_beatblox_oscillator(oscillator_type: string): AudioBuffer[];
 export class AudioBuffer {
   private constructor();
   free(): void;
+  static new(raw_data: Float32Array, sample_rate?: number | null): AudioBuffer;
   get_data(): Float32Array;
   sample_rate: number;
   size: number;
+}
+export class InstrumentSource {
+  private constructor();
+  free(): void;
+  static from_oscillator(oscillator_type: string, amplitude_text: string): InstrumentSource;
+  get_data(): AudioBuffer[];
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
+  readonly __wbg_instrumentsource_free: (a: number, b: number) => void;
+  readonly instrumentsource_from_oscillator: (a: number, b: number, c: number, d: number) => number;
+  readonly instrumentsource_get_data: (a: number) => [number, number];
   readonly __wbg_audiobuffer_free: (a: number, b: number) => void;
   readonly __wbg_get_audiobuffer_sample_rate: (a: number) => number;
   readonly __wbg_set_audiobuffer_sample_rate: (a: number, b: number) => void;
   readonly __wbg_get_audiobuffer_size: (a: number) => number;
   readonly __wbg_set_audiobuffer_size: (a: number, b: number) => void;
+  readonly audiobuffer_new: (a: number, b: number, c: number) => number;
   readonly audiobuffer_get_data: (a: number) => [number, number];
-  readonly create_beatblox_oscillator: (a: number, b: number) => [number, number];
   readonly __wbindgen_export_0: WebAssembly.Table;
-  readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
   readonly __externref_drop_slice: (a: number, b: number) => void;
+  readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __wbindgen_start: () => void;
 }
 

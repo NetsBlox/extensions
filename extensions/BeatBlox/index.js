@@ -60,21 +60,17 @@
         return res;
     }
 
-    const wasmPath = absoluteUrl('wasm/beatblox_audio_tools.js')
-    const wasmLoader = document.createElement('script');
-        wasmLoader.type = "module";
-        wasmLoader.innerHTML = `import init, {create_beatblox_oscillator} from '${wasmPath}';
-            await init();
-            window.BeatBloxAudioTools = {};
-            window.BeatBloxAudioTools.create_beatblox_oscillator = create_beatblox_oscillator;
-        `;
-    document.body.appendChild(wasmLoader);
-
     const musicMorphic = document.createElement('script');
     musicMorphic.type = 'module';
     musicMorphic.async = false;
     musicMorphic.src = absoluteUrl('js/music_morphs.js');
     document.body.appendChild(musicMorphic);
+
+    const customInstrument = document.createElement('script');
+    customInstrument.type = 'module';
+    customInstrument.async = false;
+    customInstrument.src = absoluteUrl('js/custom_instrument.js');
+    document.body.appendChild(customInstrument);
 
     const script = document.createElement('script');
     script.type = 'module';
@@ -394,18 +390,12 @@
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
-                            await audio.updateInstrument(this.receiver.id, instrument.name, instrument.src);
+                            await audio.updateInstrument(this.receiver.id, 'custom_instrument', instrument.src);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %instrument', [], function (src) {
-                        let instrument = new Instrument();
-                        return instrument;
-                    }),
-                    new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions', ['sine'], function (osc) {
-                        // let oscillator_data = window.BeatBloxAudioTools.create_beatblox_oscillator(osc);
-                        // let instrument = new Instrument(osc, oscillator_data);
-                        // return instrument;
-                        return new Oscillator()
+                    new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %l', [], i => window.BeatBlox.createInstrument(i)),
+                    new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions', ['sine'], function (type) {
+                        return new Oscillator(type)
                     }),
                     new Extension.Block('setKey', 'command', 'music', 'set key %keySig', ['CMajor'], function (key) {
                         if (KEYS[key] === undefined) throw Error(`unknown key: '${key}'`);

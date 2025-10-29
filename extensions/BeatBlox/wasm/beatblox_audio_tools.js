@@ -30,20 +30,6 @@ function getStringFromWasm0(ptr, len) {
     return decodeText(ptr, len);
 }
 
-let cachedFloat32ArrayMemory0 = null;
-
-function getFloat32ArrayMemory0() {
-    if (cachedFloat32ArrayMemory0 === null || cachedFloat32ArrayMemory0.byteLength === 0) {
-        cachedFloat32ArrayMemory0 = new Float32Array(wasm.memory.buffer);
-    }
-    return cachedFloat32ArrayMemory0;
-}
-
-function getArrayF32FromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
-}
-
 let WASM_VECTOR_LEN = 0;
 
 const cachedTextEncoder = (typeof TextEncoder !== 'undefined' ? new TextEncoder('utf-8') : { encode: () => { throw Error('TextEncoder not available') } } );
@@ -119,17 +105,30 @@ function getArrayJsValueFromWasm0(ptr, len) {
     wasm.__externref_drop_slice(ptr, len);
     return result;
 }
-/**
- * @param {string} oscillator_type
- * @returns {AudioBuffer[]}
- */
-export function create_beatblox_oscillator(oscillator_type) {
-    const ptr0 = passStringToWasm0(oscillator_type, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.create_beatblox_oscillator(ptr0, len0);
-    var v2 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
-    wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
-    return v2;
+
+let cachedFloat32ArrayMemory0 = null;
+
+function getFloat32ArrayMemory0() {
+    if (cachedFloat32ArrayMemory0 === null || cachedFloat32ArrayMemory0.byteLength === 0) {
+        cachedFloat32ArrayMemory0 = new Float32Array(wasm.memory.buffer);
+    }
+    return cachedFloat32ArrayMemory0;
+}
+
+function passArrayF32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getFloat32ArrayMemory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
+
+function getArrayF32FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
 }
 
 const AudioBufferFinalization = (typeof FinalizationRegistry === 'undefined')
@@ -184,12 +183,73 @@ export class AudioBuffer {
         wasm.__wbg_set_audiobuffer_size(this.__wbg_ptr, arg0);
     }
     /**
+     * @param {Float32Array} raw_data
+     * @param {number | null} [sample_rate]
+     * @returns {AudioBuffer}
+     */
+    static new(raw_data, sample_rate) {
+        const ptr0 = passArrayF32ToWasm0(raw_data, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.audiobuffer_new(ptr0, len0, isLikeNone(sample_rate) ? 0x100000001 : (sample_rate) >>> 0);
+        return AudioBuffer.__wrap(ret);
+    }
+    /**
      * @returns {Float32Array}
      */
     get_data() {
         const ptr = this.__destroy_into_raw();
         const ret = wasm.audiobuffer_get_data(ptr);
         var v1 = getArrayF32FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v1;
+    }
+}
+
+const InstrumentSourceFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_instrumentsource_free(ptr >>> 0, 1));
+
+export class InstrumentSource {
+
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(InstrumentSource.prototype);
+        obj.__wbg_ptr = ptr;
+        InstrumentSourceFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        InstrumentSourceFinalization.unregister(this);
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_instrumentsource_free(ptr, 0);
+    }
+    /**
+     * @param {string} oscillator_type
+     * @param {string} amplitude_text
+     * @returns {InstrumentSource}
+     */
+    static from_oscillator(oscillator_type, amplitude_text) {
+        const ptr0 = passStringToWasm0(oscillator_type, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(amplitude_text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.instrumentsource_from_oscillator(ptr0, len0, ptr1, len1);
+        return InstrumentSource.__wrap(ret);
+    }
+    /**
+     * @returns {AudioBuffer[]}
+     */
+    get_data() {
+        const ptr = this.__destroy_into_raw();
+        const ret = wasm.instrumentsource_get_data(ptr);
+        var v1 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
         return v1;
     }
