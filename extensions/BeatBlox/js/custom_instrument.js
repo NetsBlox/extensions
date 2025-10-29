@@ -25,8 +25,8 @@ function parseInstrumentParams(input) {
 }
 
 function createAmplitudeText(amplitude) {
-    console.log(amplitude);
-    if (typeof amplitude === 'string') {
+    if (!amplitude) return 'scalar-1';
+    else if (typeof amplitude === 'string') {
         const magnitude = parseFloat(amplitude);
         return `scalar-${magnitude}`
     } else if (amplitude instanceof Oscillator) {
