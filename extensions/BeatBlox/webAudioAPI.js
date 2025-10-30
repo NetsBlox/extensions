@@ -6279,11 +6279,17 @@ async function loadInstrument(audioContext, name, url_or_data) {
       return [noteData, metadata];
    }
 
-   function buildCustomInstrument(data) {
-      const noteData = data.map(notesrc => {
+   function buildCustomInstrument(instrument) {
+      const noteData = instrument.get_data().map(notesrc => {
          const audioBuffer = audioContext.createBuffer(1, notesrc.size, notesrc.sample_rate);
          audioBuffer.copyToChannel(notesrc.get_data(), 0);
-         return audioBuffer;
+         return {
+            'buffer': audioBuffer,
+            'detune': 0,
+            'loop': true,
+            'loopStart': audioBuffer.duration - 1.0,
+            'loopEnd': audioBuffer.duration
+         };;
       });
       return noteData;
    }
@@ -6333,17 +6339,17 @@ async function loadInstrument(audioContext, name, url_or_data) {
          return new OscillatorNode(offlineContext, { frequency: Frequency[note] });
       };
    }
-   else if (url_or_data instanceof Array) {
-      const noteData = await buildCustomInstrument(url_or_data);
+   else if (url_or_data instanceof Instrument) {
+      const noteData = await buildCustomInstrument(url_or_data.src);
       instrumentInstance.getNote = function (note) {
          if (note < 0 || note >= url_or_data.length)
             throw new WebAudioInstrumentError(`The specified note (${note}) is not defined`);
-         return new AudioBufferSourceNode(audioContext, { buffer: noteData[note] });
+         return new AudioBufferSourceNode(audioContext, noteData[note]);
       };
       instrumentInstance.getNoteOffline = function (offlineContext, note) {
          if (note < 0 || note >= url_or_data.length)
             throw new WebAudioInstrumentError(`The specified note (${note}) is not defined`);
-         return new AudioBufferSourceNode(offlineContext, { buffer: noteData[note] });
+         return new AudioBufferSourceNode(offlineContext, noteData[note]);
       };
    }
    else {

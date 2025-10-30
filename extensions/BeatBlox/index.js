@@ -390,7 +390,7 @@
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
-                            await audio.updateInstrument(this.receiver.id, 'custom_instrument', instrument.src);
+                            await audio.updateInstrument(this.receiver.id, 'custom_instrument', instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %l', [], i => window.BeatBlox.createInstrument(i)),

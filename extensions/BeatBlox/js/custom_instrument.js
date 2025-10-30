@@ -43,19 +43,13 @@ function createAmplitudeText(amplitude) {
     throw Error('invalid amplitude argument');
 }
 
-function loadInstumentFromSource(instrumentSource) {
-    const data = instrumentSource.get_data();
-    return new Instrument(data)
-}
-
 function createInstrument(input) {
     const params = parseInstrumentParams(input);
     if (params['source'] instanceof Oscillator) {
         const oscillatorType = params['source'].type;
         const amplitudeText = createAmplitudeText(params['amplitude']);
         const instrumentSource = InstrumentSource.from_oscillator(oscillatorType, amplitudeText);
-        const instrument = loadInstumentFromSource(instrumentSource);
-        return instrument;
+        return new Instrument(instrumentSource);
     }
     return "instrument not created";
 }
