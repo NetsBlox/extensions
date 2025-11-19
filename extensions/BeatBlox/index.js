@@ -393,7 +393,7 @@
                             await audio.updateInstrument(this.receiver.id, 'custom_instrument', instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %l', [], i => window.BeatBlox.createInstrument(i)),
+                    new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %l', [], options => window.BeatBlox.createInstrument(options)),
                     new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions', ['sine'], function (type) {
                         return new Oscillator(type)
                     }),

@@ -1,58 +1,36 @@
-import init, { InstrumentSource } from '../wasm/beatblox_audio_tools.js';
+const OPTIONS = ['source', 'amplitude', 'filter', 'amplitude-lfo-speed'];
 
-await init();
-
-const PARAM_OPTIONS = ['source', 'amplitude', 'filter', 'amplitude-lfo-speed'];
-
-function validateInstrumentParam(input) {
-    if (!(input instanceof List)) throw Error("must input a list");
+function validateInstrumentOptions(options) {
+    if (!(options instanceof List)) throw Error("must options a list");
     let sourceFound = false;
-    input.contents.forEach(element => {
+    options.contents.forEach(element => {
         if (!(element instanceof List)) throw Error("invalid param list");
         if (element.length() !== 2) throw Error("invalid param list");
         const option = element.contents[0];
-        if (PARAM_OPTIONS.indexOf(option) === -1) throw Error(`invalid param option: ${option}`);
+        if (OPTIONS.indexOf(option) === -1) throw Error(`invalid param option: ${option}`);
         if (option === 'source' && !sourceFound) sourceFound = true;
         else if (option === 'source' && sourceFound) throw Error(`cannot have multiple sources`);
     });
 }
 
-function parseInstrumentParams(input) {
-    validateInstrumentParam(input);
+function parseInstrumentOptions(options) {
+    validateInstrumentOptions(options);
     const params = {};
-    input.contents.forEach(element => params[element.contents[0]] = element.contents[1]);
+    options.contents.forEach(element => params[element.contents[0]] = element.contents[1]);
     return params;
 }
 
-function createAmplitudeText(amplitude) {
-    if (!amplitude) return 'scalar-1';
-    else if (typeof amplitude === 'string') {
-        const magnitude = parseFloat(amplitude);
-        return `scalar-${magnitude}`
-    } else if (amplitude instanceof Oscillator) {
-        const lfoType = amplitude.type;
-        return `lfo-${lfoType}-1`;
-    } else if (amplitude instanceof List) {
-        const args = amplitude.contents;
-        if (args[0] instanceof Oscillator && typeof args[1] === 'string') {
-            const lfoType = args[0].type;
-            const frequency = parseFloat(args[1]);
-            return `lfo-${lfoType}-${frequency}`;
-        }
-    }
-    throw Error('invalid amplitude argument');
-}
-
-function createInstrument(input) {
-    const params = parseInstrumentParams(input);
-    if (params['source'] instanceof Oscillator) {
-        const oscillatorType = params['source'].type;
-        const amplitudeText = createAmplitudeText(params['amplitude']);
-        const instrumentSource = InstrumentSource.from_oscillator(oscillatorType, amplitudeText);
-        return new Instrument(instrumentSource);
-    }
-    return "instrument not created";
-}
-
 window.BeatBlox = {};
-window.BeatBlox.createInstrument = createInstrument;
+window.BeatBlox.createInstrument = function (_options)  {
+    const options = parseInstrumentOptions(_options);
+    if (options.source instanceof Oscillator) {
+        const src = {
+            'type': options.source.type,
+            'gain': options.amplitude
+        }
+        return new Instrument(src);
+    }
+    else { 
+        throw Error('error: upsuported source type')
+    }
+}

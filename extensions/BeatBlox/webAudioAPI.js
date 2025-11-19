@@ -6159,14 +6159,14 @@ function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
  * 
  * @param {AudioContext} audioContext - Reference to the global browser {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
  * @param {string} name - Name of the instrument to load
- * @param {string|Array<Uint8Array>|null} url_or_data - URL pointing to the instrument data to load,
- *                                                 the instrument data itself, or `null`
+ * @param {string|Instrument|null} url_or_instrument - URL pointing to the instrument data to load,
+ *                                                     the instrument data itself, or `null`
  * @returns {Promise<Instrument>} Newly loaded {@link Instrument}
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
  * @see {@link Instrument}
  * @async
  */
-async function loadInstrument(audioContext, name, url_or_data) {
+async function loadInstrument(audioContext, name, url_or_instrument) {
 
    // Private internal Instrument functions
    function loadNumberFromArray(array, numBytes, offset) {
@@ -6331,7 +6331,7 @@ async function loadInstrument(audioContext, name, url_or_data) {
 
    // Actually load and return the instrument
    console.log('Loading instrument:', name + '...');
-   if (url_or_data == null) {
+   if (url_or_instrument == null) {
       instrumentInstance.getNote = function (note) {
          return new OscillatorNode(audioContext, { frequency: Frequency[note] });
       };
@@ -6339,21 +6339,19 @@ async function loadInstrument(audioContext, name, url_or_data) {
          return new OscillatorNode(offlineContext, { frequency: Frequency[note] });
       };
    }
-   else if (url_or_data instanceof Instrument) {
-      const noteData = await buildCustomInstrument(url_or_data.src);
+   else if (url_or_instrument instanceof Instrument) {
+      const options = url_or_instrument.src;
       instrumentInstance.getNote = function (note) {
-         if (note < 0 || note >= url_or_data.length)
-            throw new WebAudioInstrumentError(`The specified note (${note}) is not defined`);
-         return new AudioBufferSourceNode(audioContext, noteData[note]);
+         options.frequency = Frequency[note];
+         return new InstrumentNode(audioContext, options);
       };
       instrumentInstance.getNoteOffline = function (offlineContext, note) {
-         if (note < 0 || note >= url_or_data.length)
-            throw new WebAudioInstrumentError(`The specified note (${note}) is not defined`);
-         return new AudioBufferSourceNode(offlineContext, noteData[note]);
+         options.frequency = Frequency[note];
+         return new InstrumentNode(offlineContext, options);
       };
    }
    else {
-      const [noteData, metadata] = await loadInstrument(url_or_data);
+      const [noteData, metadata] = await loadInstrument(url_or_instrument);
       instrumentInstance.getNote = function (note) {
          if (note && (note < metadata.minValidNote) || (note > metadata.maxValidNote))
             throw new WebAudioInstrumentError(`The specified note (${note}) is unplayable on this instrument. Valid notes are [${metadata.minValidNote}, ${metadata.maxValidNote}]`);
@@ -6366,6 +6364,40 @@ async function loadInstrument(audioContext, name, url_or_data) {
       };
    }
    return instrumentInstance;
+}
+
+class InstrumentNode extends OscillatorNode {
+
+   audioSource
+
+   constructor(audioContext, options) {
+      super(audioContext, options);
+      this.#setGain(options.gain);
+   }
+
+   connect(node) {
+      if (this.audioSource !== undefined) {
+         return this.audioSource.connect(node)
+      }
+      return super.connect(node);
+   }
+
+   #setGain(gain) {
+      if (gain !== undefined) {
+         if (typeof gain === 'string') {
+            const gainValue = parseFloat(gain);
+            const gainNode = new GainNode(super.context, { 'gain': gainValue });
+            this.audioSource = super.connect(gainNode);
+         }
+         else if (gain instanceof Oscillator) {
+            const lfo = new OscillatorNode(super.context, { frequency: 1, type: gain.type });
+            const gainNode = new GainNode(super.context, { gain: 0 });
+            lfo.connect(gainNode.gain);
+            lfo.start();
+            this.audioSource = super.connect(gainNode);
+         }
+      }
+   }
 }
 
 /** Class representing all base-level {@link WebAudioAPI} audio analysis functions */
