@@ -335,6 +335,7 @@
                     new Extension.Palette.Block('setInstrument'),
                     new Extension.Palette.Block('createInstrument'),
                     new Extension.Palette.Block('oscillator'),
+                    new Extension.Palette.Block('filter'),
                     '-',
                     new Extension.Palette.Block('setKey'),
                     new Extension.Palette.Block('setBPM'),
@@ -393,10 +394,11 @@
                             await audio.updateInstrument(this.receiver.id, 'custom_instrument', instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %l', [], options => window.BeatBlox.createInstrument(options)),
+                    new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %l', [], window.BeatBlox.createInstrument),
                     new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions', ['sine'], function (type) {
                         return new Oscillator(type)
                     }),
+                    new Extension.Block('filter', 'reporter', 'music', 'filter %filterOptions parameters: %l', ['allpass'], window.BeatBlox.createFilter),
                     new Extension.Block('setKey', 'command', 'music', 'set key %keySig', ['CMajor'], function (key) {
                         if (KEYS[key] === undefined) throw Error(`unknown key: '${key}'`);
                         audio.updateKeySignature(KEYS[key]);
@@ -768,7 +770,8 @@
                     basicEnum('chordType', identityMap(Object.keys(CHORD_PATTERNS))),
                     basicEnum('scaleType', identityMap(Object.keys(SCALE_PATTERNS))),
                     basicEnum('drumGridOption', identityMap(['new...', 'edit...'])),
-                    basicEnum('oscillatorOptions', identityMap(['sine', 'triangle', 'sawtooth', 'square']))
+                    basicEnum('oscillatorOptions', identityMap(['sine', 'triangle', 'sawtooth', 'square'])),
+                    basicEnum('filterOptions', identityMap(['lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch', 'allpass']))
                 ];
             }
         }

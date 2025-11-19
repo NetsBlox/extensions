@@ -21,6 +21,7 @@ function parseInstrumentOptions(options) {
 }
 
 window.BeatBlox = {};
+
 window.BeatBlox.createInstrument = function (_options)  {
     const options = parseInstrumentOptions(_options);
     if (options.source instanceof Oscillator) {
@@ -33,4 +34,8 @@ window.BeatBlox.createInstrument = function (_options)  {
     else { 
         throw Error('error: upsuported source type')
     }
+}
+
+window.BeatBlox.createFilter = function (type, parameters) {
+    return new Filter(type, parameters);
 }
