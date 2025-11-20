@@ -1,10 +1,12 @@
-const INSTRUMENT_OPTIONS = ['source', 'amplitude', 'filter', 'amplitude-lfo-speed'];
+const INSTRUMENT_SOURCE_OPTIONS = ['sine', 'sawtooth', 'triangle', 'square'];
+const INSTRUMENT_OPTIONS = ['amplitude', 'filter', 'amplitude-lfo-speed'];
 const FILTER_OPTIONS = ['frequency', 'Q', 'gain'];
+const OSCILLATOR_OPTIONS = ['frequency', 'value'];
 
-function validateInstrumentOptions(options) {
-    if (!(options instanceof List)) throw Error("must options a list");
+function validateInstrumentParameters(parameters) {
+    if (!(parameters instanceof List)) throw Error("parameters must be a list");
     let sourceFound = false;
-    options.contents.forEach(element => {
+    parameters.contents.forEach(element => {
         if (!(element instanceof List)) throw Error("invalid param list");
         if (element.length() !== 2) throw Error("invalid param list");
         const option = element.contents[0];
@@ -14,11 +16,14 @@ function validateInstrumentOptions(options) {
     });
 }
 
-function parseInstrumentOptions(options) {
-    validateInstrumentOptions(options);
-    const params = {};
-    options.contents.forEach(element => params[element.contents[0]] = element.contents[1]);
-    return params;
+function validateOscillatorParameters(parameters) {
+    if (!(parameters instanceof List)) throw Error("parameters must be a list");
+    parameters.contents.forEach(element => {
+        if (!(element instanceof List)) throw Error("invalid param list");
+        if (element.length() !== 2) throw Error("invalid param list");
+        const option = element.contents[0];
+        if (OSCILLATOR_OPTIONS.indexOf(option) === -1) throw Error(`invalid param option: ${option}`);
+    });
 }
 
 function validateFilterParameters(parameters) {
@@ -31,8 +36,8 @@ function validateFilterParameters(parameters) {
     });
 }
 
-function parseFilterParameters(parameters) {
-    validateFilterParameters(parameters);
+function parseParameters(parameters, validateFunction) {
+    validateFunction(parameters);
     const params = {};
     parameters.contents.forEach(element => params[element.contents[0]] = element.contents[1]);
     return params;
@@ -40,11 +45,11 @@ function parseFilterParameters(parameters) {
 
 window.BeatBlox = {};
 
-window.BeatBlox.createInstrument = function (_options)  {
-    const options = parseInstrumentOptions(_options);
-    if (options.source instanceof Oscillator) {
+window.BeatBlox.createInstrument = function (source, _options)  {
+    const options = parseParameters(_options, validateInstrumentParameters);
+    if (INSTRUMENT_SOURCE_OPTIONS.indexOf(source) >= -1) {
         const src = {
-            'type': options.source.type,
+            'type': source,
             'gain': options.amplitude,
             'filter': options.filter.parameters
         }
@@ -55,8 +60,14 @@ window.BeatBlox.createInstrument = function (_options)  {
     }
 }
 
+window.BeatBlox.createOscillator = function (type, parameters) {
+    const params = parseParameters(parameters, validateOscillatorParameters);
+    params.type = type;
+    return new Oscillator(type, parameters);
+}
+
 window.BeatBlox.createFilter = function (type, parameters) {
-    const params = parseFilterParameters(parameters);
+    const params = parseParameters(parameters, validateFilterParameters);
     params.type = type;
     return new Filter(type, params);
 }
