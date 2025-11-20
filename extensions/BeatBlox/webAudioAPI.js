@@ -6373,6 +6373,7 @@ class InstrumentNode extends OscillatorNode {
    constructor(audioContext, options) {
       super(audioContext, options);
       this.#setGain(options.gain);
+      this.#setFilter(options.filter);
    }
 
    connect(node) {
@@ -6396,6 +6397,13 @@ class InstrumentNode extends OscillatorNode {
             lfo.start();
             this.audioSource = super.connect(gainNode);
          }
+      }
+   }
+
+   #setFilter(filter) {
+      if (filter !== undefined) {
+         const filterNode = new BiquadFilterNode(super.context, filter);
+         this.audioSource = super.connect(filterNode);
       }
    }
 }
