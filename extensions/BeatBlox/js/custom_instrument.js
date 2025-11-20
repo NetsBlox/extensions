@@ -1,4 +1,5 @@
-const OPTIONS = ['source', 'amplitude', 'filter', 'amplitude-lfo-speed'];
+const INSTRUMENT_OPTIONS = ['source', 'amplitude', 'filter', 'amplitude-lfo-speed'];
+const FILTER_OPTIONS = ['frequency', 'Q', 'gain'];
 
 function validateInstrumentOptions(options) {
     if (!(options instanceof List)) throw Error("must options a list");
@@ -20,6 +21,23 @@ function parseInstrumentOptions(options) {
     return params;
 }
 
+function validateFilterParameters(parameters) {
+    if (!(parameters instanceof List)) throw Error("parameters must be a list");
+    parameters.contents.forEach(element => {
+        if (!(element instanceof List)) throw Error("invalid param list");
+        if (element.length() !== 2) throw Error("invalid param list");
+        const option = element.contents[0];
+        if (FILTER_OPTIONS.indexOf(option) === -1) throw Error(`invalid param option: ${option}`);
+    });
+}
+
+function parseFilterParameters(parameters) {
+    validateFilterParameters(parameters);
+    const params = {};
+    parameters.contents.forEach(element => params[element.contents[0]] = element.contents[1]);
+    return params;
+}
+
 window.BeatBlox = {};
 
 window.BeatBlox.createInstrument = function (_options)  {
@@ -37,5 +55,6 @@ window.BeatBlox.createInstrument = function (_options)  {
 }
 
 window.BeatBlox.createFilter = function (type, parameters) {
-    return new Filter(type, parameters);
+    const params = parseFilterParameters(parameters);
+    return new Filter(type, params);
 }
