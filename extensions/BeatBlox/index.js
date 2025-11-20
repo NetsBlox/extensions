@@ -394,10 +394,8 @@
                             await audio.updateInstrument(this.receiver.id, 'custom_instrument', instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %l', [], window.BeatBlox.createInstrument),
-                    new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions', ['sine'], function (type) {
-                        return new Oscillator(type)
-                    }),
+                    new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %oscillatorOptions %l', ['sine'], window.BeatBlox.createInstrument),
+                    new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions %l', ['sine'], window.BeatBlox.createOscillator),
                     new Extension.Block('filter', 'reporter', 'music', 'filter %filterOptions parameters: %l', ['allpass'], window.BeatBlox.createFilter),
                     new Extension.Block('setKey', 'command', 'music', 'set key %keySig', ['CMajor'], function (key) {
                         if (KEYS[key] === undefined) throw Error(`unknown key: '${key}'`);
