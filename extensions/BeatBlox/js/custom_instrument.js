@@ -8,7 +8,7 @@ function validateInstrumentOptions(options) {
         if (!(element instanceof List)) throw Error("invalid param list");
         if (element.length() !== 2) throw Error("invalid param list");
         const option = element.contents[0];
-        if (OPTIONS.indexOf(option) === -1) throw Error(`invalid param option: ${option}`);
+        if (INSTRUMENT_OPTIONS.indexOf(option) === -1) throw Error(`invalid param option: ${option}`);
         if (option === 'source' && !sourceFound) sourceFound = true;
         else if (option === 'source' && sourceFound) throw Error(`cannot have multiple sources`);
     });
@@ -45,7 +45,8 @@ window.BeatBlox.createInstrument = function (_options)  {
     if (options.source instanceof Oscillator) {
         const src = {
             'type': options.source.type,
-            'gain': options.amplitude
+            'gain': options.amplitude,
+            'filter': options.filter.parameters
         }
         return new Instrument(src);
     }
@@ -56,5 +57,6 @@ window.BeatBlox.createInstrument = function (_options)  {
 
 window.BeatBlox.createFilter = function (type, parameters) {
     const params = parseFilterParameters(parameters);
+    params.type = type;
     return new Filter(type, params);
 }
