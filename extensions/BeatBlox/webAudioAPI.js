@@ -6400,8 +6400,6 @@ class InstrumentNode extends OscillatorNode {
 
       oscillators.forEach(oscillatorData => {
          const osc = new OscillatorNode(super.context, oscillatorData.osc.parameters);
-         console.log(oscillatorData.osc.parameters);
-         console.log(osc);
          osc.connect(_node[oscillatorData.key]);
          osc.start();
       });
