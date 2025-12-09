@@ -6372,8 +6372,8 @@ class InstrumentNode extends OscillatorNode {
 
    constructor(audioContext, options) {
       super(audioContext, options);
-      this.#setGain(options.gain);
-      this.#setFilter(options.filter);
+      this.#connectNode(options.gain);
+      this.#connectNode(options.filter);
    }
 
    connect(node) {
@@ -6383,28 +6383,37 @@ class InstrumentNode extends OscillatorNode {
       return super.connect(node);
    }
 
-   #setGain(gain) {
-      if (gain !== undefined) {
-         if (typeof gain === 'string') {
-            const gainValue = parseFloat(gain);
-            const gainNode = new GainNode(super.context, { 'gain': gainValue });
-            this.audioSource = super.connect(gainNode);
-         }
-         else if (gain instanceof Oscillator) {
-            const lfo = new OscillatorNode(super.context, { frequency: 1, type: gain.type });
-            const gainNode = new GainNode(super.context, { gain: 0 });
-            lfo.connect(gainNode.gain);
-            lfo.start();
-            this.audioSource = super.connect(gainNode);
-         }
+   #connectNode(node) {
+      if (node === undefined || !node.parameters) {
+         return;
       }
-   }
 
-   #setFilter(filter) {
-      if (filter !== undefined) {
-         const filterNode = new BiquadFilterNode(super.context, filter);
-         this.audioSource = super.connect(filterNode);
-      }
+      const fieldsWithOscillator = [];
+      const parameters = {}
+      Object.keys(node.parameters).forEach(key => {
+         const item = node.parameters[key];
+         if (item instanceof Oscillator) {
+            fieldsWithOscillator.push(key);
+         }
+         parameters[key] = item instanceof Oscillator ? 0 : item;
+      });
+
+      const _AudioNode  = node => {
+         if (node instanceof Filter) return BiquadFilterNode;
+         if (node instanceof Gain) return GainNode;
+      };
+      const _node = new (_AudioNode(node))(super.context, parameters);
+      
+      const oscillators = fieldsWithOscillator.map(key => {
+         const osc = new OscillatorNode(super.context, { 
+            frequency: node.parameters[key].getFrequency(), 
+            type: node.parameters[key].type,
+         });
+         osc.connect(_node[key]);
+      });
+      oscillators.forEach(osc => osc.start());
+
+      this.audioSource = super.connect(_node);
    }
 }
 

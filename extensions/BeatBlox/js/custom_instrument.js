@@ -1,5 +1,5 @@
 const INSTRUMENT_SOURCE_OPTIONS = ['sine', 'sawtooth', 'triangle', 'square'];
-const INSTRUMENT_OPTIONS = ['amplitude', 'filter', 'amplitude-lfo-speed'];
+const INSTRUMENT_OPTIONS = ['gain', 'filter'];
 const FILTER_OPTIONS = ['frequency', 'Q', 'gain'];
 const OSCILLATOR_OPTIONS = ['frequency', 'value'];
 
@@ -50,8 +50,8 @@ window.BeatBlox.createInstrument = function (source, _options)  {
     if (INSTRUMENT_SOURCE_OPTIONS.indexOf(source) >= -1) {
         const src = {
             'type': source,
-            'gain': options.amplitude,
-            'filter': options.filter.parameters
+            'gain': new Gain(options.gain),
+            'filter': options.filter
         }
         return new Instrument(src);
     }
@@ -63,11 +63,10 @@ window.BeatBlox.createInstrument = function (source, _options)  {
 window.BeatBlox.createOscillator = function (type, parameters) {
     const params = parseParameters(parameters, validateOscillatorParameters);
     params.type = type;
-    return new Oscillator(type, parameters);
+    return new Oscillator(type, params);
 }
 
 window.BeatBlox.createFilter = function (type, parameters) {
     const params = parseParameters(parameters, validateFilterParameters);
-    params.type = type;
     return new Filter(type, params);
 }
