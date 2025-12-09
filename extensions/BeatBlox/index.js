@@ -334,6 +334,7 @@
                 const blocks = [
                     new Extension.Palette.Block('setInstrument'),
                     new Extension.Palette.Block('createInstrument'),
+                    new Extension.Palette.Block('updateInstrument'),
                     new Extension.Palette.Block('oscillator'),
                     new Extension.Palette.Block('filter'),
                     '-',
@@ -391,10 +392,14 @@
                             await setupEntity(this.receiver);
                             setupProcess(this);
 
-                            await audio.updateInstrument(this.receiver.id, 'custom_instrument', instrument);
+                            await audio.updateInstrument(this.receiver.id, 'custom-instrument+' + instrument.id, instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %oscillatorOptions %l', ['sine'], window.BeatBlox.createInstrument),
+                    new Extension.Block('updateInstrument', 'command', 'music', 'update instrument %l %l', [], function (instrument, updates) {
+                        const newInstrument = window.BeatBlox.updateInstrument(instrument, updates);
+                        console.log(this.setInstrument);
+                    }),
                     new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions %l', ['sine'], window.BeatBlox.createOscillator),
                     new Extension.Block('filter', 'reporter', 'music', 'filter %filterOptions parameters: %l', ['allpass'], window.BeatBlox.createFilter),
                     new Extension.Block('setKey', 'command', 'music', 'set key %keySig', ['CMajor'], function (key) {

@@ -44,6 +44,7 @@ function parseParameters(parameters, validateFunction) {
 }
 
 window.BeatBlox = {};
+window.BeatBlox.instrumentCount = 0;
 
 window.BeatBlox.createInstrument = function (source, _options)  {
     const options = parseParameters(_options, validateInstrumentParameters);
@@ -51,13 +52,17 @@ window.BeatBlox.createInstrument = function (source, _options)  {
         const src = {
             'type': source,
             'gain': new Gain(options.gain),
-            'filter': options.filter
+            'filter': options.filter,
         }
-        return new Instrument(src);
+        return new Instrument(window.BeatBlox.instrumentCount++, src);
     }
     else { 
         throw Error('error: upsuported source type')
     }
+}
+
+window.BeatBlox.updateInstrument = function (instrument, updates) {
+
 }
 
 window.BeatBlox.createOscillator = function (type, parameters) {
