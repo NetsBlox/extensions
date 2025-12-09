@@ -6388,32 +6388,41 @@ class InstrumentNode extends OscillatorNode {
          return;
       }
 
-      const fieldsWithOscillator = [];
-      const parameters = {}
-      Object.keys(node.parameters).forEach(key => {
-         const item = node.parameters[key];
-         if (item instanceof Oscillator) {
-            fieldsWithOscillator.push(key);
-         }
-         parameters[key] = item instanceof Oscillator ? 0 : item;
-      });
+      const parameterList = this.#createParameterList(node.parameters);
+      const parameters = parameterList.parameters;
+      const oscillators = parameterList.oscillators;
 
-      const _AudioNode  = node => {
+      const _AudioNode = node => {
          if (node instanceof Filter) return BiquadFilterNode;
          if (node instanceof Gain) return GainNode;
       };
       const _node = new (_AudioNode(node))(super.context, parameters);
-      
-      const oscillators = fieldsWithOscillator.map(key => {
-         const osc = new OscillatorNode(super.context, { 
-            frequency: node.parameters[key].getFrequency(), 
-            type: node.parameters[key].type,
-         });
-         osc.connect(_node[key]);
+
+      oscillators.forEach(oscillatorData => {
+         const osc = new OscillatorNode(super.context, oscillatorData.osc.parameters);
+         console.log(oscillatorData.osc.parameters);
+         console.log(osc);
+         osc.connect(_node[oscillatorData.key]);
+         osc.start();
       });
-      oscillators.forEach(osc => osc.start());
 
       this.audioSource = super.connect(_node);
+   }
+
+   #createParameterList(params) {
+      const fieldsWithOscillator = [];
+      const parameters = {}
+
+      Object.keys(params).forEach(key => {
+         const item = params[key];
+         if (item instanceof Oscillator) fieldsWithOscillator.push({ key: key, osc: item });
+         parameters[key] = item instanceof Oscillator ? 0 : item;
+      });
+
+      return {
+         parameters: parameters,
+         oscillators: fieldsWithOscillator,
+      }
    }
 }
 
