@@ -398,7 +398,7 @@
                     new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %oscillatorOptions %l', ['sine'], window.BeatBlox.createInstrument),
                     new Extension.Block('updateInstrument', 'command', 'music', 'update instrument %l %l', [], function (instrument, updates) {
                         const newInstrument = window.BeatBlox.updateInstrument(instrument, updates);
-                        console.log(this.setInstrument);
+                        this.setInstrument(newInstrument);
                     }),
                     new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions %l', ['sine'], window.BeatBlox.createOscillator),
                     new Extension.Block('filter', 'reporter', 'music', 'filter %filterOptions parameters: %l', ['allpass'], window.BeatBlox.createFilter),

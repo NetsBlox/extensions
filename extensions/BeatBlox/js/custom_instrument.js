@@ -62,7 +62,9 @@ window.BeatBlox.createInstrument = function (source, _options)  {
 }
 
 window.BeatBlox.updateInstrument = function (instrument, updates) {
-
+    const _updates = parseParameters(updates, validateInstrumentParameters);
+    Object.keys(_updates).forEach(key => instrument.src[key] = key === 'gain' ? new Gain(_updates.gain) : _updates[key]);
+    return instrument;
 }
 
 window.BeatBlox.createOscillator = function (type, parameters) {

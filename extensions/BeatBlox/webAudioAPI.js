@@ -6384,9 +6384,11 @@ class InstrumentNode extends OscillatorNode {
    }
 
    #connectNode(node) {
+      console.log(node);
       if (node === undefined || !node.parameters) {
          return;
       }
+      console.log('hello');
 
       const parameterList = this.#createParameterList(node.parameters);
       const parameters = parameterList.parameters;
