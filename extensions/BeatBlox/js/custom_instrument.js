@@ -1,5 +1,5 @@
 const INSTRUMENT_SOURCE_OPTIONS = ['sine', 'sawtooth', 'triangle', 'square'];
-const INSTRUMENT_OPTIONS = ['gain', 'filter'];
+const INSTRUMENT_OPTIONS = ['type', 'gain', 'filter'];
 const FILTER_OPTIONS = ['frequency', 'Q', 'gain'];
 const OSCILLATOR_OPTIONS = ['frequency', 'value'];
 
