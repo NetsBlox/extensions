@@ -336,7 +336,7 @@
                     new Extension.Palette.Block('createInstrument'),
                     new Extension.Palette.Block('updateInstrument'),
                     '-',
-                    // TODO add effect chain
+                    new Extension.Palette.Block('effectChain'),
                     '-',
                     new Extension.Palette.Block('oscillator'),
                     new Extension.Palette.Block('filter'),
@@ -400,6 +400,8 @@
                         const newInstrument = window.BeatBlox.updateInstrument(instrument, updates);
                         this.setInstrument(newInstrument);
                     }),
+                    // TODO - implement this block
+                    new Extension.Block('effectChain', 'command', 'music', 'effect chain %mult%l', [], function (arg) { console.log('todo'); }),
                     new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions %l', ['sine'], window.BeatBlox.createOscillator),
                     new Extension.Block('filter', 'reporter', 'music', 'filter %filterOptions parameters: %l', ['allpass'], window.BeatBlox.createFilter),
                     new Extension.Block('effect', 'reporter', 'music', 'effect %effectOptions parameters: %l', ['delay'], window.BeatBlox.createEffect),
