@@ -335,8 +335,12 @@
                     new Extension.Palette.Block('setInstrument'),
                     new Extension.Palette.Block('createInstrument'),
                     new Extension.Palette.Block('updateInstrument'),
+                    '-',
+                    // TODO add effect chain
+                    '-',
                     new Extension.Palette.Block('oscillator'),
                     new Extension.Palette.Block('filter'),
+                    new Extension.Palette.Block('effect'),
                     '-',
                     new Extension.Palette.Block('setKey'),
                     new Extension.Palette.Block('setBPM'),
@@ -398,6 +402,7 @@
                     }),
                     new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions %l', ['sine'], window.BeatBlox.createOscillator),
                     new Extension.Block('filter', 'reporter', 'music', 'filter %filterOptions parameters: %l', ['allpass'], window.BeatBlox.createFilter),
+                    new Extension.Block('effect', 'reporter', 'music', 'effect %effectOptions parameters: %l', ['delay'], window.BeatBlox.createEffect),
                     new Extension.Block('setKey', 'command', 'music', 'set key %keySig', ['CMajor'], function (key) {
                         if (KEYS[key] === undefined) throw Error(`unknown key: '${key}'`);
                         audio.updateKeySignature(KEYS[key]);
@@ -713,7 +718,8 @@
                     basicEnum('scaleType', identityMap(Object.keys(SCALE_PATTERNS))),
                     basicEnum('drumGridOption', identityMap(['new...', 'edit...'])),
                     basicEnum('oscillatorOptions', identityMap(['sine', 'triangle', 'sawtooth', 'square'])),
-                    basicEnum('filterOptions', identityMap(['lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch', 'allpass']))
+                    basicEnum('filterOptions', identityMap(['lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch', 'allpass'])),
+                    basicEnum('effectOptions', identityMap(['delay']))
                 ];
             }
         }

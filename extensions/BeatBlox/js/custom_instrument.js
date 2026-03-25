@@ -77,3 +77,8 @@ window.BeatBlox.createFilter = function (type, parameters) {
     const params = parseParameters(parameters, validateFilterParameters);
     return new Filter(type, params);
 }
+
+// TODO implementation needed
+window.BeatBlox.createEffect = function (type, parameters) {
+    return new AudioEffect(type);
+}
