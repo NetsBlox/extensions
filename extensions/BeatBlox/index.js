@@ -357,10 +357,6 @@
                     new Extension.Palette.Block('audioAnalysis'),
                     new Extension.Palette.Block('createClip'),
                     '-',
-                    new Extension.Palette.Block('setAudioEffect'),
-                    new Extension.Palette.Block('getAudioEffect'),
-                    new Extension.Palette.Block('clearAudioEffects'),
-                    '-',
                     new Extension.Palette.Block('setAudioInput'),
                     new Extension.Palette.Block('startRecording'),
                     new Extension.Palette.Block('finishRecording'),
@@ -599,63 +595,6 @@
                             const res = new Sound(new Audio(URL.createObjectURL(blob, { type: 'audio/wav' })), 'netsblox-sound');
                             res.audioBuffer = blob;
                             return res;
-                        }, { args: [], timeout: I32_MAX });
-                    }),
-                    new Extension.Block('setAudioEffect', 'command', 'music', 'set %audioEffect effect to %n %', ['Volume', 100], function (effect, rawValue) {
-                        return this.runAsyncFn(async () => {
-                            await setupEntity(this.receiver);
-                            setupProcess(this);
-
-                            const { type, params } = EFFECT_INFO[effect] || {};
-                            if (type === undefined || params === undefined) throw Error(`unknown effect: "${effect}"`);
-
-                            const value = rawValue / 100;
-                            if (isNaN(value)) throw Error(`expected a number, got "${rawValue}"`);
-
-                            const targets = [this.receiver.id, this.receiver.id + 'Drum'];
-                            if (this.receiver.musicInfo.effects[effect] === undefined) {
-                                for (const target of targets) {
-                                    await audio.applyTrackEffect(target, effect, EFFECTS[type]);
-                                }
-                            }
-                            this.receiver.musicInfo.effects[effect] = value;
-                            for (const target of targets) {
-                                await audio.updateTrackEffect(target, effect, params(value));
-                            }
-                        }, { args: [], timeout: I32_MAX });
-                    }),
-                    new Extension.Block('getAudioEffect', 'reporter', 'music', 'get %audioEffectAug effect', ['Volume'], function (effect) {
-                        return this.runAsyncFn(async () => {
-                            await setupEntity(this.receiver);
-                            setupProcess(this);
-
-                            const getSingle = effect => {
-                                const { identity } = EFFECT_INFO[effect] || {};
-                                if (identity === undefined) throw Error(`unknown effect: "${effect}"`);
-
-                                return { value: this.receiver.musicInfo.effects[effect] ?? identity, identity };
-                            };
-
-                            if (effect === 'every') {
-                                return snapify(Object.keys(EFFECT_INFO).map(x => [x, 100 * getSingle(x).value]));
-                            } else if (effect === 'every active') {
-                                return snapify(Object.keys(EFFECT_INFO).map(x => [x, getSingle(x)]).filter(x => x[1].value !== x[1].identity).map(x => [x[0], 100 * x[1].value]));
-                            } else {
-                                return 100 * getSingle(effect).value;
-                            }
-                        }, { args: [], timeout: I32_MAX });
-                    }),
-                    new Extension.Block('clearAudioEffects', 'command', 'music', 'clear audio effects', [], function () {
-                        return this.runAsyncFn(async () => {
-                            await setupEntity(this.receiver);
-                            setupProcess(this);
-
-                            for (const effect in EFFECT_INFO) {
-                                for (const target of [this.receiver.id, this.receiver.id + 'Drum']) {
-                                    audio.removeTrackEffect(target, effect);
-                                }
-                            }
-                            this.receiver.musicInfo.effects = {};
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('setAudioInput', 'command', 'music', 'use input %audioInput', [], function (device) {
