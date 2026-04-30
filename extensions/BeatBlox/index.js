@@ -410,7 +410,7 @@
                                 let tt = 0;
                                 for (let j = 0; j < duration[i].length; ++j) {
                                     const m = j === duration[i].length - 1 ? mods : mods.concat([ audio.getModification(MODIFIERS['Tie']) ]);
-                                    tt += await audio.playNote(this.receiver.id, notes[i], this.musicInfo.t + tt, DURATIONS[duration[i][j]], m);
+                                    tt += await audio.playNote(this.receiver.id, -1 * Math.abs(notes[i]), this.musicInfo.t + tt, DURATIONS[duration[i][j]], m);
                                 }
                                 t = Math.min(t, tt);
                             }
@@ -480,15 +480,15 @@
                         }
                     }),
                     new Extension.Block('tieDuration', 'reporter', 'music', 'tie %mult%noteDuration', [['Quarter']], durations => durations.contents.map(x => x.toString()).filter(x => x.length !== 0).join('+')),
-                    new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], note => snapify(parseNote(note))),
+                    new Extension.Block('noteNumber', 'reporter', 'music', 'note# %s', ['C4'], note => snapify(Math.abs(parseNote(note)))),
                     new Extension.Block('chordNotes', 'reporter', 'music', '%s %chordType chord', ['C4', 'Major'], function (note, type) {
                         if (CHORD_PATTERNS[type] === undefined) throw Error(`unknown chord type: '${type}'`);
-                        function f(b) { return b.map ? b.map(f) : CHORD_PATTERNS[type].map(x => -(x + Math.abs(b))); }
+                        function f(b) { return b.map ? b.map(f) : CHORD_PATTERNS[type].map(x => (x + Math.abs(b))); }
                         return snapify(f(parseNote(note)));
                     }),
                     new Extension.Block('scaleNotes', 'reporter', 'music', '%s %scaleType scale', ['C4', 'Major'], function (note, type) {
                         if (SCALE_PATTERNS[type] === undefined) throw Error(`unknown scale type: '${type}'`);
-                        function f(b) { return b.map ? b.map(f) : SCALE_PATTERNS[type].map(x => -(x + Math.abs(b))); }
+                        function f(b) { return b.map ? b.map(f) : SCALE_PATTERNS[type].map(x => (x + Math.abs(b))); }
                         return snapify(f(parseNote(note)));
                     }),
                     new Extension.Block('playClip', 'command', 'music', 'play sound %snd', [], function (rawSound) {
