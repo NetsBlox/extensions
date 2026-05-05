@@ -5,6 +5,25 @@
     function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
     function lerp(x, a, b) { return (1 - x) * a + x * b; }
 
+    const OSCILLATOR_HELP = 'The Oscillator block represents a periodic waveform. It is commonly used as the\n' +
+                            'source of a Custom Instrument. It can also be connected to different parameters\n' +
+                            'in audio blocks. It takes in two optional parameters: "frequency" and "value".\n\n' +
+                            'The "frequency" parameter represents the frequency of oscillation in hertz. When\n' +
+                            'no frequency is given, the oscillator defaults to a frequency of 440 hz. No\n' +
+                            'frequency parameter is needed when an oscillator is the source of a Custom Instrument.' +
+                            '\n\n' +
+                            'The "value" parameter represents the value which the oscillator oscillates around.\n' +
+                            'no value is given, the oscillator defaults to a value of 1. No value parameter is\n' + 
+                            'needed when an oscillator is the source of a Custom Instrument.';
+    const FILTER_HELP = 'The Filter block encapsulates different types of audio filters. It is often the foundation\n' + 
+                        'for more complex audio effects. While this block provides a wide variety of different\n' +
+                        'filters to choose from, it has a simple set of inputs: "frequency", "Q", and "gain".\n' +
+                        '\n' +
+                        'The "frequency" parameter represents the cutoff frequency for the filter being used.\n' +
+                        'The "Q" controls the peak of the frequency cutoff. The "gain" parameter applies a\n' +
+                        'boost in dB if applicable, otherwise this is a no-op.';
+    const EFFECT_HELP = 'This block provides a selection of pre-build audio effects.';
+
     const EFFECT_INFO = {
         'Volume':     { type: 'Volume' ,        identity: 1.0, params: x => ({ 'intensity': clamp(x, 0, 1) }) },
         'Delay':      { type: 'Delay',          identity: 0.0, params: x => ({ 'delay': clamp(x, 0, 1), 'attenuation': 0.5 }) },
@@ -400,9 +419,9 @@
                     }),
                     // TODO - implement this block
                     new Extension.Block('effectChain', 'command', 'music', 'effect chain %mult%l', [], function (arg) { console.log('todo'); }),
-                    new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions %l', ['sine'], window.BeatBlox.createOscillator),
-                    new Extension.Block('filter', 'reporter', 'music', 'filter %filterOptions parameters: %l', ['allpass'], window.BeatBlox.createFilter),
-                    new Extension.Block('effect', 'reporter', 'music', 'effect %effectOptions parameters: %l', ['delay'], window.BeatBlox.createEffect),
+                    new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions %inputs', ['sine'], window.BeatBlox.createOscillator, OSCILLATOR_HELP),
+                    new Extension.Block('filter', 'reporter', 'music', 'filter %filterOptions %inputs', ['allpass'], window.BeatBlox.createFilter, FILTER_HELP),
+                    new Extension.Block('effect', 'reporter', 'music', 'effect %effectOptions %inputs', ['delay'], window.BeatBlox.createEffect, EFFECT_HELP),
                     new Extension.Block('setKey', 'command', 'music', 'set key %keySig', ['CMajor'], function (key) {
                         if (KEYS[key] === undefined) throw Error(`unknown key: '${key}'`);
                         audio.updateKeySignature(KEYS[key]);
