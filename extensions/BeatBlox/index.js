@@ -336,8 +336,6 @@
                     new Extension.Palette.Block('createInstrument'),
                     new Extension.Palette.Block('updateInstrument'),
                     '-',
-                    new Extension.Palette.Block('effectChain'),
-                    '-',
                     new Extension.Palette.Block('oscillator'),
                     new Extension.Palette.Block('filter'),
                     new Extension.Palette.Block('effect'),
