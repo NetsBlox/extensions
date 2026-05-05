@@ -412,7 +412,7 @@
                             await audio.updateInstrument(this.receiver.id, 'custom-instrument+' + instrument.id, instrument);
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %oscillatorOptions %l', ['sine'], window.BeatBlox.createInstrument),
+                    new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %l', [], window.BeatBlox.createInstrument),
                     new Extension.Block('updateInstrument', 'command', 'music', 'update instrument %l %l', [], function (instrument, updates) {
                         const newInstrument = window.BeatBlox.updateInstrument(instrument, updates);
                         this.setInstrument(newInstrument);

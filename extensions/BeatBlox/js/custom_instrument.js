@@ -46,19 +46,10 @@ function parseParameters(parameters, validateFunction) {
 window.BeatBlox = {};
 window.BeatBlox.instrumentCount = 0;
 
-window.BeatBlox.createInstrument = function (source, _options)  {
-    const options = parseParameters(_options, validateInstrumentParameters);
-    if (INSTRUMENT_SOURCE_OPTIONS.indexOf(source) >= -1) {
-        const src = {
-            'type': source,
-            'gain': new Gain(options.gain),
-            'filter': options.filter,
-        }
-        return new Instrument(window.BeatBlox.instrumentCount++, src);
-    }
-    else { 
-        throw Error('error: upsuported source type')
-    }
+window.BeatBlox.createInstrument = function (audioGraph)  {
+    // TODO - graph validation
+    if (!(audioGraph instanceof Graph)) throw Error('error: instrument must be created from audio graph');
+    return new Instrument(window.BeatBlox.instrumentCount++, audioGraph);
 }
 
 window.BeatBlox.updateInstrument = function (instrument, updates) {
