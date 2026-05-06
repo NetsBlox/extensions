@@ -73,3 +73,7 @@ window.BeatBlox.createFilter = function (type, parameters) {
 window.BeatBlox.createEffect = function (type, parameters) {
     return new AudioEffect(type);
 }
+
+window.BeatBlox.createGain = function (gain) {
+    return new Gain(gain);
+}

@@ -15,6 +15,7 @@
                             'The "value" parameter represents the value which the oscillator oscillates around.\n' +
                             'no value is given, the oscillator defaults to a value of 1. No value parameter is\n' + 
                             'needed when an oscillator is the source of a Custom Instrument.';
+    const GAIN_HELP = 'The Gain block controls the volume of and audio source.';
     const FILTER_HELP = 'The Filter block encapsulates different types of audio filters. It is often the foundation\n' + 
                         'for more complex audio effects. While this block provides a wide variety of different\n' +
                         'filters to choose from, it has a simple set of inputs: "frequency", "Q", and "gain".\n' +
@@ -356,6 +357,7 @@
                     new Extension.Palette.Block('updateInstrument'),
                     '-',
                     new Extension.Palette.Block('oscillator'),
+                    new Extension.Palette.Block('gain'),
                     new Extension.Palette.Block('filter'),
                     new Extension.Palette.Block('effect'),
                     '-',
@@ -418,8 +420,8 @@
                         this.setInstrument(newInstrument);
                     }),
                     // TODO - implement this block
-                    new Extension.Block('effectChain', 'command', 'music', 'effect chain %mult%l', [], function (arg) { console.log('todo'); }),
                     new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions %inputs', ['sine'], window.BeatBlox.createOscillator, OSCILLATOR_HELP),
+                    new Extension.Block('gain', 'reporter', 'music', 'gain %n', [1], window.BeatBlox.createGain, GAIN_HELP),
                     new Extension.Block('filter', 'reporter', 'music', 'filter %filterOptions %inputs', ['allpass'], window.BeatBlox.createFilter, FILTER_HELP),
                     new Extension.Block('effect', 'reporter', 'music', 'effect %effectOptions %inputs', ['delay'], window.BeatBlox.createEffect, EFFECT_HELP),
                     new Extension.Block('setKey', 'command', 'music', 'set key %keySig', ['CMajor'], function (key) {
