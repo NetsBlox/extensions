@@ -43,12 +43,21 @@ function parseParameters(parameters, validateFunction) {
     return params;
 }
 
+function validateAudioRoutingGraph(graph) {
+    const contents = graph.contents.contents;
+    console.log(contents);
+    if (graph.type !== 'directed flow') throw Error('instrument must have only one source');
+    // TODO add other valid audio sources
+    if (!(contents[0] instanceof Oscillator)) throw Error('invalid audio source');
+    // TODO add a gain node check
+}
+
 window.BeatBlox = {};
 window.BeatBlox.instrumentCount = 0;
 
 window.BeatBlox.createInstrument = function (audioGraph)  {
-    // TODO - graph validation
     if (!(audioGraph instanceof Graph)) throw Error('error: instrument must be created from audio graph');
+    validateAudioRoutingGraph(audioGraph);
     return new Instrument(window.BeatBlox.instrumentCount++, audioGraph);
 }
 
