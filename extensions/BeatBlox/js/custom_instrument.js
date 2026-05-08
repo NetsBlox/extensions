@@ -50,6 +50,7 @@ function validateAudioRoutingGraph(graph) {
     // TODO add other valid audio sources
     if (!(contents[0] instanceof Oscillator)) throw Error('invalid audio source');
     // TODO add a gain node check
+    return contents[0];
 }
 
 window.BeatBlox = {};
@@ -57,8 +58,9 @@ window.BeatBlox.instrumentCount = 0;
 
 window.BeatBlox.createInstrument = function (audioGraph)  {
     if (!(audioGraph instanceof Graph)) throw Error('error: instrument must be created from audio graph');
-    validateAudioRoutingGraph(audioGraph);
-    return new Instrument(window.BeatBlox.instrumentCount++, audioGraph);
+    const sourceNode = validateAudioRoutingGraph(audioGraph);
+    const src = { 'source': sourceNode, 'graph': audioGraph };
+    return new Instrument(window.BeatBlox.instrumentCount++, src);
 }
 
 window.BeatBlox.updateInstrument = function (instrument, updates) {
