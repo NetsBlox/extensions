@@ -6341,6 +6341,7 @@ async function loadInstrument(audioContext, name, url_or_instrument) {
    }
    else if (url_or_instrument instanceof Instrument) {
       const options = url_or_instrument.src;
+      options.type = options.source.type;
       instrumentInstance.getNote = function (note) {
          options.frequency = Frequency[note];
          return new InstrumentNode(audioContext, options);
@@ -6366,33 +6367,41 @@ async function loadInstrument(audioContext, name, url_or_instrument) {
    return instrumentInstance;
 }
 
+// TODO add documentation
 class InstrumentNode extends OscillatorNode {
 
    audioSource
+   #audioGraph
+   #audioNodes
 
+   // TODO the graph is not being properly routed
    constructor(audioContext, options) {
       super(audioContext, options);
-      this.#connectNode(options.gain);
-      this.#connectNode(options.filter);
+      this.#audioGraph = options.graph;
+      this.#audioNodes = [];
+      this.#loadAudioNodes();
+      this.#createAudioRoutingGraph();
+      this.audioSource = this.#audioNodes[this.#audioNodes.length - 1];
    }
 
    connect(node) {
       if (this.audioSource !== undefined) {
-         return this.audioSource.connect(node)
+         return this.audioSource.connect(node);
       }
       return super.connect(node);
    }
 
-   #connectNode(node) {
+   #createAudioNode(node) {
       if (node === undefined || !node.parameters) {
          return;
-      }
+      } 
 
       const parameterList = this.#createParameterList(node.parameters);
       const parameters = parameterList.parameters;
       const oscillators = parameterList.oscillators;
 
       const _AudioNode = node => {
+         if (node instanceof Oscillator) return OscillatorNode;
          if (node instanceof Filter) return BiquadFilterNode;
          if (node instanceof Gain) return GainNode;
       };
@@ -6404,7 +6413,26 @@ class InstrumentNode extends OscillatorNode {
          osc.start();
       });
 
-      this.audioSource = super.connect(_node);
+      return _node;
+   }
+
+   #loadAudioNodes() {
+      const nodes = this.#audioGraph.contents;
+      for (let i = 1; i <= nodes.length(); ++i) {
+         const _node = this.#createAudioNode(nodes.at(i));
+         if (_node) this.#audioNodes.push(_node);
+      }
+   }
+
+   #createAudioRoutingGraph() {
+      const edges = this.#audioGraph.getEdges();
+      const connections = edges.map(edge => {
+         const u = edge.at(1), v = edge.at(2);
+         const uIndex = this.#audioGraph.contents.indexOf(u) - 1;
+         const vIndex = this.#audioGraph.contents.indexOf(v) - 1;
+         return [this.#audioNodes[uIndex], this.#audioNodes[vIndex]];
+      });
+      connections.itemsArray().forEach(([node1, node2]) => node1.connect(node2));
    }
 
    #createParameterList(params) {
