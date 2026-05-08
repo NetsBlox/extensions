@@ -45,17 +45,19 @@ function parseParameters(parameters, validateFunction) {
 
 function validateAudioRoutingGraph(graph) {
     const contents = graph.contents.contents;
-    console.log(contents);
     if (graph.type !== 'directed flow') throw Error('instrument must have only one source');
     // TODO add other valid audio sources
     if (!(contents[0] instanceof Oscillator)) throw Error('invalid audio source');
     // TODO add a gain node check
+    // TODO there must only be one destination
+    // TODO check that only valid blocks are in the grahp
     return contents[0];
 }
 
 window.BeatBlox = {};
 window.BeatBlox.instrumentCount = 0;
 
+// TODO add information about the destination
 window.BeatBlox.createInstrument = function (audioGraph)  {
     if (!(audioGraph instanceof Graph)) throw Error('error: instrument must be created from audio graph');
     const sourceNode = validateAudioRoutingGraph(audioGraph);
