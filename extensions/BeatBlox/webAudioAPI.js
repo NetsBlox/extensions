@@ -6374,7 +6374,6 @@ class InstrumentNode extends OscillatorNode {
    #audioGraph
    #audioNodes
 
-   // TODO the graph is not being properly routed
    constructor(audioContext, options) {
       super(audioContext, options);
       this.#audioGraph = options.graph;
@@ -6405,7 +6404,9 @@ class InstrumentNode extends OscillatorNode {
          if (node instanceof Filter) return BiquadFilterNode;
          if (node instanceof Gain) return GainNode;
       };
+      
       const _node = new (_AudioNode(node))(super.context, parameters);
+      if (_node instanceof OscillatorNode) _node.start();
 
       oscillators.forEach(oscillatorData => {
          const osc = new OscillatorNode(super.context, oscillatorData.osc.parameters);
