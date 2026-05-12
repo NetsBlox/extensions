@@ -6373,11 +6373,14 @@ class InstrumentNode extends OscillatorNode {
    audioSource
    #audioGraph
    #audioNodes
+   #vertices
 
    constructor(audioContext, options) {
       super(audioContext, options);
       this.#audioGraph = options.graph;
       this.#audioNodes = [];
+      this.#vertices = options.graph.getVertices();
+      this.#vertices.at(1).parameters.frequency = options.frequency;
       this.#loadAudioNodes();
       this.#createAudioRoutingGraph();
       this.audioSource = this.#audioNodes[this.#audioNodes.length - 1];
@@ -6404,7 +6407,7 @@ class InstrumentNode extends OscillatorNode {
          if (node instanceof Filter) return BiquadFilterNode;
          if (node instanceof Gain) return GainNode;
       };
-      
+
       const _node = new (_AudioNode(node))(super.context, parameters);
       if (_node instanceof OscillatorNode) _node.start();
 
@@ -6418,7 +6421,7 @@ class InstrumentNode extends OscillatorNode {
    }
 
    #loadAudioNodes() {
-      const nodes = this.#audioGraph.contents;
+      const nodes = this.#vertices;
       for (let i = 1; i <= nodes.length(); ++i) {
          const _node = this.#createAudioNode(nodes.at(i));
          if (_node) this.#audioNodes.push(_node);
@@ -6429,8 +6432,8 @@ class InstrumentNode extends OscillatorNode {
       const edges = this.#audioGraph.getEdges();
       const connections = edges.map(edge => {
          const u = edge.at(1), v = edge.at(2);
-         const uIndex = this.#audioGraph.contents.indexOf(u) - 1;
-         const vIndex = this.#audioGraph.contents.indexOf(v) - 1;
+         const uIndex = this.#vertices.indexOf(u) - 1;
+         const vIndex = this.#vertices.indexOf(v) - 1;
          return [this.#audioNodes[uIndex], this.#audioNodes[vIndex]];
       });
       connections.itemsArray().forEach(([node1, node2]) => node1.connect(node2));
