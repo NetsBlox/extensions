@@ -20,6 +20,7 @@
     "lodash": "^4.17.21"
   },
   "dependencies": {
-    "js-aruco": "^0.1.0"
+    "js-aruco": "^0.1.0",
+    "planck": "^1.4.3"
   }
 }
