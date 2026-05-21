@@ -2,6 +2,7 @@ const INSTRUMENT_SOURCE_OPTIONS = ['sine', 'sawtooth', 'triangle', 'square'];
 const INSTRUMENT_OPTIONS = ['type', 'gain', 'filter'];
 const FILTER_OPTIONS = ['frequency', 'Q', 'gain'];
 const OSCILLATOR_OPTIONS = ['frequency', 'value'];
+const DELAY_OPTIONS = ['delayTime'];
 
 function validateInstrumentParameters(parameters) {
     if (!(parameters instanceof List)) throw Error("parameters must be a list");
@@ -33,6 +34,16 @@ function validateFilterParameters(parameters) {
         if (element.length() !== 2) throw Error("invalid param list");
         const option = element.contents[0];
         if (FILTER_OPTIONS.indexOf(option) === -1) throw Error(`invalid param option: ${option}`);
+    });
+}
+
+function validateDelayParameters(parameters) {
+    if (!(parameters instanceof List)) throw Error("parameters must be a list");
+    parameters.contents.forEach(element => {
+        if (!(element instanceof List)) throw Error("invalid param list");
+        if (element.length() !== 2) throw Error("invalid param list");
+        const option = element.contents[0];
+        if (DELAY_OPTIONS.indexOf(option) === -1) throw Error(`invalid param option: ${option}`);
     });
 }
 
@@ -84,7 +95,13 @@ window.BeatBlox.createFilter = function (type, parameters) {
 
 // TODO implementation needed
 window.BeatBlox.createEffect = function (type, parameters) {
-    return new AudioEffect(type);
+    let params;
+    switch (type) {
+        case 'delay':
+            params = parseParameters(parameters, validateDelayParameters);
+            break;
+    }
+    return new AudioEffect(type, params);
 }
 
 window.BeatBlox.createGain = function (gain) {
