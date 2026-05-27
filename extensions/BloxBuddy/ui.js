@@ -2,9 +2,9 @@
     const UI = {};
 
     function promptAPIKey() {
-        const key = prompt('Enter Google Gemini API Key');
+        const key = prompt('Enter OpenAI API Key');
         if (key) {
-            localStorage.setItem('gemini-api-key', key);
+            localStorage.setItem('openai-api-key', key);
         } else {
             alert('API Key is required to use BloxBuddy');
         }
@@ -47,10 +47,10 @@
             chatPopup.style.display = chatPopup.style.display === 'block' ? 'none' : 'block';
         });
 
-        let apiKey = localStorage.getItem('gemini-api-key');
+        let apiKey = localStorage.getItem('openai-api-key');
         if (!apiKey) {
             promptAPIKey();
-            apiKey = localStorage.getItem('gemini-api-key');
+            apiKey = localStorage.getItem('openai-api-key');
         }
 
         UI.button = btn;
@@ -250,6 +250,7 @@ Do not start your response with "Sure!" or "Here is a simplified version of the 
 Also include possible continuations in the response, if relevant. It is acceptable to not include any continuations if none are relevant to end the conversation.
 Write the continuations so that the student will understand what they mean, but they must remain short. Please limit the number of them when possible, so that the conversation remains focused and short. The student will know how to explore on their own without you offering to do it for them.
 DO NOT turn continuations into questions if they are not questions in the original text.
+DO NOT include continuations in the "response" section of the json. Include the continuations only under the "continuation" key in the json.
 The user should start a new conversation if they need more help. No need to let the user go off on tangents. Do not ask for free-form text input from the user, as this is not supported. All interactions should be guided by the options you provide in the "continuation" field. Make sure to only provide continuations that you are confident the user will understand and you be able to respond accurately to.
 
 Remember to keep our guidelines for them in mind.
@@ -266,7 +267,7 @@ Please keep responses short. Convey necessary information in a concise manner. D
                         parsed.continuation = refined.continuation;
 
                         window.BloxBuddyUI.addChatMessage(parsed.response);
-                        
+
                         if(parsed.continuation) {
                             if(typeof(parsed.continuation) === 'string') {
                                 window.BloxBuddyUI.addResponseButton(parsed.continuation);

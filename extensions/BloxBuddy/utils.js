@@ -46,9 +46,9 @@
     }
 
     function getSettings() {
-        const apiKey = localStorage.getItem('gemini-api-key');
-        const model = 'gemini-flash-latest';
-        const endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/';
+        const apiKey = localStorage.getItem('openai-api-key');
+        const model = 'gpt-5.4-mini';
+        const endpoint = 'https://api.openai.com/v1/';
 
         if (!apiKey) {
             throw Error('API Key not set - see extension menu');
