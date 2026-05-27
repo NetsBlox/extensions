@@ -4,16 +4,16 @@
     style.rel = 'stylesheet';
     style.type = 'text/css';
     if(document.currentScript.src.includes('localhost')) {
-        style.href = 'http://localhost:4000/bloxbuddy.css';
+        style.href = 'http://localhost:4000/extensions/BloxBuddy/bloxbuddy.css';
     } else {
         style.href = 'https://extensions.netsblox.org/extensions/BloxBuddy/bloxbuddy.css';
     }
     document.head.appendChild(style);
 
     function promptAPIKey() {
-        const key = prompt('Enter Google Gemini API Key');
+        const key = prompt('Enter Open AI API Key');
         if (key) {
-            localStorage.setItem('gemini-api-key', key);
+            localStorage.setItem('openai-api-key', key);
         }
     }
 
@@ -22,7 +22,7 @@
     // Function to load a script and return a promise that resolves when it's loaded
     function loadScript(src) {
         const script = document.createElement('script');
-        script.src = isLocal ? `http://localhost:4000/${src}` : `https://extensions.netsblox.org/extensions/BloxBuddy/${src}`;
+        script.src = isLocal ? `http://localhost:4000/extensions/BloxBuddy/${src}` : `https://extensions.netsblox.org/extensions/BloxBuddy/${src}`;
         document.head.appendChild(script);
         return new Promise((resolve) => {
             script.onload = resolve;
@@ -37,9 +37,8 @@
     script.onload = async function () {
     window.BloxBuddyCurrentChat = [{ role: 'system', content: "" }];
 
-    window.BloxBuddyMainModel = 'gemini-flash-latest';
-    //window.BloxBuddyChatRefinerModel = 'learnlm-2.0-flash-experimental';
-    window.BloxBuddyChatRefinerModel = 'gemini-flash-latest';
+    window.BloxBuddyMainModel = 'gpt-5.4-mini';
+    window.BloxBuddyChatRefinerModel = 'gpt-5.4-mini';
 
     window.BloxBuddyResetChat = function() {
         window.BloxBuddyCurrentChat = [{ role: 'system', content: "" }];
@@ -71,7 +70,7 @@
             this.ide = ide;
 
             // Require an API key
-            let apiKey = localStorage.getItem('gemini-api-key');
+            let apiKey = localStorage.getItem('openai-api-key');
             if (!apiKey) {
                 promptAPIKey();
             }
@@ -109,20 +108,8 @@
                 },
                 'Set API Key...': function () {
                     promptAPIKey();
-                    apiKey = localStorage.getItem('gemini-api-key');
+                    apiKey = localStorage.getItem('openai-api-key');
                 },
-                // 'Set OpenAI Text Model...': function () {
-                //     const model = prompt('Enter OpenAI Model');
-                //     if (model) {
-                //         localStorage.setItem('openai-model', model);
-                //     }
-                // },
-                // 'Set API Endpoint...': function () {
-                //     const endpoint = prompt('Enter OpenAI compatible API Endpoint');
-                //     if (endpoint) {
-                //         localStorage.setItem('openai-endpoint', endpoint);
-                //     }
-                // },
             };
 
             return options;
@@ -190,6 +177,7 @@
                 }),
             });
             const data = await res.json();
+            console.log(data)
             return data.choices[0].message.content;
         } catch (e) {
             console.error(e);
@@ -202,7 +190,7 @@
 
     // Check if we are running locally
     if(document.currentScript.src.includes('localhost')) {
-        script.src = 'http://localhost:4000/blockstocode.js';
+        script.src = 'http://localhost:4000/extensions/BloxBuddy/blockstocode.js';
     } else {
         script.src = 'https://extensions.netsblox.org/extensions/BloxBuddy/blockstocode.js';
     }
