@@ -1,3 +1,25 @@
+// utils taken from extension code
+const I32_MAX = 2147483647;
+
+async function setupEntity(entity) {
+    if (!(entity instanceof SpriteMorph) && !(entity instanceof StageMorph)) throw Error('internal error');
+
+    if (entity.musicInfo === undefined) {
+        entity.musicInfo = {
+            effects: {},
+        };
+
+        audio.createTrack(entity.id);
+        audio.createTrack(entity.id + 'Drum');
+
+        await PREFETCH;
+        await audio.updateInstrument(entity.id, 'Grand Piano');
+        await audio.updateInstrument(entity.id + 'Drum', 'Drum Kit');
+    }
+}
+
+// custom instrument driver
+
 const INSTRUMENT_SOURCE_OPTIONS = ['sine', 'sawtooth', 'triangle', 'square'];
 const INSTRUMENT_OPTIONS = ['type', 'gain', 'filter'];
 const FILTER_OPTIONS = ['frequency', 'Q', 'gain'];
@@ -106,4 +128,18 @@ window.BeatBlox.createEffect = function (type, parameters) {
 
 window.BeatBlox.createGain = function (gain) {
     return new Gain(gain);
+}
+
+window.BeatBlox.setInstrument = async function (instrument, instrumentOptions, audioCtx, receiverID) {
+    console.log('hello')
+    if (typeof instrument === "string" && instrumentOptions.indexOf(instrument) >= 0)
+        await audioCtx.updateInstrument(receiverID, instrument);
+    else if (instrument instanceof Instrument) {
+        const src = instrument.src.source.type;
+        await audioCtx.updateInstrument(receiverID, src);
+        // TODO - update the destination node to have the rest of the graph.
+        //        this should probably be created before the source is updated
+    } 
+    else 
+        throw Error(`unknown instrument: "${instrument}"`);
 }

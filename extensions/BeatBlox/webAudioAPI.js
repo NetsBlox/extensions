@@ -6154,19 +6154,18 @@ function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
 /**
  * Loads an existing {@link Instrument} object capable of mapping audio data to musical output.
  * 
- * If the `url_or_data` parameter is set to `null`, a sine-wave oscillator will be used to generate
+ * If the `url` parameter is set to `null`, a sine-wave oscillator will be used to generate
  * all audio output.
  * 
  * @param {AudioContext} audioContext - Reference to the global browser {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
  * @param {string} name - Name of the instrument to load
- * @param {string|Instrument|null} url_or_instrument - URL pointing to the instrument data to load,
- *                                                     the instrument data itself, or `null`
+ * @param {string|null} url - URL pointing to the instrument data to load or `null`
  * @returns {Promise<Instrument>} Newly loaded {@link Instrument}
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
  * @see {@link Instrument}
  * @async
  */
-async function loadInstrument(audioContext, name, url_or_instrument) {
+async function loadInstrument(audioContext, name, url) {
 
    // Private internal Instrument functions
    function loadNumberFromArray(array, numBytes, offset) {
@@ -6279,21 +6278,6 @@ async function loadInstrument(audioContext, name, url_or_instrument) {
       return [noteData, metadata];
    }
 
-   function buildCustomInstrument(instrument) {
-      const noteData = instrument.get_data().map(notesrc => {
-         const audioBuffer = audioContext.createBuffer(1, notesrc.size, notesrc.sample_rate);
-         audioBuffer.copyToChannel(notesrc.get_data(), 0);
-         return {
-            'buffer': audioBuffer,
-            'detune': 0,
-            'loop': true,
-            'loopStart': audioBuffer.duration - 1.0,
-            'loopEnd': audioBuffer.duration
-         };;
-      });
-      return noteData;
-   }
-
    // Create an instance of the Instrument object
    const instrumentInstance = {
       /**
@@ -6331,28 +6315,17 @@ async function loadInstrument(audioContext, name, url_or_instrument) {
 
    // Actually load and return the instrument
    console.log('Loading instrument:', name + '...');
-   if (url_or_instrument == null) {
+   if (url == null || validOscillatorName(url)) {
+      url = url ? url : 'sine';
       instrumentInstance.getNote = function (note) {
-         return new OscillatorNode(audioContext, { frequency: Frequency[note] });
+         return new OscillatorNode(audioContext, { type: url, frequency: Frequency[note] });
       };
       instrumentInstance.getNoteOffline = function (offlineContext, note) {
-         return new OscillatorNode(offlineContext, { frequency: Frequency[note] });
-      };
-   }
-   else if (url_or_instrument instanceof Instrument) {
-      const options = url_or_instrument.src;
-      options.type = options.source.type;
-      instrumentInstance.getNote = function (note) {
-         options.frequency = Frequency[note];
-         return new InstrumentNode(audioContext, options);
-      };
-      instrumentInstance.getNoteOffline = function (offlineContext, note) {
-         options.frequency = Frequency[note];
-         return new InstrumentNode(offlineContext, options);
+         return new OscillatorNode(offlineContext, { type: url, frequency: Frequency[note] });
       };
    }
    else {
-      const [noteData, metadata] = await loadInstrument(url_or_instrument);
+      const [noteData, metadata] = await loadInstrument(url);
       instrumentInstance.getNote = function (note) {
          if (note && (note < metadata.minValidNote) || (note > metadata.maxValidNote))
             throw new WebAudioInstrumentError(`The specified note (${note}) is unplayable on this instrument. Valid notes are [${metadata.minValidNote}, ${metadata.maxValidNote}]`);
@@ -6365,95 +6338,6 @@ async function loadInstrument(audioContext, name, url_or_instrument) {
       };
    }
    return instrumentInstance;
-}
-
-// TODO add documentation
-class InstrumentNode extends OscillatorNode {
-
-   audioSource
-   #audioGraph
-   #audioNodes
-   #vertices
-
-   constructor(audioContext, options) {
-      super(audioContext, options);
-      this.#audioGraph = options.graph;
-      this.#audioNodes = [];
-      this.#vertices = options.graph.getVertices();
-      this.#vertices.at(1).parameters.frequency = options.frequency;
-      this.#loadAudioNodes();
-      this.#createAudioRoutingGraph();
-      this.audioSource = this.#audioNodes[this.#audioNodes.length - 1];
-   }
-
-   connect(node) {
-      if (this.audioSource !== undefined) {
-         return this.audioSource.connect(node);
-      }
-      return super.connect(node);
-   }
-
-   #createAudioNode(node) {
-      if (node === undefined || !node.parameters) {
-         return;
-      } 
-
-      const parameterList = this.#createParameterList(node.parameters);
-      const parameters = parameterList.parameters;
-      const oscillators = parameterList.oscillators;
-
-      const _AudioNode = node => {
-         if (node instanceof Oscillator) return OscillatorNode;
-         if (node instanceof Filter) return BiquadFilterNode;
-         if (node instanceof Gain) return GainNode;
-      };
-
-      const _node = new (_AudioNode(node))(super.context, parameters);
-      if (_node instanceof OscillatorNode) _node.start();
-
-      oscillators.forEach(oscillatorData => {
-         const osc = new OscillatorNode(super.context, oscillatorData.osc.parameters);
-         osc.connect(_node[oscillatorData.key]);
-         osc.start();
-      });
-
-      return _node;
-   }
-
-   #loadAudioNodes() {
-      const nodes = this.#vertices;
-      for (let i = 1; i <= nodes.length(); ++i) {
-         const _node = this.#createAudioNode(nodes.at(i));
-         if (_node) this.#audioNodes.push(_node);
-      }
-   }
-
-   #createAudioRoutingGraph() {
-      const edges = this.#audioGraph.getEdges();
-      const connections = edges.map(edge => {
-         const u = edge.at(1), v = edge.at(2);
-         const uIndex = this.#vertices.indexOf(u) - 1;
-         const vIndex = this.#vertices.indexOf(v) - 1;
-         return [this.#audioNodes[uIndex], this.#audioNodes[vIndex]];
-      });
-      connections.itemsArray().forEach(([node1, node2]) => node1.connect(node2));
-   }
-
-   #createParameterList(params) {
-      const fieldsWithOscillator = [];
-      const parameters = {}
-
-      Object.keys(params).forEach(key => {
-         const item = params[key];
-         if (item instanceof Oscillator) fieldsWithOscillator.push({ key: key, osc: item });
-         parameters[key] = item instanceof Oscillator ? 0 : item;
-      });
-
-      return {
-         parameters: parameters,
-         oscillators: fieldsWithOscillator,
-      }
-   }
 }
 
 /** Class representing all base-level {@link WebAudioAPI} audio analysis functions */
@@ -6564,7 +6448,7 @@ function getAnalyzerFor(analysisType) {
    return AnalysisClasses[analysisType];
 }
 
-var version = "0.6.0";
+var version = "0.5.0";
 
 /**
  * Required function prototype to use when registering a MIDI device callback.
@@ -6650,6 +6534,15 @@ function getNoteInKey(note, key) {
       return -note;
    else
       return (note + key.offsets[note % 12]);
+}
+
+function validOscillatorName(str) {
+    switch (str) {
+        case 'sine': case 'triangle':
+        case 'sawtooth': case 'square':
+            return true;
+    }
+    return false;
 }
 
 /** Contains all WebAudioAPI top-level functionality. */
@@ -7141,16 +7034,16 @@ class WebAudioAPI {
     * 
     * @param {string} trackName - Name of the track for which to update the instrument
     * @param {string} instrumentName - Name of the instrument to assign to the track
-    * @param {Array<Uint8Array>|null} instrumentData - Data for importing a custom instrument
     */
-   async updateInstrument(trackName, instrumentName, instrumentData = null) {
+   async updateInstrument(trackName, instrumentName) {
+      console.log(instrumentName);
       if (!(trackName in this.#tracks))
          throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
-      if (!(instrumentName in this.#instrumentListing) && instrumentData == null)
+      if (!(instrumentName in this.#instrumentListing) && !(validOscillatorName(instrumentName)))
          throw new WebAudioTargetError(`The target instrument name (${instrumentName}) does not exist`);
-      if (instrumentData)
-        this.#loadedInstruments[instrumentName] = await loadInstrument(this.#audioContext, instrumentName, instrumentData);
-      else
+      if (validOscillatorName(instrumentName))
+        this.#loadedInstruments[instrumentName] = await loadInstrument(this.#audioContext, instrumentName, instrumentName);
+      else if (!(instrumentName in this.#loadedInstruments))
          this.#loadedInstruments[instrumentName] = await loadInstrument(this.#audioContext, instrumentName, this.#instrumentListing[instrumentName]);
       this.#tracks[trackName].updateInstrument(this.#loadedInstruments[instrumentName]);
    }

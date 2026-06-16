@@ -397,21 +397,11 @@
             getBlocks() {
                 return [
                     new Extension.Block('setInstrument', 'command', 'music', 'set instrument %instrument', ['Grand Piano'], function (instrument) {
-                        if (typeof instrument === "string") {
-                            return this.runAsyncFn(async () => {
-                                await setupEntity(this.receiver);
-                                setupProcess(this);
-
-                                if (INSTRUMENTS.indexOf(instrument) < 0) throw Error(`unknown instrument: "${instrument}"`);
-
-                                await audio.updateInstrument(this.receiver.id, instrument);
-                            }, { args: [], timeout: I32_MAX });
-                        }
                         return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
-
-                            await audio.updateInstrument(this.receiver.id, 'custom-instrument+' + instrument.id, instrument);
+                            await window.BeatBlox.setInstrument(instrument, INSTRUMENTS, audio, this.receiver.id);
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %l', [], window.BeatBlox.createInstrument),
