@@ -7027,6 +7027,19 @@ class WebAudioAPI {
    }
 
    /**
+    * Createsa new instrument available for the user. It is automatically set for
+    * the desired track.
+    * 
+    * @param {string} trackName - Name of the track for which to update the instrument
+    * @param {string} instrumentName - Name of the instrument to assign to the track
+    * @param {Object} instrumentParameters - An object containing all the components
+    *                                        of the instrument.
+    */
+   async createInstrument(trackName, instrumentName, instrumentParameters) {
+      console.log(instrumentParameters);
+   }
+
+   /**
     * Updates the instrument used to play back audio on the specified track.
     * 
     * The instrument name must refer to a valid instrument as returned by the
