@@ -25,10 +25,8 @@ window.BeatBlox.setInstrument = async function (instrument, instrumentOptions, a
     if (typeof instrument === "string" && instrumentOptions.indexOf(instrument) >= 0)
         await audioCtx.updateInstrument(receiverID, instrument);
     else if (instrument instanceof Instrument) {
-        const src = instrument.src.source.type;
-        await audioCtx.updateInstrument(receiverID, src);
-        // TODO - update the destination node to have the rest of the graph.
-        //        this should probably be created before the source is updated
+        const instrumentParameters = instrument.getParameters();
+        await audioCtx.createInstrument(receiverID, 'temp', instrumentParameters);
     } 
     else 
         throw Error(`unknown instrument: "${instrument}"`);

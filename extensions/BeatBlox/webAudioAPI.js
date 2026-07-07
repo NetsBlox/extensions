@@ -106,7 +106,8 @@ const EffectType = {
    Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
    Panning: 31, Equalization: 32,                                                   // Spectral Effects
    Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
-   LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
+   LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54, // Filter Effects
+   CustomEffect: 100
 };
 
 /**
@@ -2770,6 +2771,103 @@ class Compression extends EffectBase {
 }
 
 /**
+ * Class representing a Custom Audio Effect.
+ * 
+ * The user is able to specify 
+ * 
+ * @extends EffectBase
+ */
+
+class CustomEffect extends EffectBase {
+   
+   // Effect-specific private variables
+   /** @type {AnalyserNode} */
+   #inputNode;
+   /** @type {AnalyserNode} */
+   #outputNode;
+
+   constructor(audioContext) {
+      super(audioContext);
+      this.#inputNode = new AnalyserNode(audioContext);
+      this.#outputNode = new AnalyserNode(audioContext);
+   }
+
+   /** @todo */
+   async load() { return; }
+
+   /** @todo */
+   static getParameters() {
+      return [
+         {}
+      ];
+   }
+
+   /** @todo */
+   currentParameterValues() { return undefined; }
+
+   /**
+    * Updates the parameters of the effect at the specified time.
+    * 
+    * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+    * changes to take effect.
+    * 
+    * @param {Object} source - The source node for the custom instrument.
+    * @param {[Object]} audioNotes - Information on all the nodes in a custom instrument.
+    * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
+    * @returns {Promise<boolean>} Whether the effect update was successfully applied
+    */
+   async update({source, audioNodes}, updateTime, timeConstant) { 
+      const audioNodeContainer = this.#createAudioNodes(audioNodes);
+      audioNodes.forEach(nodeMetaData => {
+         const id = nodeMetaData.id;
+         const src = id === source.id ? this.#inputNode : audioNodeContainer[id];
+         if (nodeMetaData.connections.length === 0) {
+            src.connect(this.#outputNode);
+         }
+         nodeMetaData.connections.forEach(dstMetaData => {
+            const dst = audioNodeContainer[dstMetaData.id];
+            src.connect(dst);
+         });
+      });
+   }
+
+   getInputNode() {
+      return this.#inputNode;
+   }
+
+   getOutputNode() {
+      return this.#outputNode;
+   }
+
+   #nodeBuilder(nodeMetaData) {
+      const NodeType = x => {
+         switch (x) {
+            case 'oscillator':
+               return OscillatorNode;
+            case 'gain':
+               return GainNode;
+            case 'biquad':
+               return BiquadFilterNode;
+            case 'delay':
+               return DelayNode;
+         }
+      }
+      return new (NodeType(nodeMetaData.type))(this.audioContext, nodeMetaData.parameters);
+   }
+
+   #createAudioNodes(audioNodes) {
+      const nodeContainer = {};
+      audioNodes.forEach(node => {
+         if (!nodeContainer[node.id]) {
+            nodeContainer[node.id] = this.#nodeBuilder(node);
+         }
+      });
+      return nodeContainer;
+   }
+}
+
+/**
  * Class representing a Delay effect.
  * 
  * A Delay effect replicates an audio signal and plays back one or more possibly attenuated
@@ -4710,7 +4808,8 @@ const EffectClasses = {
    [EffectType.Tremolo]: Tremolo, [EffectType.Vibrato]: Vibrato, [EffectType.Flanger]: Flanger, [EffectType.Phaser]: Phaser,
    [EffectType.Panning]: Panning, [EffectType.Equalization]: Equalization, [EffectType.Volume]: Volume, [EffectType.Compression]: Compression,
    [EffectType.Distortion]: Distortion, [EffectType.LowPassFilter]: LowPassFilter, [EffectType.HighPassFilter]: HighPassFilter,
-   [EffectType.BandPassFilter]: BandPassFilter, [EffectType.BandRejectFilter]: BandRejectFilter, [EffectType.PitchShift]: PitchShift
+   [EffectType.BandPassFilter]: BandPassFilter, [EffectType.BandRejectFilter]: BandRejectFilter, [EffectType.PitchShift]: PitchShift,
+   [EffectType.CustomEffect]: CustomEffect
 };
 
 
@@ -6315,8 +6414,7 @@ async function loadInstrument(audioContext, name, url) {
 
    // Actually load and return the instrument
    console.log('Loading instrument:', name + '...');
-   if (url == null || validOscillatorName(url)) {
-      url = url ? url : 'sine';
+   if (url == null) {
       instrumentInstance.getNote = function (note) {
          return new OscillatorNode(audioContext, { type: url, frequency: Frequency[note] });
       };
@@ -6337,6 +6435,65 @@ async function loadInstrument(audioContext, name, url) {
          return new AudioBufferSourceNode(offlineContext, noteData[note]);
       };
    }
+   return instrumentInstance;
+}
+
+/**
+ * Creates and loads a new {@link Instrument} object capable of mapping audio data to musical output.
+ * 
+ * @param {AudioContext} audioContext - Reference to the global browser {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
+ * @param {string} name - Name of the instrument to load
+ * @param {Object} type - The type of oscillator to use as a base.
+ * @returns {Instrument} Newly loaded {@link Instrument}
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
+ * @see {@link Instrument}
+ */
+function loadCustomInstrument(audioContext, type) {
+
+   // Private internal Instrument functions
+
+   // Create an instance of the Instrument object
+   const instrumentInstance = {
+      /**
+       * Name of the {@link Instrument}.
+       * @memberof Instrument
+       * @instance
+       */
+      name,
+
+      /**
+       * Returns an {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
+       * that can be used to play back the specified MIDI `note`.
+       * 
+       * @function
+       * @param {number} note - MIDI note number for which to generate a playable note
+       * @memberof Instrument
+       * @instance
+       * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
+       */
+      getNote: null,
+
+      /**
+       * Returns an {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
+       * that can be used to play back the specified MIDI `note` from an {@link OfflineAudioContext}.
+       * 
+       * @function
+       * @param {OfflineAudioContext} - Offline audio context whicih will be used to play back the note
+       * @param {number} note - MIDI note number for which to generate a playable note
+       * @memberof Instrument
+       * @instance
+       * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
+       */
+      getNoteOffline: null
+   };
+
+   instrumentInstance.getNote = function (note) {
+      return new OscillatorNode(audioContext, { type: type, frequency: Frequency[note] });
+   };
+   instrumentInstance.getNoteOffline = function (offlineContext, note) {
+      return new OscillatorNode(offlineContext, { type: type, frequency: Frequency[note] });
+   };
+
    return instrumentInstance;
 }
 
@@ -6534,15 +6691,6 @@ function getNoteInKey(note, key) {
       return -note;
    else
       return (note + key.offsets[note % 12]);
-}
-
-function validOscillatorName(str) {
-    switch (str) {
-        case 'sine': case 'triangle':
-        case 'sawtooth': case 'square':
-            return true;
-    }
-    return false;
 }
 
 /** Contains all WebAudioAPI top-level functionality. */
@@ -7036,7 +7184,18 @@ class WebAudioAPI {
     *                                        of the instrument.
     */
    async createInstrument(trackName, instrumentName, instrumentParameters) {
-      console.log(instrumentParameters);
+      // TODO - Clear all existing audio effects
+
+      // set the instrument source
+      const instrumentSource = instrumentParameters.source;
+      if (!(trackName in this.#tracks))
+         throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      this.#loadedInstruments[instrumentName] = loadCustomInstrument(this.#audioContext, instrumentSource.parameters.type);
+      this.#tracks[trackName].updateInstrument(this.#loadedInstruments[instrumentName]);
+
+      // update the track effect
+      await this.applyTrackEffect(trackName, 'custom instrument', 100);
+      await this.updateTrackEffect(trackName, 'custom instrument', instrumentParameters);
    }
 
    /**
@@ -7049,13 +7208,11 @@ class WebAudioAPI {
     * @param {string} instrumentName - Name of the instrument to assign to the track
     */
    async updateInstrument(trackName, instrumentName) {
-      console.log(instrumentName);
+      // TODO - clear any existing audio effects
       if (!(trackName in this.#tracks))
          throw new WebAudioTargetError(`The target track name (${trackName}) does not exist`);
       if (!(instrumentName in this.#instrumentListing) && !(validOscillatorName(instrumentName)))
          throw new WebAudioTargetError(`The target instrument name (${instrumentName}) does not exist`);
-      if (validOscillatorName(instrumentName))
-        this.#loadedInstruments[instrumentName] = await loadInstrument(this.#audioContext, instrumentName, instrumentName);
       else if (!(instrumentName in this.#loadedInstruments))
          this.#loadedInstruments[instrumentName] = await loadInstrument(this.#audioContext, instrumentName, this.#instrumentListing[instrumentName]);
       this.#tracks[trackName].updateInstrument(this.#loadedInstruments[instrumentName]);
