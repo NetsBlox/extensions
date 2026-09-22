@@ -354,7 +354,6 @@
                 const blocks = [
                     new Extension.Palette.Block('setInstrument'),
                     new Extension.Palette.Block('createInstrument'),
-                    new Extension.Palette.Block('updateInstrument'),
                     '-',
                     new Extension.Palette.Block('oscillator'),
                     new Extension.Palette.Block('gain'),
@@ -405,11 +404,6 @@
                         }, { args: [], timeout: I32_MAX });
                     }),
                     new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %l', [], window.BeatBlox.createInstrument),
-                    new Extension.Block('updateInstrument', 'command', 'music', 'update instrument %l %l', [], function (instrument, updates) {
-                        const newInstrument = window.BeatBlox.updateInstrument(instrument, updates);
-                        this.setInstrument(newInstrument);
-                    }),
-                    // TODO - implement this block
                     new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions %inputs', ['sine'], window.BeatBlox.createOscillator, OSCILLATOR_HELP),
                     new Extension.Block('gain', 'reporter', 'music', 'gain %n', [1], window.BeatBlox.createGain, GAIN_HELP),
                     new Extension.Block('filter', 'reporter', 'music', 'filter %filterOptions %inputs', ['allpass'], window.BeatBlox.createFilter, FILTER_HELP),
