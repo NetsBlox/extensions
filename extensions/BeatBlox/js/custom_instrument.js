@@ -24,10 +24,8 @@ window.BeatBlox.createGain = function (gain) {
 window.BeatBlox.setInstrument = async function (instrument, instrumentOptions, audioCtx, receiverID) {
     if (typeof instrument === "string" && instrumentOptions.indexOf(instrument) >= 0)
         await audioCtx.updateInstrument(receiverID, instrument);
-    else if (instrument instanceof Instrument) {
-        const instrumentParameters = instrument.getParameters();
-        await audioCtx.createInstrument(receiverID, 'temp', instrumentParameters);
-    } 
+    else if (instrument instanceof Instrument)
+        await audioCtx.createInstrument(receiverID, 'temp', instrument.parameters); 
     else 
         throw Error(`unknown instrument: "${instrument}"`);
 }
