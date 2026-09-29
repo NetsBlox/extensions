@@ -7180,8 +7180,6 @@ class WebAudioAPI {
     *                                        of the instrument.
     */
    async createInstrument(trackName, instrumentName, instrumentParameters) {
-      // TODO - Clear all existing audio effects
-
       // set the instrument source
       const instrumentSource = instrumentParameters.source;
       if (!(trackName in this.#tracks))
