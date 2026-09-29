@@ -5,6 +5,26 @@
     function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
     function lerp(x, a, b) { return (1 - x) * a + x * b; }
 
+    const OSCILLATOR_HELP = 'The Oscillator block represents a periodic waveform. It is commonly used as the\n' +
+                            'source of a Custom Instrument. It can also be connected to different parameters\n' +
+                            'in audio blocks. It takes in two optional parameters: "frequency" and "value".\n\n' +
+                            'The "frequency" parameter represents the frequency of oscillation in hertz. When\n' +
+                            'no frequency is given, the oscillator defaults to a frequency of 440 hz. No\n' +
+                            'frequency parameter is needed when an oscillator is the source of a Custom Instrument.' +
+                            '\n\n' +
+                            'The "value" parameter represents the value which the oscillator oscillates around.\n' +
+                            'no value is given, the oscillator defaults to a value of 1. No value parameter is\n' + 
+                            'needed when an oscillator is the source of a Custom Instrument.';
+    const GAIN_HELP = 'The Gain block controls the volume of and audio source.';
+    const FILTER_HELP = 'The Filter block encapsulates different types of audio filters. It is often the foundation\n' + 
+                        'for more complex audio effects. While this block provides a wide variety of different\n' +
+                        'filters to choose from, it has a simple set of inputs: "frequency", "Q", and "gain".\n' +
+                        '\n' +
+                        'The "frequency" parameter represents the cutoff frequency for the filter being used.\n' +
+                        'The "Q" controls the peak of the frequency cutoff. The "gain" parameter applies a\n' +
+                        'boost in dB if applicable, otherwise this is a no-op.';
+    const EFFECT_HELP = 'This block provides a selection of pre-build audio effects.';
+
     const EFFECT_INFO = {
         'Volume':     { type: 'Volume' ,        identity: 1.0, params: x => ({ 'intensity': clamp(x, 0, 1) }) },
         'Delay':      { type: 'Delay',          identity: 0.0, params: x => ({ 'delay': clamp(x, 0, 1), 'attenuation': 0.5 }) },
@@ -59,16 +79,24 @@
         console.log(`resolved '${relative}' to ${res}`);
         return res;
     }
+
     const musicMorphic = document.createElement('script');
     musicMorphic.type = 'module';
     musicMorphic.async = false;
     musicMorphic.src = absoluteUrl('js/music_morphs.js');
     document.body.appendChild(musicMorphic);
 
+    const customInstrument = document.createElement('script');
+    customInstrument.type = 'module';
+    customInstrument.async = false;
+    customInstrument.src = absoluteUrl('js/custom_instrument.js');
+    document.body.appendChild(customInstrument);
+
     const script = document.createElement('script');
     script.type = 'module';
     script.async = false;
-    script.src = absoluteUrl('webAudioAPI.js');
+    //script.src = 'https://hedgecrw.github.io/WebAudioAPI/lib/webAudioAPI.js';
+    script.src = absoluteUrl('webAudioAPI.js')
     script.onload = () => {
         const audio = new window.WebAudioAPI();
 
@@ -325,6 +353,13 @@
             getPalette() {
                 const blocks = [
                     new Extension.Palette.Block('setInstrument'),
+                    new Extension.Palette.Block('createInstrument'),
+                    '-',
+                    new Extension.Palette.Block('oscillator'),
+                    new Extension.Palette.Block('gain'),
+                    new Extension.Palette.Block('filter'),
+                    new Extension.Palette.Block('effect'),
+                    '-',
                     new Extension.Palette.Block('setKey'),
                     new Extension.Palette.Block('setBPM'),
                     new Extension.Palette.Block('getBPM'),
@@ -343,10 +378,6 @@
                     new Extension.Palette.Block('queryClip'),
                     new Extension.Palette.Block('audioAnalysis'),
                     new Extension.Palette.Block('createClip'),
-                    '-',
-                    new Extension.Palette.Block('setAudioEffect'),
-                    new Extension.Palette.Block('getAudioEffect'),
-                    new Extension.Palette.Block('clearAudioEffects'),
                     '-',
                     new Extension.Palette.Block('setAudioInput'),
                     new Extension.Palette.Block('startRecording'),
@@ -368,12 +399,15 @@
                         return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
                             setupProcess(this);
-
-                            if (INSTRUMENTS.indexOf(instrument) < 0) throw Error(`unknown instrument: "${instrument}"`);
-
-                            await audio.updateInstrument(this.receiver.id, instrument);
+                            await window.BeatBlox.setInstrument(instrument, INSTRUMENTS, audio, this.receiver.id);
+                            await waitUntil(this.musicInfo.t - SCHEDULING_WINDOW);
                         }, { args: [], timeout: I32_MAX });
                     }),
+                    new Extension.Block('createInstrument', 'reporter', 'music', 'create instrument %l', [], window.BeatBlox.createInstrument),
+                    new Extension.Block('oscillator', 'reporter', 'music', 'oscillator %oscillatorOptions %inputs', ['sine'], window.BeatBlox.createOscillator, OSCILLATOR_HELP),
+                    new Extension.Block('gain', 'reporter', 'music', 'gain %n', [1], window.BeatBlox.createGain, GAIN_HELP),
+                    new Extension.Block('filter', 'reporter', 'music', 'filter %filterOptions %inputs', ['allpass'], window.BeatBlox.createFilter, FILTER_HELP),
+                    new Extension.Block('effect', 'reporter', 'music', 'effect %effectOptions %inputs', ['delay'], window.BeatBlox.createEffect, EFFECT_HELP),
                     new Extension.Block('setKey', 'command', 'music', 'set key %keySig', ['CMajor'], function (key) {
                         if (KEYS[key] === undefined) throw Error(`unknown key: '${key}'`);
                         audio.updateKeySignature(KEYS[key]);
@@ -573,63 +607,6 @@
                             return res;
                         }, { args: [], timeout: I32_MAX });
                     }),
-                    new Extension.Block('setAudioEffect', 'command', 'music', 'set %audioEffect effect to %n %', ['Volume', 100], function (effect, rawValue) {
-                        return this.runAsyncFn(async () => {
-                            await setupEntity(this.receiver);
-                            setupProcess(this);
-
-                            const { type, params } = EFFECT_INFO[effect] || {};
-                            if (type === undefined || params === undefined) throw Error(`unknown effect: "${effect}"`);
-
-                            const value = rawValue / 100;
-                            if (isNaN(value)) throw Error(`expected a number, got "${rawValue}"`);
-
-                            const targets = [this.receiver.id, this.receiver.id + 'Drum'];
-                            if (this.receiver.musicInfo.effects[effect] === undefined) {
-                                for (const target of targets) {
-                                    await audio.applyTrackEffect(target, effect, EFFECTS[type]);
-                                }
-                            }
-                            this.receiver.musicInfo.effects[effect] = value;
-                            for (const target of targets) {
-                                await audio.updateTrackEffect(target, effect, params(value));
-                            }
-                        }, { args: [], timeout: I32_MAX });
-                    }),
-                    new Extension.Block('getAudioEffect', 'reporter', 'music', 'get %audioEffectAug effect', ['Volume'], function (effect) {
-                        return this.runAsyncFn(async () => {
-                            await setupEntity(this.receiver);
-                            setupProcess(this);
-
-                            const getSingle = effect => {
-                                const { identity } = EFFECT_INFO[effect] || {};
-                                if (identity === undefined) throw Error(`unknown effect: "${effect}"`);
-
-                                return { value: this.receiver.musicInfo.effects[effect] ?? identity, identity };
-                            };
-
-                            if (effect === 'every') {
-                                return snapify(Object.keys(EFFECT_INFO).map(x => [x, 100 * getSingle(x).value]));
-                            } else if (effect === 'every active') {
-                                return snapify(Object.keys(EFFECT_INFO).map(x => [x, getSingle(x)]).filter(x => x[1].value !== x[1].identity).map(x => [x[0], 100 * x[1].value]));
-                            } else {
-                                return 100 * getSingle(effect).value;
-                            }
-                        }, { args: [], timeout: I32_MAX });
-                    }),
-                    new Extension.Block('clearAudioEffects', 'command', 'music', 'clear audio effects', [], function () {
-                        return this.runAsyncFn(async () => {
-                            await setupEntity(this.receiver);
-                            setupProcess(this);
-
-                            for (const effect in EFFECT_INFO) {
-                                for (const target of [this.receiver.id, this.receiver.id + 'Drum']) {
-                                    audio.removeTrackEffect(target, effect);
-                                }
-                            }
-                            this.receiver.musicInfo.effects = {};
-                        }, { args: [], timeout: I32_MAX });
-                    }),
                     new Extension.Block('setAudioInput', 'command', 'music', 'use input %audioInput', [], function (device) {
                         return this.runAsyncFn(async () => {
                             await setupEntity(this.receiver);
@@ -745,6 +722,9 @@
                     basicEnum('chordType', identityMap(Object.keys(CHORD_PATTERNS))),
                     basicEnum('scaleType', identityMap(Object.keys(SCALE_PATTERNS))),
                     basicEnum('drumGridOption', identityMap(['new...', 'edit...'])),
+                    basicEnum('oscillatorOptions', identityMap(['sine', 'triangle', 'sawtooth', 'square'])),
+                    basicEnum('filterOptions', identityMap(['lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch', 'allpass'])),
+                    basicEnum('effectOptions', identityMap(['delay']))
                 ];
             }
         }
